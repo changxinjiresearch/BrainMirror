@@ -5,7 +5,7 @@ import json
 import pytest
 import numpy as np
 
-P=Path(__file__).with_name('ixi_github_backup.py')
+P=Path(__file__).resolve().parents[1] / 'scripts' / 'ixi_github_backup.py'
 spec=importlib.util.spec_from_file_location('backup',P)
 b=importlib.util.module_from_spec(spec);spec.loader.exec_module(b)
 
