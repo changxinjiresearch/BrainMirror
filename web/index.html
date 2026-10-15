@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BrainMirror · AI Black Box Observatory</title>
+<link rel="stylesheet" href="/web/style.css">
+<script src="/web/plotly.min.js"></script>
+<script defer src="/web/app.js"></script>
+</head>
+<body>
+<header><div class="logo">◉ <span>BrainMirror</span><small>AI BLACK BOX OBSERVATORY · v0.1</small></div><span id="modelStatus" class="pill">正在读取模型状态…</span></header>
+<main>
+<div class="intro"><div><h1>观察 AI 内部真实的计算</h1><p>修改左侧三维结构，右侧显示 PyTorch 模型中的真实计算单元、卷积连接与激活。不是人工绘制的“概念神经元”。</p></div><span class="eyebrow" id="sourceTag">SYNTHETIC DEMO</span></div>
+<div class="controls panel">
+  <section><h2>01 · 数据</h2><p>内置体素模型仅用于界面与计算验证。真实实验请上传对齐的健康 MRI 和目标区域掩膜。</p>
+    <button id="demoBtn" class="secondary">使用合成大脑</button><form id="uploadForm"><label>MRI (.nii/.nii.gz/.npy)<input id="mriFile" name="mri" type="file" accept=".nii,.gz,.npy" required></label><label>ROI Mask<input name="mask" type="file" accept=".nii,.gz,.npy" required></label><button type="submit" class="secondary">加载 MRI + 掩膜</button></form>
+  </section>
+  <section><h2>02 · 学习</h2><p>训练一个真正的 3D 卷积自编码器；未训练时所有响应都来自随机权重。</p>
+    <div class="hrow"><label>训练来源<select id="trainingSource"><option value="synthetic">合成数据 (演示)</option><option value="uploaded">已上传 MRI</option></select></label><label>Epochs<input type="number" id="epochs" min="1" max="80" value="8"></label></div>
+    <button id="trainBtn">开始训练模型</button><div id="trainProgress" class="note">训练状态：未开始</div>
+  </section>
+  <section><h2>03 · 实验</h2><p>局部结构形变基于 ROI 掩膜生成新的 3D 输入；它不是经过临床验证的病变模拟。</p>
+    <label>局部膨胀强度 <strong><span id="strengthLabel">0.0</span> voxels</strong><input id="strength" type="range" min="0" max="2.5" step="0.25" value="0"></label>
+    <div class="hrow"><label>目标层<select id="layer"><option value="conv3">conv3</option><option value="conv2">conv2</option><option value="conv1">conv1</option></select></label><label>通道<input id="channel" type="number" min="0" max="7" value="0"></label></div>
+    <div class="hrow triple"><label>z<input id="z" type="number" min="0" max="3" value="2"></label><label>y<input id="y" type="number" min="0" max="3" value="2"></label><label>x<input id="x" type="number" min="0" max="3" value="2"></label></div>
+    <label class="check"><input id="ablate" type="checkbox"> 对选中神经元做预激活置零干预</label><button id="analyzeBtn">运行真实计算实验 ↗</button>
+  </section>
+</div>
+<div class="visuals">
+  <section class="panel viz"><div class="panel-heading"><div><span class="eyebrow">INPUT WORLD</span><h2>左侧 · 3D MRI 结构</h2></div><span class="tiny">真实体素几何 / 合成样本示例</span></div><div id="brainPlot" class="plot"></div><p class="subtitle">蓝色：近似脑组织外表面 ｜ 橙色：目标 ROI。右键/拖拽可旋转、滚轮缩放。外表面由强度阈值估计，仅用于预览。</p></section>
+  <section class="panel viz"><div class="panel-heading"><div><span class="eyebrow">MODEL INTERNALS</span><h2>右侧 · 原始神经网络</h2></div><select id="graphView" class="viewselect"><option value="cloud">512 个真实神经元 · 总览</option><option value="focus">选中神经元 · 全部输入连接</option></select></div><div id="neuralPlot" class="plot"></div><p class="subtitle">总览显示最深卷积层全部 512 个真实计算单元（其间不虚构连接）；局部视图显示一个选定单元的真实卷积核输入连接。点击总览节点可选择它。</p></section>
+</div>
+<div class="bottom">
+ <section class="panel results"><div class="panel-heading"><h2>实验测量</h2><span id="runId" class="tiny">尚无运行记录</span></div><div id="metrics" class="metrics"><p class="muted">点击“运行真实计算实验”，这里会展示真实网络测量值。</p></div><div id="caution" class="warning">注意：亮起的节点不等于“负责某个脑区”。观察到激活或扰动敏感性，不等于已经识别了功能或因果机制。</div><a id="download" class="download hidden" download>下载可复现 JSON 实验记录 ↧</a></section>
+ <section class="panel explainer"><h2>如何理解这些点和线？</h2><p><b>输入节点：</b>上一卷积层中的一个确切坐标与通道。</p><p><b>输出节点：</b>你指定的 conv1/2/3 中的一个实际神经元。</p><p><b>连线：</b>该输出节点的卷积核连接；符号与粗细编码真实加权贡献。</p><p><b>数值一致性：</b>程序验证 ∑(输入激活 × 真实权重) + 偏置 = 原始预激活。</p><p><b>干预：</b>将该节点的预激活设为 0，测量最终重建输出的变化。</p><div class="warning">此版本是局部精确计算图，不是完整的因果线路图。连接是架构上的计算依赖；是否承担语义功能需要进一步验证。</div></section>
+</div>
+<div id="error" role="alert" class="error hidden"></div>
+</main>
+<footer>BrainMirror v0.1 · local-first research prototype · Not for clinical use · MRI data stays in local server memory</footer>
+</body></html>

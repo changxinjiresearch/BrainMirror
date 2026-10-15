@@ -1,0 +1,28 @@
+name: Engineering QA (no medical data)
+on:
+  push:
+    branches: [main, 'phase/**']
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Compilation
+        run: python -m compileall -q brainmirror scripts
+      - name: Tests
+        run: python -m pytest -q tests
+      - name: Prohibit tracked patient/secret artifacts
+        run: |
+          if git ls-files | grep -Ei '(\.nii(\.gz)?$|\.dcm$|\.npy$|\.npz$|\.pt$|\.pth$|(^|/)\.env$)'; then
+            echo 'Forbidden binary, dataset or secret files tracked'; exit 1
+          fi
