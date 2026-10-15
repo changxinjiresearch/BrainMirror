@@ -24,7 +24,7 @@ from urllib.request import Request, urlopen
 
 ROOT = Path('/kaggle/working')
 ALLOWED_TOP = {'brainmirror_ixi_train_atlas_run1', 'brainmirror_ixi_split_v1',
-               'brainmirror_ixi_pilot5_v1', 'brainmirror_ixi_bootstrap'}
+               'brainmirror_ixi_pilot5_v1', 'brainmirror_ixi_pilot', 'brainmirror_ixi_bootstrap'}
 MANIFEST = 'brainmirror_ixi_split_v1/PRIVATE_ixi_subject_split_DRAFT.csv'
 REPO_PATTERN = re.compile(r'^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')
 MAX_FILE_BYTES = 2 * 1024**3 - 1  # GitHub release per-asset limit
@@ -54,7 +54,7 @@ def asset_name(label: str) -> str:
 def candidate_files(root: Path) -> list[Path]:
     """Include only complete shards; never read a half-written shard snapshot."""
     results=[]
-    for part in ('brainmirror_ixi_split_v1', 'brainmirror_ixi_pilot5_v1', 'brainmirror_ixi_bootstrap'):
+    for part in ('brainmirror_ixi_split_v1', 'brainmirror_ixi_pilot5_v1', 'brainmirror_ixi_pilot', 'brainmirror_ixi_bootstrap'):
         folder=root/part
         if folder.exists():
             results += [p for p in folder.rglob('*') if p.is_file() and not p.is_symlink()]
