@@ -304,7 +304,7 @@ def parse_args():
             sp.add_argument('--shard-index',type=int,required=True)
             sp.add_argument('--synthstrip-dir',default='/kaggle/working/brainmirror_ixi_pilot')
             sp.add_argument('--min-dice',type=float,default=.70)
-        else:
+        elif name=='merge':
             sp.add_argument('--shards-root',required=True)
     return p.parse_args()
 
