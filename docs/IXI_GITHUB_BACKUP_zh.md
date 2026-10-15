@@ -18,7 +18,7 @@ from kaggle_secrets import UserSecretsClient
 from urllib.request import urlretrieve
 import os, subprocess, sys
 
-revision = "424d999231f8db21efbc0ea0664be535b046c66b"
+revision = "ddd904035c91bffad459db28ef15495789349dc6"
 url = (
     "https://raw.githubusercontent.com/"
     f"changxinjiresearch/BrainMirror/{revision}/scripts/ixi_github_backup.py"
