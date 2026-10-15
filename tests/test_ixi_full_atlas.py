@@ -51,3 +51,16 @@ def test_aggregates_roundtrip(tmp_path):
     p=tmp_path/'agg.npz'
     app.save_aggregates(p,np.ones((6,7,8)),np.ones((6,7,8)),np.ones((6,7,8),np.int16),np)
     with np.load(p) as z: assert z['count'].sum()==6*7*8
+
+def test_plan_cli_does_not_require_shards_root(monkeypatch):
+    import sys
+    monkeypatch.setattr(sys, "argv", [
+        "ixi_full_atlas.py", "plan",
+        "--manifest", "private.csv",
+        "--pilot-root", "/tmp/pilot",
+        "--shard-size", "12",
+    ])
+    args = app.parse_args()
+    assert args.command == "plan"
+    assert args.manifest == "private.csv"
+    assert not hasattr(args, "shards_root")
