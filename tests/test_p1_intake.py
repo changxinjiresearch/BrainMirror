@@ -158,3 +158,23 @@ def test_weak_4d_candidate_rejected(monkeypatch, tmp_path):
     r=inspect_nifti(tmp_path/'s.nii.gz')
     assert r['qc_status']=='FAIL'
     assert 'NOT_3D_SINGLE_VOLUME' in r['qc_reasons']
+
+
+def test_actual_nibabel_synthetic_nifti_roundtrip(tmp_path, monkeypatch):
+    """Real NiBabel I/O on a synthetic volume; never treated as human MRI."""
+    monkeypatch.delitem(sys.modules, 'nibabel', raising=False)
+    nib = pytest.importorskip('nibabel')
+    voxels = np.zeros((96, 96, 96), dtype=np.float32)
+    voxels[18:78, 18:78, 18:78] = 1
+    affine = np.diag([1.2, 1.2, 1.2, 1.0])
+    img = nib.Nifti1Image(voxels, affine)
+    img.set_qform(affine, code=1)
+    img.set_sform(affine, code=1)
+    path = tmp_path / 'IXI999-Guys-999-T1.nii.gz'
+    nib.save(img, str(path))
+    result = inspect_nifti(path, voxel_qc=True)
+    assert result['qc_status'] == 'PASS'
+    assert result['orientation'] == 'RAS'
+    assert result['shape'] == [96,96,96]
+    assert result['finite_fraction'] == 1
+    assert 0.1 < result['nonzero_fraction'] < 0.5
