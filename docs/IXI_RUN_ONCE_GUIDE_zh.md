@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import subprocess, sys
 
-base = 'https://raw.githubusercontent.com/changxinjiresearch/BrainMirror/<PINNED_COMMIT>/scripts/'
+base = 'https://raw.githubusercontent.com/changxinjiresearch/BrainMirror/d736bc0fe04a74d47122e0e00ac5c9fc7f7b9aae/scripts/'
 for name in ['ixi_full_atlas.py', 'ixi_run_all.py']:
     urlretrieve(base + name, '/kaggle/working/' + name)
 # exporter is in anatomy branch, download separately if approved private preview is desired
@@ -34,7 +34,7 @@ result = subprocess.run([
 print('Run return code:', result.returncode)
 ```
 
-在冻结 GitHub 源码提交后，将 `<PINNED_COMMIT>` 替换为实际提交哈希，勿使用随时间变化的 `main` 文件。
+上述 URL 已固定到通过 GitHub CI 的提交 `d736bc0`，请勿改用随时间变化的 `main`。
 
 ## 运行过程与产物
 
