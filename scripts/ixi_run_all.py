@@ -160,6 +160,20 @@ def make_private_browser_preview(final: Path, count_good: int, exporter: Path):
     print('Browser preview is PRIVATE and UNREVIEWED, do not publish.',flush=True)
 
 
+def backup_checkpoint(args):
+    """Require private GitHub checkpoint before advancing to next shard."""
+    if not args.backup_repo:
+        if args.require_backup:
+            raise RuntimeError('Backup is required: set --backup-repo to a PRIVATE repository')
+        return
+    if not os.getenv('BRAINMIRROR_BACKUP_TOKEN'):
+        raise RuntimeError('Missing BRAINMIRROR_BACKUP_TOKEN Kaggle secret; refusing unprotected run')
+    script=Path(args.backup_script)
+    if not script.is_file():
+        raise FileNotFoundError(f'Backup client not found: {script}')
+    invoke([sys.executable,str(script),'sync','--root','/kaggle/working','--repo',args.backup_repo])
+
+
 def run(args):
     sys.path.insert(0,str(Path(args.engine).resolve().parent))
     import importlib.util
@@ -183,11 +197,14 @@ def run(args):
     if not (synth/'mri_synthstrip').is_file() or not (synth/'synthstrip.1.pt').is_file():
         raise FileNotFoundError('SynthStrip script/weights not found. Reuse earlier pilot location.')
     meta=engine.metadata(manifest,pilot,args.shard_size)
+    # Protect *existing* completed shards immediately before more computation.
+    backup_checkpoint(args)
     print('REAL IXI AFFINE CANDIDATE — NOT WHOLE-BRAIN FUNCTION SIMULATION',flush=True)
     print(f'581 sources: 467 train, 57 dev, 57 test; sha256={actual_hash}',flush=True)
     print('P1_PASS=false; model training not authorized; no public output.',flush=True)
     if not args.skip_full_voxel_qc:
         voxel_preflight(rows,work,actual_hash)
+        backup_checkpoint(args)
     shard_root=work/'shards'
     shard_root.mkdir(exist_ok=True)
     num_shards=math.ceil(len(train)/args.shard_size)
@@ -210,6 +227,7 @@ def run(args):
             '--synthstrip-dir',str(synth),'--shard-index',str(k),
             '--shard-size',str(args.shard_size),'--out',str(shard),
             '--min-dice',str(args.min_dice)] + (['--approved'] if args.approved else []))
+        backup_checkpoint(args)
     final=work/'final'
     if not (final/'PRIVATE_merge_receipt.json').exists():
         invoke([sys.executable,engine_command,'merge',
@@ -233,6 +251,7 @@ def run(args):
         'neural_activity_simulated':False}
     summary=work/'PRIVATE_run_summary.json'
     if not summary.exists():mark_receipt(work,status,'PRIVATE_run_summary.json')
+    backup_checkpoint(args)
     print('\n3D ANATOMICAL CANDIDATE GENERATED. SCIENTIFIC QC / APPROVAL OUTSTANDING.',flush=True)
     print(json.dumps(status,indent=2),flush=True)
     return 0 if n_bad==0 else 3
@@ -252,6 +271,10 @@ def parse_args():
     p.add_argument('--max-minutes',type=float,default=480)
     p.add_argument('--skip-full-voxel-qc',action='store_true')
     p.add_argument('--approved',action='store_true',help='Require the independently approved cohort manifest')
+    p.add_argument('--backup-repo',default=os.getenv('BRAINMIRROR_PRIVATE_REPO',''))
+    p.add_argument('--backup-script',default='/kaggle/working/ixi_github_backup.py')
+    p.add_argument('--require-backup',action='store_true',
+                   help='Fail closed unless private GitHub backup is enabled and verified')
     p.add_argument('--make-private-preview',action='store_true')
     args=p.parse_args()
     if not 1<=args.shard_size<=60 or not .5<=args.min_dice<=.95 or args.max_minutes<=0:
