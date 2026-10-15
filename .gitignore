@@ -35,3 +35,11 @@ models/
 checkpoints/
 *.log
 .DS_Store
+# Public source repo: exclude private intake reports and identifiers
+private_scans.json
+aggregate_receipt.json
+*patient*.csv
+*subject*_manifest.csv
+# The legacy Plotly minified vendor file is supplied via library P0 archive.
+# Do not use external CDNs to process patient images without separate review.
+web/plotly.min.js
