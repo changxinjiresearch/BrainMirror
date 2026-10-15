@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 import json, re, hashlib, argparse
 import numpy as np
 
-ID_RE = re.compile(r"^IXI(\\d{3})-([A-Za-z]+)-", re.I)
+ID_RE = re.compile(r"^IXI(\d{3})-([A-Za-z]+)-", re.I)
 
 def discover(root):
     root=Path(root)
