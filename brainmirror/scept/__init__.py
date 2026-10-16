@@ -36,3 +36,10 @@ from .swin3d import (WindowAttention3D, SwinBlock3D, MultiLayerSwinVIB3D,
                      execution_topology)
 from .swin_discovery import (WindowAtom, SwinDiscoveryConfig,
                              discover_scca_swin, execute_route, validate_fixed_route)
+
+# v0.8: real MONAI 1.5.1 controlled multi-block atom cascades.
+# Optional MONAI is imported only when the adapter is instantiated.
+from .monai_crosslayer import (
+    capture_monai_reference, run_isolated_monai_chain,
+    discover_monai_crosslayer,
+)

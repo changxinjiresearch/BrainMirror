@@ -163,3 +163,21 @@ def test_official_monai_automatic_multiblock_search(input_volume):
     if report['selected_path']:
         assert len(report['selected_path'])>=2
         assert report['negative_control']['max_logit_delta']<3e-5
+
+
+def test_official_monai_vib_bridge_crosslayer_path(input_volume):
+    """Run the path on the actual SwinUNETR with a spatial VIB bottleneck."""
+    from brainmirror.scept.monai_crosslayer import capture_monai_reference,run_isolated_monai_chain
+    backbone=build_monai_model(depths=(1,1,1,1)).eval()
+    bridge=MonaiSwinVIBBridge(backbone,feature_size=12,enabled=True).eval()
+    ref=input_volume.clone();ref[:,:,:8,:8,:8]*=-0.6
+    roi=torch.zeros((32,32,32),dtype=torch.bool);roi[:8,:8,:8]=True
+    a=AttentionAtom('backbone.swinViT.layers1.0.blocks.0.attn',0,0,0,0,'value_message')
+    b=AttentionAtom('backbone.swinViT.layers2.0.blocks.0.attn',0,0,0,0,'value_message')
+    with torch.no_grad():
+        snap=capture_monai_reference(bridge,input_volume,ref,class_index=0,roi=roi)
+        patched=run_isolated_monai_chain(bridge,ref,snap,[a,b],roi=roi)
+        cut=run_isolated_monai_chain(bridge,ref,snap,[a,b],roi=roi,cut_at=1)
+    assert len(patched['hops'])==2
+    assert torch.isfinite(patched['logits']).all()
+    assert torch.allclose(cut['logits'],snap.reference_logits,atol=3e-5,rtol=2e-5)
