@@ -151,3 +151,17 @@ def test_fail_closed_on_invalid_shapes_and_training():
     m.eval()
     with torch.no_grad():
         with pytest.raises(ValueError):discover_monai_crosslayer(m,clean,ref,torch.zeros_like(roi))
+
+
+def test_auto_can_select_nonadjacent_blocks_without_manual_indices():
+    m,clean,ref,roi,_=fixtures()
+    with torch.no_grad():
+        result=discover_monai_crosslayer(m,clean,ref,roi,max_hops=3,max_sites=4,
+                                          per_step=2,beam_width=3,max_exact=8,
+                                          kinds=('value_message',),effect_tol=1e-8)
+    assert result['forward_budget_used']<=8
+    assert result['screened']>0
+    assert len(result['candidate_paths'])<=8
+    for tested in result['candidate_paths']:
+        keys=[int(a['module'].split('layers')[1][0]) for a in tested['path']]
+        assert keys==sorted(set(keys))

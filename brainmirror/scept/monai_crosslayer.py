@@ -332,11 +332,12 @@ def discover_monai_crosslayer(model, clean, reference, roi, *,
                               per_step=2, beam_width=2, max_exact=8,
                               kinds=('value_message','qk_logit'),
                               heldout_reference=None, effect_tol=1e-7):
-    """Automatic ROI->real-window atoms->multi-block path candidate search.
+    """ROI-guided forward-only beam search over official MONAI block sites.
 
-    One primary reference is used for screening and selection. Optional second
-    reference is evaluated ONLY after primary selection. All candidates and
-    tested output effects are recorded; abstention if no effect/contradiction.
+    The algorithm chooses *which* early accessible blocks as well as each
+    Head/Query/Key automatically. Site and atom selection use only the primary
+    reference. Heldout reference may *validate* a fixed selected route only.
+    Returns every executed path, including weak/conflicting pathways.
     """
     if roi.ndim!=3 or tuple(roi.shape)!=tuple(clean.shape[-3:]) or not bool(roi.any()):
         raise ValueError('ROI must be a nonempty mask on the input 3D grid')
@@ -348,59 +349,74 @@ def discover_monai_crosslayer(model, clean, reference, roi, *,
     with torch.no_grad():
         snap=capture_monai_reference(model,clean,reference,class_index=class_index,roi=roi)
         obs=MonaiSwinObserver(model)
-        ordered=[s for _,s in _ordered_sites(obs)][:max_sites]
-        if len(ordered)<2: raise RuntimeError('Cannot discover cross-layer path')
-        sites=ordered[:max_hops]
-        ranked,screen_count=_rank_changed_atoms(obs,snap,snap.clean_windows[sites[0]],sites[0],roi,
-                                                  kinds=kinds,limit=per_step)
-        budget=0
-        all_checks=[]
+        sites=[s for _,s in _ordered_sites(obs)][:max_sites]
+        if len(sites)<2:raise RuntimeError('Cannot discover cross-layer path')
+        position={site:i for i,site in enumerate(sites)}
+        exact=0
+        screened=0
+        tests=[]
         beams=[]
-        for score,atom in ranked:
-            if budget>=max_exact:break
-            candidate=[atom]
-            result=run_isolated_monai_chain(model,reference,snap,candidate,
-                                            class_index=class_index,roi=roi,capture_windows=True)
-            budget+=1
-            all_checks.append({'path':[asdict(a) for a in candidate],
-                               'heuristic':score,'effect':result['effect_from_reference'],
-                               'hops':result['hops'],'kind':'source_probe'})
-            beams.append((abs(result['effect_from_reference']),candidate,result))
+        # Sources can originate at any eligible block with a later block.
+        proposals=[]
+        for site in sites[:-1]:
+            ranked,n=_rank_changed_atoms(obs,snap,snap.clean_windows[site],site,roi,
+                                          kinds=kinds,limit=per_step)
+            screened+=n
+            proposals.extend((score,atom) for score,atom in ranked)
+        proposals.sort(key=lambda pair:(-pair[0],position[pair[1].module],
+                                        pair[1].window,pair[1].head,pair[1].query,pair[1].key))
+        for score,atom in proposals[:min(max_exact,beam_width)]:
+            path=[atom]
+            res=run_isolated_monai_chain(model,reference,snap,path,
+                                         class_index=class_index,roi=roi,capture_windows=True)
+            exact+=1
+            tests.append({'path':[asdict(a) for a in path],
+                          'heuristic':score,'effect':res['effect_from_reference'],
+                          'hops':res['hops'],'kind':'source_probe'})
+            beams.append((abs(res['effect_from_reference']),path,res))
         if not beams:
             return {'status':'unresolved','reason':'no_changed_roi_atoms','tested':[],
-                    'screened':screen_count,'forward_budget_used':budget,
+                    'selected_path':None,'screened':screened,'forward_budget_used':exact,
                     'score_clean':snap.original_score,'score_reference':snap.reference_score}
-        for site in sites[1:]:
+        terminals=[]
+        for depth in range(1,max_hops):
             expanded=[]
             for _,path,prev in beams:
-                choices,count=_rank_changed_atoms(obs,snap,prev['hybrid_windows'][site],site,roi,
+                # Graph topology rule: strictly ordered forward sites, never
+                # same block twice or backwards; omitted blocks transmit only
+                # the declared identity stream.
+                later=sites[position[path[-1].module]+1:]
+                for site in later:
+                    choices,n=_rank_changed_atoms(obs,snap,prev['hybrid_windows'][site],site,roi,
                                                   kinds=kinds,limit=per_step)
-                screen_count+=count
-                for score,atom in choices:
-                    if budget>=max_exact:break
-                    full=path+[atom]
-                    res=run_isolated_monai_chain(model,reference,snap,full,
-                                                 class_index=class_index,roi=roi,capture_windows=True)
-                    budget+=1
-                    all_checks.append({'path':[asdict(a) for a in full],
-                                       'heuristic':score,'effect':res['effect_from_reference'],
-                                       'hops':res['hops'],'kind':'candidate'})
-                    expanded.append((abs(res['effect_from_reference']),full,res))
-                if budget>=max_exact:break
+                    screened+=n
+                    for score,atom in choices:
+                        if exact>=max_exact:break
+                        path2=path+[atom]
+                        res=run_isolated_monai_chain(model,reference,snap,path2,
+                                                     class_index=class_index,roi=roi,capture_windows=True)
+                        exact+=1
+                        tests.append({'path':[asdict(a) for a in path2],
+                                      'heuristic':score,'effect':res['effect_from_reference'],
+                                      'hops':res['hops'],'kind':'candidate'})
+                        expanded.append((abs(res['effect_from_reference']),path2,res))
+                    if exact>=max_exact:break
+                if exact>=max_exact:break
             if not expanded:break
             expanded.sort(key=lambda t:-t[0])
+            terminals.extend(expanded)
             beams=expanded[:beam_width]
-        terminal=[x for x in beams if len(x[1])>=2]
-        terminal.sort(key=lambda t:-t[0])
-        best=terminal[0] if terminal else None
+            if exact>=max_exact:break
+        terminals.sort(key=lambda t:-t[0])
+        best=terminals[0] if terminals else None
         heldout=None
         cutoff=None
-        primary_status='unresolved'
+        status='unresolved'
         reason='no_valid_multiblock_path'
         if best is not None:
             effect=best[2]['effect_from_reference']
-            # Essential negative control: substitute reference at last selected
-            # hop; prior identity-stream delta must no longer leak downstream.
+            # Negative control: reference substitution at final chosen atomic
+            # hop removes upstream identity-stream bypass entirely.
             cut=run_isolated_monai_chain(model,reference,snap,best[1],class_index=class_index,
                                          roi=roi,cut_at=len(best[1])-1)
             cutoff={'effect':cut['effect_from_reference'],
@@ -410,26 +426,26 @@ def discover_monai_crosslayer(model, clean, reference, roi, *,
             elif abs(effect)<=effect_tol:
                 reason='insufficient_effect'
             else:
-                primary_status='intervened'
+                status='intervened'
                 reason='primary_reference_only'
-        if best is not None and heldout_reference is not None and primary_status=='intervened':
+        if best is not None and heldout_reference is not None and status=='intervened':
             if heldout_reference.shape!=clean.shape:
                 raise ValueError('Heldout reference shape mismatch')
             hold=capture_monai_reference(model,clean,heldout_reference,class_index=class_index,roi=roi)
-            valid=run_isolated_monai_chain(model,heldout_reference,hold,best[1],class_index=class_index,roi=roi)
-            h_effect=valid['effect_from_reference']
-            consistency=(abs(h_effect)>effect_tol and h_effect*best[2]['effect_from_reference']>0)
+            val=run_isolated_monai_chain(model,heldout_reference,hold,best[1],class_index=class_index,roi=roi)
+            h_effect=val['effect_from_reference']
+            consistent=abs(h_effect)>effect_tol and h_effect*best[2]['effect_from_reference']>0
             heldout={'score_clean':hold.original_score,'score_reference':hold.reference_score,
-                     'effect':h_effect,'direction_consistent':consistency}
-            primary_status='cross_reference_supported' if consistency else 'conflicting'
-            reason='same_direction_nonzero' if consistency else 'reference_disagreement'
-        return {'status':primary_status,'reason':reason,'model':'monai_swinunetr_1.5.1',
+                     'effect':h_effect,'direction_consistent':consistent}
+            status='cross_reference_supported' if consistent else 'conflicting'
+            reason='same_direction_nonzero' if consistent else 'reference_disagreement'
+        return {'status':status,'reason':reason,'model':'monai_swinunetr_1.5.1',
                 'scope':'controlled_residual_atom_cascade_not_unique_circuit',
                 'score_clean':snap.original_score,'score_reference':snap.reference_score,
                 'spatial_effect':snap.original_score-snap.reference_score,
-                'screened':screen_count,'forward_budget_used':budget,
+                'screened':screened,'forward_budget_used':exact,
                 'screening_scope':'bounded_roi_scan_96_queries_12_keys_per_head',
-                'candidate_paths':all_checks,
+                'candidate_paths':tests,
                 'selected_path':None if best is None else [asdict(a) for a in best[1]],
                 'selected_effect':None if best is None else best[2]['effect_from_reference'],
                 'negative_control':cutoff,'heldout':heldout}
