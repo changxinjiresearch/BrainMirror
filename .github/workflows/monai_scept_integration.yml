@@ -4,6 +4,9 @@ on:
     branches: ['phase/**']
     paths:
       - 'brainmirror/scept/monai_*.py'
+      - 'brainmirror/scept/brats*.py'
+      - 'tests/test_brats_v09*.py'
+      - 'scripts/scept_brats_v09*.py'
       - 'tests/test_monai_integration_v07.py'
       - 'tests/test_scept_monai_crosslayer_v08.py'
       - 'brainmirror/scept/monai_crosslayer.py'
@@ -12,6 +15,9 @@ on:
   pull_request:
     paths:
       - 'brainmirror/scept/monai_*.py'
+      - 'brainmirror/scept/brats*.py'
+      - 'tests/test_brats_v09*.py'
+      - 'scripts/scept_brats_v09*.py'
       - 'tests/test_monai_integration_v07.py'
       - 'tests/test_scept_monai_crosslayer_v08.py'
       - 'brainmirror/scept/monai_crosslayer.py'
@@ -31,7 +37,7 @@ jobs:
       - name: Install official MONAI and CPU test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install 'torch>=2.3,<3' 'monai==1.5.1' 'pytest>=8,<10' 'numpy>=1.26,<3' 'einops>=0.7,<1'
+          python -m pip install 'torch>=2.3,<3' 'monai==1.5.1' 'pytest>=8,<10' 'numpy>=1.26,<3' 'einops>=0.7,<1' 'nibabel>=5.3,<6'
       - name: Verify installed MONAI version
         run: |
           python -c 'import torch,monai;print("torch",torch.__version__,"monai",monai.__version__)'
@@ -44,6 +50,8 @@ jobs:
           python -m pytest -q -rs tests/test_monai_integration_v07.py
           PYTHONPATH=. python scripts/monai_v07_smoke.py --json-out /tmp/monai-v07-result.json
           PYTHONPATH=. python scripts/monai_v08_smoke.py --json-out /tmp/monai-v08-result.json
+          python -m pytest -q -rs tests/test_brats_v09.py tests/test_brats_v09_monai.py
+          PYTHONPATH=. python scripts/scept_brats_v09_synthetic_smoke.py --json-out /tmp/scept-brats-v09-SYNTHETIC.json
       - name: Upload synthetic engineering audit
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,4 +60,12 @@ jobs:
           path: |
             /tmp/monai-v07-result.json
             /tmp/monai-v08-result.json
+          if-no-files-found: ignore
+
+      - name: Upload BraTS v0.9 engineering smoke (SYNTHETIC, NO PATIENT DATA)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-brats-v09-SYNTHETIC-not-medical-evidence
+          path: /tmp/scept-brats-v09-SYNTHETIC.json
           if-no-files-found: ignore
