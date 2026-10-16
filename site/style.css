@@ -16,3 +16,6 @@
 .native-warning{border-left:3px solid #d9b56b;background:#3a30213d;padding:10px 12px;font-size:11px;line-height:1.5;color:#eed1a0}
 .native-anatomy-tools>a{font-size:11px;color:#85dfd5}
 .native-anatomy-tools input[type=file]{max-width:100%;font-size:12px;color:#d7e5ee}
+
+/* Keep source and scientific status captions visible over the native 3D canvas. */
+.canvas-area .canvas-top,.canvas-area .hint,.canvas-area .axes{z-index:8}
