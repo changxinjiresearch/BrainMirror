@@ -57,7 +57,12 @@ jobs:
       - name: Serve browser app and run real pretrained model
         run: |
           python -m http.server 8999 --bind 127.0.0.1 --directory scept-studio > /tmp/scept-http.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8999/ > /dev/null && break; sleep 0.25; done
           node scept-studio/e2e.mjs
+      - name: Verify real production SCEPT site
+        env:
+          SCEPT_BASE_URL: https://scept-studio-brainmirror.vercel.app/
+        run: node scept-studio/e2e.mjs
       - name: Screenshot on failure
         if: failure()
         uses: actions/upload-artifact@v4
