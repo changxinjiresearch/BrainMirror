@@ -35,3 +35,11 @@ Dependencies for optional template scripts: `numpy`, `scipy`, `SimpleITK`, `niba
 - Network traces: real **recorded** PyTorch activations, trained only on 8 synthetic phantom samples for 3 epochs; no real anatomy representation claim.
 - Live MRI→trained-model linkage: **NOT AVAILABLE**.
 - No clinical validation, diagnosis or mechanistic conclusions.
+
+## IXI 467-person public default brain (v0.5, candidate)
+
+When the owner publishes the **privacy-sanitized** group-only preview as `data/ixi_population_467.json` on the public repository's `main` branch, the web UI loads it automatically on page open from GitHub raw. The renderer checks the exact SHA256 `36b25fbf1f6749b309cc93adc811ee2137fa83fdab89cf72ba87886e542cda21` and license/provenance before displaying it. Failed or absent downloads do **not** show invented brain data; the local file input and optional MNI reference remain available.
+
+Source: IXI Dataset, https://brain-development.org/ixi-dataset/, licensed CC BY-SA 3.0. This file is a derived, brain-only, group-averaged and downsampled visualization, not per-subject raw MRI. Modifications: SynthStrip extraction, affine alignment to a single reference (2 mm), intensity normalization, arithmetic mean and quantization. 467 training MRIs included, 0 automatically flagged, 57 dev and 57 test withheld. **Research candidate, not independently anatomically approved**; no claim of a nonlinear unbiased atlas. Right-hand BrainAE still shows recorded synthetic PyTorch examples and is **not** linked to this IXI data.
+
+Do not publish private manifests, subjects' MRI, individual QC receipts or GitHub/Kaggle tokens. The private source lives at `BrainMirror-Data-Private/staging/ixi-public-preview/ixi_population_467.json`. License and release policy: `data/README.md` on public main.
