@@ -57,8 +57,9 @@ def stage_if_needed():
         import nibabel
     if not SPLIT.is_file():
         from kaggle_secrets import UserSecretsClient
-        backup=fetch("ixi_github_backup.py")
-        # That backup utility lives in another previous frozen revision:
+        # Frozen, audited IXI backup utility is stored on an older revision,
+        # not on the P5 branch. Do NOT try fetch() here (404 on fresh sessions).
+        backup=WORK/"ixi_github_backup.py"
         prev=("https://raw.githubusercontent.com/changxinjiresearch/BrainMirror/"
               "ddd904035c91bffad459db28ef15495789349dc6/scripts/ixi_github_backup.py")
         urllib.request.urlretrieve(prev,backup)
