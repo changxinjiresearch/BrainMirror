@@ -114,12 +114,20 @@ def main():
         if not dim.HasField("dim_value"):
             raise SystemExit("Model input shape is dynamic; provide a concrete shape in the website")
         shape.append(dim.dim_value)
+    # Only genuine ONNX node/output dependencies are represented as graph edges.
+    # No inferred attention semantics or invented causal connections are added.
+    graph_nodes = [
+        {"id": i, "op": node.op_type, "name": node.name or "node_" + str(i),
+         "inputs": list(node.input), "outputs": list(node.output)}
+        for i, node in enumerate(model.graph.node)
+    ]
     manifest = {
         "schema": "scept.model.v1",
         "name": args.model.stem + " (instrumented, frozen weights)",
         "sha256": sha,
         "input": {"name": selected, "shape": shape, "normalize": args.normalize},
         "observed": names,
+        "graph": {"nodes": graph_nodes, "edge_semantics": "actual_onnx_tensor_dependency"},
         "intervention_mask": mask_name,
         "model_original": str(args.model),
         "training_performed": False,
