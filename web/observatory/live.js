@@ -49,6 +49,35 @@ async function awaitResult(id,key){
  }
  throw Error('等待超时；任务结果尚未确认');
 }
+function attachRealPredictionOverlay(result){
+ const overlay=result.prediction_overlay;
+ if(!overlay||!S.mri||overlay.kind!=='measured_model_prediction_axial_mask')return;
+ const {patch_start:start,full_z:z,mask_base64:masks}=overlay;
+ if(!Array.isArray(start)||start.length!==3||!Number.isInteger(z))return;
+ const n=64, tiles={};
+ try{
+  for(const k of ['wt','tc','et']){
+   const decoded=atob(masks[k]);
+   if(decoded.length!==n*n)throw Error('Bad measured mask dimensions');
+   tiles[k]=decoded;
+  }
+ }catch{return}
+ const [nx,ny,nz]=S.mri.dims;
+ if(z<0||z>=nz||start[0]<0||start[1]<0||start[0]+n>nx||start[1]+n>ny)return;
+ S.mask={name:'Measured SwinUNETR local prediction',dims:S.mri.dims,
+   voxel:function(index){
+    const z0=Math.floor(index/(nx*ny));if(z0!==z)return 0;
+    const within=index-z0*nx*ny;
+    const x0=within%nx,y0=Math.floor(within/nx);
+    const x=x0-start[0],y=y0-start[1];
+    if(x<0||y<0||x>=n||y>=n)return 0;
+    const i=x*n+y;
+    return tiles.et.charCodeAt(i)?4:tiles.tc.charCodeAt(i)?1:tiles.wt.charCodeAt(i)?2:0;
+   }};
+ S.slice=z;S.renderMode='slice';S.pointCloud=null;
+ if(typeof updateViewer==='function')updateViewer();
+ info.textContent='已将本次真实模型的局部 WT/TC/ET 预测叠加到左侧 FLAIR 切片（不是人工标签）。';
+}
 form.addEventListener('submit',async function(ev){
  ev.preventDefault();if(running||!origin)return;
  const data=new FormData(form);
@@ -70,6 +99,7 @@ form.addEventListener('submit',async function(ev){
   document.getElementById('pathMode').classList.add('active');
   document.getElementById('architectureMode').classList.remove('active');
   updateRecord();
+  attachRealPredictionOverlay(measured);
   if(typeof event==='function')event('SCEPT 实时计算完成','四模态 MRI · 实测 Attention','Private model worker');
   if(typeof setView==='function')setView('observatory');
   info.textContent='真实模型实验完成。右侧可检查被干预原子，下方是实际测量的预测效应。';
