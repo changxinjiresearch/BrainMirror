@@ -45,7 +45,7 @@ def test_trace_equivalence_shapes_and_real_attention(fixture):
     assert numeric_trace_equivalence(model,x)
     output,records,details=captured_forward(model,x)
     assert output.shape==(1,3,16,16,16)
-    assert len(allowed_modules(model)) == 5
+    assert len(allowed_modules(model)) == 9
     assert records['blocks.0.attn.weights'].shape==(1,4,64,64)
     assert records['blocks.1.mlp'].shape==(1,64,16)
     assert records['vib'].shape==(1,64,8)
@@ -74,7 +74,7 @@ def test_reference_and_explanation_are_measured(fixture):
     assert r['reference'].endswith('SYNTHETIC_ONLY')
     assert r['mechanistic_claim'].startswith('node-level')
     assert r['independent_validation'] is False
-    assert len(r['modules'])==5
+    assert len(r['modules'])==9
     assert abs(r['input_effect']-(r['clean_score']-r['altered_score']))<1e-6
     assert all(torch.isfinite(torch.tensor(m['disruption'])) for m in r['modules'])
     assert abs(r['input_effect']) > 1e-9

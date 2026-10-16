@@ -10,7 +10,8 @@ import torch
 def allowed_modules(model):
     # Explicit, versioned patch sites; actual module forward outputs are used.
     return {name: module for name, module in model.named_modules()
-            if (name.endswith('.attn') or name.endswith('.mlp') or name == 'vib')}
+            if (name.endswith('.attn') or name.endswith('.mlp') or
+                name.endswith('_to_residual') or name == 'vib')}
 
 
 def _primary(output):
@@ -26,31 +27,57 @@ def _replace(output, tensor):
 
 @contextmanager
 def instrument(model, *, patch=None, records=None):
-    """Capture module outputs and optionally replace ONE selected module output.
+    """Capture module outputs; optionally inject one or multiple exact states.
 
-    For SpatialVIB, replace only z, preserving KL/mu/logvar as diagnostics.
-    Every hook is removed even on exception; inputs and weights not mutated.
+    patch accepts (site, tensor), (site, tensor, boolean_token_mask), or
+    {site: tensor}. `*_to_residual` sites correspond to declared single-consumer
+    branch edges in TransformerVIB3D; ordinary sites are node interventions.
     """
     sites = allowed_modules(model)
-    if patch is not None and patch[0] not in sites:
-        raise KeyError(f'Unknown patch site: {patch[0]}')
+    if patch is None:
+        patches = {}
+    elif isinstance(patch, dict):
+        patches = patch
+    elif isinstance(patch, tuple) and len(patch) in (2, 3):
+        patches = {patch[0]: patch[1:]}
+    else:
+        raise TypeError('Patch must be a mapping or (site, tensor[, mask])')
+    unknown = set(patches).difference(sites)
+    if unknown:
+        raise KeyError(f'Unknown patch sites: {sorted(unknown)}')
     handles = []
     try:
         for name, module in sites.items():
             def callback(_module, _input, output, name=name):
                 value = _primary(output)
-                if name == 'vib':
-                    value = output[0]
                 if records is not None:
                     records[name] = value.detach().clone()
                     if name.endswith('.attn') and isinstance(output, tuple):
                         records[name + '.weights'] = output[1].detach().clone()
-                if patch is not None and patch[0] == name:
-                    replacement = patch[1]
-                    if replacement.shape != value.shape or replacement.device != value.device:
-                        raise ValueError(f'Patch mismatch at {name}')
-                    return _replace(output, replacement.detach().clone())
-                return None
+                if name not in patches:
+                    return None
+                specification = patches[name]
+                if isinstance(specification, tuple):
+                    if len(specification) not in (1, 2):
+                        raise ValueError('Bad patch tuple')
+                    replacement = specification[0]
+                    mask = specification[1] if len(specification) == 2 else None
+                else:
+                    replacement, mask = specification, None
+                if (not torch.is_tensor(replacement) or
+                    replacement.shape != value.shape or
+                    replacement.device != value.device or
+                    replacement.dtype != value.dtype):
+                    raise ValueError(f'Patch tensor mismatch at {name}')
+                if mask is not None:
+                    if (name == 'vib' or value.ndim != 3 or
+                        not torch.is_tensor(mask) or mask.dtype != torch.bool or
+                        mask.shape != value.shape[:2] or mask.device != value.device):
+                        raise ValueError(f'Invalid token mask at {name}')
+                    changed = torch.where(mask.unsqueeze(-1), replacement.detach(), value)
+                else:
+                    changed = replacement.detach().clone()
+                return _replace(output, changed)
             handles.append(module.register_forward_hook(callback))
         yield
     finally:

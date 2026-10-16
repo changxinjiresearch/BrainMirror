@@ -13,14 +13,18 @@ class TransformerBlock(nn.Module):
         super().__init__()
         self.norm1 = nn.LayerNorm(dim)
         self.attn = nn.MultiheadAttention(dim, heads, batch_first=True, dropout=0.)
+        # Explicit single-consumer graph edges. Identity modules do not alter
+        # mathematics; they expose branch -> residual-sum intervention sites.
+        self.attn_to_residual = nn.Identity()
+        self.mlp_to_residual = nn.Identity()
         self.norm2 = nn.LayerNorm(dim)
         self.mlp = nn.Sequential(nn.Linear(dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, dim))
 
     def forward(self, x):
         h = self.norm1(x)
         delta, _weights = self.attn(h, h, h, need_weights=True, average_attn_weights=False)
-        x = x + delta
-        return x + self.mlp(self.norm2(x))
+        x = x + self.attn_to_residual(delta)
+        return x + self.mlp_to_residual(self.mlp(self.norm2(x)))
 
 
 class SpatialVIB(nn.Module):
@@ -85,6 +89,23 @@ class TransformerVIB3D(nn.Module):
             return out, {'kl': kl, 'mu': mu, 'logvar': logvar,
                          'latent': z, 'grid': grid}
         return out
+
+    def scca_edge_routes(self):
+        """Declared *single consumer* branch edges in the executable forward.
+
+        These identity taps mark attn/MLP branch-to-addition edges. They do not
+        capture individual attention heads, tokens-to-token links, or unique
+        multi-hop circuits. Site semantics are checked by independent tests.
+        """
+        return {
+            f'blocks.{i}.{branch}_to_residual': {
+                'source': f'blocks.{i}.{source}',
+                'consumer': f'blocks.{i}.residual_add_{branch}',
+                'intervention_unit': 'whole_branch_tensor',
+            }
+            for i in range(len(self.blocks))
+            for branch, source in (('attn', 'attn'), ('mlp', 'mlp'))
+        }
 
     def encoder_parameters(self):
         for module in (self.embed, self.position, self.blocks, self.norm):

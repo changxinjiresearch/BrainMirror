@@ -1,0 +1,235 @@
+{
+  "data": "random_synthetic_tensor_no_mri_or_patient_data",
+  "seed": 240216,
+  "model": "untrained_3d_TransformerVIB3D",
+  "interpretation_limit": "edge-set interventions not complete causal path",
+  "patient_independent_validation": false,
+  "SCCA": {
+    "method": "SCCA",
+    "stage": "declared_edge_set_intervention_alpha",
+    "region": {
+      "z0": 4,
+      "z1": 12,
+      "y0": 4,
+      "y1": 12,
+      "x0": 4,
+      "x1": 12
+    },
+    "target_channel": 2,
+    "reference": "channel_mean",
+    "validation_reference": "local_blur",
+    "clean_score": -0.04406203702092171,
+    "reference_score": -0.040174249559640884,
+    "input_effect": -0.0038877874612808228,
+    "edge_annotations": {
+      "blocks.0.attn_to_residual": {
+        "source": "blocks.0.attn",
+        "consumer": "blocks.0.residual_add_attn",
+        "intervention_unit": "whole_branch_tensor"
+      },
+      "blocks.0.mlp_to_residual": {
+        "source": "blocks.0.mlp",
+        "consumer": "blocks.0.residual_add_mlp",
+        "intervention_unit": "whole_branch_tensor"
+      },
+      "blocks.1.attn_to_residual": {
+        "source": "blocks.1.attn",
+        "consumer": "blocks.1.residual_add_attn",
+        "intervention_unit": "whole_branch_tensor"
+      },
+      "blocks.1.mlp_to_residual": {
+        "source": "blocks.1.mlp",
+        "consumer": "blocks.1.residual_add_mlp",
+        "intervention_unit": "whole_branch_tensor"
+      }
+    },
+    "interpretation": "Single-consumer residual branch edge-set interventions; not complete neural circuits",
+    "independent_patient_validation": false,
+    "status": "candidate_selected_not_independently_validated",
+    "gradient_screen": {
+      "blocks.0.attn_to_residual": 0.0008600645232945681,
+      "blocks.0.mlp_to_residual": 0.000464201089926064,
+      "blocks.1.attn_to_residual": 0.00047133659245446324,
+      "blocks.1.mlp_to_residual": -0.001559725496917963
+    },
+    "candidates": [
+      "blocks.1.mlp_to_residual",
+      "blocks.0.attn_to_residual",
+      "blocks.1.attn_to_residual",
+      "blocks.0.mlp_to_residual"
+    ],
+    "tested_edge_sets": [
+      {
+        "edges": [
+          "blocks.1.mlp_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": -0.0017365477979183197,
+        "restoration": -0.001986078917980194,
+        "fractional_recovery": 0.5108506927808972,
+        "relative_restoration_error": 0.4891493072191027,
+        "off_target_change": 0.0007505412795580924,
+        "objective": 0.28312806486800834,
+        "direction_aligned": true,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.1.attn_to_residual",
+          "blocks.1.mlp_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": -0.001779206097126007,
+        "restoration": -0.0019374564290046692,
+        "fractional_recovery": 0.4983442249094498,
+        "relative_restoration_error": 0.5016557750905501,
+        "off_target_change": 0.002172530861571431,
+        "objective": 0.3428346979066676,
+        "direction_aligned": true,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.mlp_to_residual",
+          "blocks.1.mlp_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": -0.0011513829231262207,
+        "restoration": -0.0013049058616161346,
+        "fractional_recovery": 0.3356422835898124,
+        "relative_restoration_error": 0.6643577164101876,
+        "off_target_change": 0.0009056523558683693,
+        "objective": 0.5260301355715588,
+        "direction_aligned": true,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.attn_to_residual",
+          "blocks.1.mlp_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": -0.0014068596065044403,
+        "restoration": -0.0012197792530059814,
+        "fractional_recovery": 0.3137463827830053,
+        "relative_restoration_error": 0.6862536172169947,
+        "off_target_change": 0.0011445508571341634,
+        "objective": 0.5568319562986576,
+        "direction_aligned": true,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.mlp_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": 0.00027780234813690186,
+        "restoration": -0.0003466866910457611,
+        "fractional_recovery": 0.08917326229853778,
+        "relative_restoration_error": 0.9108267377014622,
+        "off_target_change": 0.0006577866734005511,
+        "objective": 0.8729892073952097,
+        "direction_aligned": false,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.mlp_to_residual",
+          "blocks.1.attn_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": 0.0003470592200756073,
+        "restoration": -0.000266440212726593,
+        "fractional_recovery": 0.06853260765412698,
+        "relative_restoration_error": 0.9314673923458731,
+        "off_target_change": 0.002106464933604002,
+        "objective": 0.9584678203413488,
+        "direction_aligned": false,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.attn_to_residual",
+          "blocks.0.mlp_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": 0.0003904402256011963,
+        "restoration": 7.005035877227783e-05,
+        "fractional_recovery": -0.01801805254786225,
+        "relative_restoration_error": 1.0180180525478622,
+        "off_target_change": 0.0009919842705130577,
+        "objective": 1.1214638340201508,
+        "direction_aligned": false,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.1.attn_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": 0.00010742619633674622,
+        "restoration": 0.00045846402645111084,
+        "fractional_recovery": -0.11792414863647688,
+        "relative_restoration_error": 1.1179241486364768,
+        "off_target_change": 0.0020893490873277187,
+        "objective": 1.3005026701523483,
+        "direction_aligned": false,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.attn_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": 0.00033220648765563965,
+        "restoration": 0.0008540265262126923,
+        "fractional_recovery": -0.21966903662252543,
+        "relative_restoration_error": 1.2196690366225253,
+        "off_target_change": 0.0008620457374490798,
+        "objective": 1.5320271929699032,
+        "direction_aligned": false,
+        "evidence_status": "intervened_selection_only"
+      },
+      {
+        "edges": [
+          "blocks.0.attn_to_residual",
+          "blocks.1.attn_to_residual"
+        ],
+        "input_effect": -0.0038877874612808228,
+        "disruption": 0.0006027743220329285,
+        "restoration": 0.0015118122100830078,
+        "fractional_recovery": -0.3888618462658822,
+        "relative_restoration_error": 1.3888618462658822,
+        "off_target_change": 0.0022167868446558714,
+        "objective": 2.020341075917485,
+        "direction_aligned": false,
+        "evidence_status": "intervened_selection_only"
+      }
+    ],
+    "selected": {
+      "edges": [
+        "blocks.1.mlp_to_residual"
+      ],
+      "input_effect": -0.0038877874612808228,
+      "disruption": -0.0017365477979183197,
+      "restoration": -0.001986078917980194,
+      "fractional_recovery": 0.5108506927808972,
+      "relative_restoration_error": 0.4891493072191027,
+      "off_target_change": 0.0007505412795580924,
+      "objective": 0.28312806486800834,
+      "direction_aligned": true,
+      "evidence_status": "intervened_selection_only"
+    },
+    "validation": {
+      "strategy": "local_blur",
+      "same_case_different_reference": true,
+      "independent_patient_validation": false,
+      "input_effect": -0.003636937588453293,
+      "status": "evaluated_on_reserved_reference",
+      "disruption": -0.0018262602388858795,
+      "restoration": -0.002096939831972122,
+      "relative_restoration_error": 0.4234325497832084,
+      "direction_aligned": true
+    }
+  }
+}
