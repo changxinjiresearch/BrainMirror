@@ -1,0 +1,256 @@
+{
+  "version": "scept_monai_v08_controlled_cascade",
+  "data": "fixed_seed_synthetic_only_no_training_no_patient",
+  "seed": 240216,
+  "monai": "1.5.1",
+  "torch": "2.14.1+cu130",
+  "input_shape": [
+    1,
+    4,
+    32,
+    32,
+    32
+  ],
+  "roi_voxels": 1728,
+  "model_architecture": "official_monai_swinunetr_depths_2_1_1_1",
+  "fixed_three_block_path": [
+    {
+      "module": "swinViT.layers1.0.blocks.0.attn",
+      "window": 0,
+      "head": 0,
+      "query": 0,
+      "key": 0,
+      "kind": "value_message"
+    },
+    {
+      "module": "swinViT.layers1.0.blocks.1.attn",
+      "window": 0,
+      "head": 0,
+      "query": 0,
+      "key": 0,
+      "kind": "value_message"
+    },
+    {
+      "module": "swinViT.layers2.0.blocks.0.attn",
+      "window": 0,
+      "head": 0,
+      "query": 0,
+      "key": 0,
+      "kind": "value_message"
+    }
+  ],
+  "fixed_effect": 0.0,
+  "hop_deltas": [
+    {
+      "module": "swinViT.layers1.0.blocks.0.attn",
+      "atom": {
+        "module": "swinViT.layers1.0.blocks.0.attn",
+        "window": 0,
+        "head": 0,
+        "query": 0,
+        "key": 0,
+        "kind": "value_message"
+      },
+      "attention_delta_l2": 0.14747072756290436,
+      "incoming_window_delta_l2": 0.0
+    },
+    {
+      "module": "swinViT.layers1.0.blocks.1.attn",
+      "atom": {
+        "module": "swinViT.layers1.0.blocks.1.attn",
+        "window": 0,
+        "head": 0,
+        "query": 0,
+        "key": 0,
+        "kind": "value_message"
+      },
+      "attention_delta_l2": 0.0,
+      "incoming_window_delta_l2": 0.23479662835597992
+    },
+    {
+      "module": "swinViT.layers2.0.blocks.0.attn",
+      "atom": {
+        "module": "swinViT.layers2.0.blocks.0.attn",
+        "window": 0,
+        "head": 0,
+        "query": 0,
+        "key": 0,
+        "kind": "value_message"
+      },
+      "attention_delta_l2": 0.0,
+      "incoming_window_delta_l2": 1.1786291054249887e-07
+    }
+  ],
+  "cut_at_last_max_logit_error": 0.0,
+  "automatic_search": {
+    "status": "unresolved",
+    "reason": "insufficient_effect",
+    "model": "monai_swinunetr_1.5.1",
+    "scope": "controlled_residual_atom_cascade_not_unique_circuit",
+    "score_clean": -0.07619728893041611,
+    "score_reference": -0.060659125447273254,
+    "spatial_effect": -0.015538163483142853,
+    "screened": 4008,
+    "forward_budget_used": 3,
+    "screening_scope": "bounded_roi_scan_96_queries_12_keys_per_head",
+    "candidate_paths": [
+      {
+        "path": [
+          {
+            "module": "swinViT.layers1.0.blocks.1.attn",
+            "window": 63,
+            "head": 2,
+            "query": 7,
+            "key": 3,
+            "kind": "value_message"
+          }
+        ],
+        "heuristic": 1.6471043825149536,
+        "effect": 0.0,
+        "hops": [
+          {
+            "module": "swinViT.layers1.0.blocks.1.attn",
+            "atom": {
+              "module": "swinViT.layers1.0.blocks.1.attn",
+              "window": 63,
+              "head": 2,
+              "query": 7,
+              "key": 3,
+              "kind": "value_message"
+            },
+            "attention_delta_l2": 0.9924671053886414,
+            "incoming_window_delta_l2": 0.0
+          }
+        ],
+        "kind": "source_probe"
+      },
+      {
+        "path": [
+          {
+            "module": "swinViT.layers1.0.blocks.1.attn",
+            "window": 63,
+            "head": 2,
+            "query": 7,
+            "key": 3,
+            "kind": "value_message"
+          },
+          {
+            "module": "swinViT.layers2.0.blocks.0.attn",
+            "window": 0,
+            "head": 1,
+            "query": 6,
+            "key": 4,
+            "kind": "value_message"
+          }
+        ],
+        "heuristic": 0.04118947312235832,
+        "effect": -3.725290298461914e-09,
+        "hops": [
+          {
+            "module": "swinViT.layers1.0.blocks.1.attn",
+            "atom": {
+              "module": "swinViT.layers1.0.blocks.1.attn",
+              "window": 63,
+              "head": 2,
+              "query": 7,
+              "key": 3,
+              "kind": "value_message"
+            },
+            "attention_delta_l2": 0.9924671053886414,
+            "incoming_window_delta_l2": 0.0
+          },
+          {
+            "module": "swinViT.layers2.0.blocks.0.attn",
+            "atom": {
+              "module": "swinViT.layers2.0.blocks.0.attn",
+              "window": 0,
+              "head": 1,
+              "query": 6,
+              "key": 4,
+              "kind": "value_message"
+            },
+            "attention_delta_l2": 0.02371935173869133,
+            "incoming_window_delta_l2": 0.7559223175048828
+          }
+        ],
+        "kind": "candidate"
+      },
+      {
+        "path": [
+          {
+            "module": "swinViT.layers1.0.blocks.1.attn",
+            "window": 63,
+            "head": 2,
+            "query": 7,
+            "key": 3,
+            "kind": "value_message"
+          },
+          {
+            "module": "swinViT.layers2.0.blocks.0.attn",
+            "window": 0,
+            "head": 0,
+            "query": 1,
+            "key": 4,
+            "kind": "value_message"
+          }
+        ],
+        "heuristic": 0.04085085541009903,
+        "effect": -3.725290298461914e-09,
+        "hops": [
+          {
+            "module": "swinViT.layers1.0.blocks.1.attn",
+            "atom": {
+              "module": "swinViT.layers1.0.blocks.1.attn",
+              "window": 63,
+              "head": 2,
+              "query": 7,
+              "key": 3,
+              "kind": "value_message"
+            },
+            "attention_delta_l2": 0.9924671053886414,
+            "incoming_window_delta_l2": 0.0
+          },
+          {
+            "module": "swinViT.layers2.0.blocks.0.attn",
+            "atom": {
+              "module": "swinViT.layers2.0.blocks.0.attn",
+              "window": 0,
+              "head": 0,
+              "query": 1,
+              "key": 4,
+              "kind": "value_message"
+            },
+            "attention_delta_l2": 0.021443136036396027,
+            "incoming_window_delta_l2": 0.7559223175048828
+          }
+        ],
+        "kind": "candidate"
+      }
+    ],
+    "selected_path": [
+      {
+        "module": "swinViT.layers1.0.blocks.1.attn",
+        "window": 63,
+        "head": 2,
+        "query": 7,
+        "key": 3,
+        "kind": "value_message"
+      },
+      {
+        "module": "swinViT.layers2.0.blocks.0.attn",
+        "window": 0,
+        "head": 1,
+        "query": 6,
+        "key": 4,
+        "kind": "value_message"
+      }
+    ],
+    "selected_effect": -3.725290298461914e-09,
+    "negative_control": {
+      "effect": 0.0,
+      "max_logit_delta": 0.0
+    },
+    "heldout": null
+  },
+  "limitation": "controlled-path intervention, not unique natural causal circuit; model random weights"
+}
