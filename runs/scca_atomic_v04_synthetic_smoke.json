@@ -1,0 +1,90 @@
+{
+  "schema": "brainmirror.scca_atomic_smoke.v0.4",
+  "data": "fully_synthetic_tensors_not_mri",
+  "seed": 240216,
+  "dtype": "torch.float32",
+  "device": "cpu",
+  "model_a": {
+    "class": "TransformerVIB3D",
+    "depth": 3,
+    "patch": 4,
+    "weights_sha256": "41b7a94163fec67b48fb5f43792d793f843a4204ea867e8461986b6416bcfa0a",
+    "input_sha256": "836e0cb488b6401db4829dd256cedd1ee3f6c8a65ba15e85a1d61139a0aeea20"
+  },
+  "model_b": {
+    "class": "MultiScaleTransformerVIB3D",
+    "scales": 2,
+    "patch": 2,
+    "weights_sha256": "06b385972b75c4d8ed43d5b0b226edec37fb4d5e792ee48dc8463ebbf62945c4",
+    "input_sha256": "53693866385f51632aab5f39d0c30fb8a672351b2bf3788a45538de5e4f5457e"
+  },
+  "single_scale": {
+    "weighted_value": {
+      "l2": 0.0806891918182373,
+      "max_abs": 0.03931327164173126,
+      "all_finite": true
+    },
+    "single_logit": {
+      "l2": 0.017597349360585213,
+      "max_abs": 0.007082072552293539,
+      "all_finite": true
+    },
+    "latent_oracle_error": 2.427259460091591e-08,
+    "isolated_chain_final_gate_delta": {
+      "l2": 0.002246467163786292,
+      "max_abs": 0.001122593879699707,
+      "all_finite": true
+    },
+    "chain_z_delta": {
+      "l2": 0.0007109291036613286,
+      "max_abs": 0.00039155781269073486,
+      "all_finite": true
+    },
+    "search_status": "same_case_candidates_not_independently_validated",
+    "tested_candidates": 5,
+    "search_top": {
+      "head": 0,
+      "query": 0,
+      "key": 0,
+      "input_effect": -0.005133701488375664,
+      "chain_restoration": -1.2498348951339722e-06,
+      "signed_fraction": 0.00024345686985579443,
+      "absolute_relative_error": 0.9997565431301442,
+      "direction_aligned": true,
+      "route_delta_norm": 0.0015479024732485414
+    }
+  },
+  "multi_scale": {
+    "fine_to_coarse_token": 0,
+    "merge_delta": {
+      "l2": 0.4694143533706665,
+      "max_abs": 0.2533053159713745,
+      "all_finite": true
+    },
+    "merge_z_delta": {
+      "l2": 0.22169186174869537,
+      "max_abs": 0.14170369505882263,
+      "all_finite": true
+    },
+    "coarse_atomic_delta": {
+      "l2": 0.014688622206449509,
+      "max_abs": 0.008703106082975864,
+      "all_finite": true
+    },
+    "coarse_atomic_z_delta": {
+      "l2": 0.006431981921195984,
+      "max_abs": 0.004177287220954895,
+      "all_finite": true
+    },
+    "fine_skip_unchanged": true
+  },
+  "scope": "same_case_synthetic_engineering_validation_only",
+  "not_verified": [
+    "independent_patients",
+    "BraTS2020",
+    "clinical_safety",
+    "method_novelty",
+    "GradCAM_superiority",
+    "unique_complete_causal_path"
+  ]
+}
