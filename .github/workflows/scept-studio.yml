@@ -30,7 +30,7 @@ jobs:
       - name: Static safety and DOM contract
         run: |
           python -m pip install pytest numpy onnx onnxruntime
-          pytest -q tests/test_scept_static.py tests/test_scept_instrument.py
+          PYTHONPATH=. python -m pytest -q tests/test_scept_static.py tests/test_scept_instrument.py
       - name: Prevent private raw MRI/model weights
         run: |
           if git ls-files scept-studio | grep -Ei '\.(nii|nii.gz|dcm|pt|pth|onnx|ort)$'; then
