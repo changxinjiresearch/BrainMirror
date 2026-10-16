@@ -50,7 +50,11 @@ def stage_if_needed():
         if not SPLIT.is_file() or sha(SPLIT)!=EXPECTED_SPLIT:
             raise RuntimeError("Cannot verify original TRAIN-only split; refusing to use staged T1")
         return
-    import nibabel  # image prep and hash; Kaggle notebooks usually have this installed
+    try:
+        import nibabel  # image prep and hash
+    except ImportError:
+        run([sys.executable,"-m","pip","install","-q","nibabel"])
+        import nibabel
     if not SPLIT.is_file():
         from kaggle_secrets import UserSecretsClient
         backup=fetch("ixi_github_backup.py")
@@ -156,6 +160,15 @@ def main():
             if p.wait()!=0:raise RuntimeError("FastSurfer segmentation failed; see preserved private log")
     if not SEG.is_file() or SEG.stat().st_size<100_000:
         raise RuntimeError("Real aseg/DKTatlas segmentation output missing")
+    # Validate actual label content, not merely file existence.
+    import nibabel as nib
+    import numpy as np
+    seg_img=nib.load(str(SEG))
+    volume=np.asarray(seg_img.dataobj)
+    ids=set(np.unique(volume.astype(np.int32)).tolist())
+    if volume.ndim!=3 or min(volume.shape)<160 or len(ids)<15 or not ({17,53,10,49}&ids):
+        raise RuntimeError("Output failed label content QA; do not treat as completed segmentation")
+    print("REAL SEGMENTATION LABEL_QA:",len(ids),"label IDs",flush=True)
     print("REAL FASTSURFER SEGMENTATION FINISHED; backing up private derived labels.",flush=True)
     backup_segmentation(token)
     print("P5 SEGMENTATION COMPLETE AND PRIVATELY BACKED UP.",flush=True)
