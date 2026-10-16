@@ -124,3 +124,42 @@ def test_actual_monai_roi_to_atom_screening(model,input_volume):
     checked=verify_ranked_monai_atoms(model,input_volume,reference,ranked,class_index=0)
     assert len(checked)==2
     assert all(r['evidence_status']=='intervened_not_crossvalidated' for r in checked)
+
+
+def test_official_monai_crosslayer_cut_and_reference_identity(input_volume):
+    from brainmirror.scept.monai_crosslayer import capture_monai_reference,run_isolated_monai_chain
+    m=build_monai_model(depths=(2,1,1,1)).eval()
+    ref=input_volume.clone();ref[:,:,:8,:8,:8]*=-0.65
+    roi=torch.zeros((32,32,32),dtype=torch.bool);roi[:8,:8,:8]=True
+    first=AttentionAtom('swinViT.layers1.0.blocks.0.attn',0,0,0,0,'value_message')
+    second=AttentionAtom('swinViT.layers1.0.blocks.1.attn',0,0,0,0,'value_message')
+    third=AttentionAtom('swinViT.layers2.0.blocks.0.attn',0,0,0,0,'value_message')
+    with torch.no_grad():
+        baseline=m(ref).clone()
+        snap=capture_monai_reference(m,input_volume,ref,class_index=0,roi=roi)
+        path=[first,second,third]
+        observed=run_isolated_monai_chain(m,ref,snap,path,roi=roi)
+        cut=run_isolated_monai_chain(m,ref,snap,path,roi=roi,cut_at=2)
+        after=m(ref)
+    assert len(observed['hops'])==3
+    assert torch.allclose(cut['logits'],baseline,atol=3e-5,rtol=2e-5)
+    assert torch.equal(after,baseline)
+    assert torch.isfinite(observed['logits']).all()
+
+
+def test_official_monai_automatic_multiblock_search(input_volume):
+    from brainmirror.scept.monai_crosslayer import discover_monai_crosslayer
+    m=build_monai_model(depths=(2,1,1,1)).eval()
+    ref=input_volume.clone();ref[:,:,:12,:12,:12]*=-0.25
+    roi=torch.zeros((32,32,32),dtype=torch.bool);roi[:12,:12,:12]=True
+    with torch.no_grad():
+        report=discover_monai_crosslayer(m,input_volume,ref,roi,
+            max_hops=3,max_sites=3,per_step=2,beam_width=1,max_exact=5,
+            kinds=('value_message',),effect_tol=1e-8)
+    assert report['model']=='monai_swinunetr_1.5.1'
+    assert report['forward_budget_used']<=5
+    assert report['screened']>0
+    assert report['status'] in ('unresolved','intervened')
+    if report['selected_path']:
+        assert len(report['selected_path'])>=2
+        assert report['negative_control']['max_logit_delta']<3e-5

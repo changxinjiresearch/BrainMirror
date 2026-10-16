@@ -5,11 +5,17 @@ on:
     paths:
       - 'brainmirror/scept/monai_*.py'
       - 'tests/test_monai_integration_v07.py'
+      - 'tests/test_scept_monai_crosslayer_v08.py'
+      - 'brainmirror/scept/monai_crosslayer.py'
+      - 'scripts/monai_v08_smoke.py'
       - '.github/workflows/monai_scept_integration.yml'
   pull_request:
     paths:
       - 'brainmirror/scept/monai_*.py'
       - 'tests/test_monai_integration_v07.py'
+      - 'tests/test_scept_monai_crosslayer_v08.py'
+      - 'brainmirror/scept/monai_crosslayer.py'
+      - 'scripts/monai_v08_smoke.py'
       - '.github/workflows/monai_scept_integration.yml'
 permissions:
   contents: read
@@ -37,10 +43,13 @@ jobs:
         run: |
           python -m pytest -q -rs tests/test_monai_integration_v07.py
           PYTHONPATH=. python scripts/monai_v07_smoke.py --json-out /tmp/monai-v07-result.json
+          PYTHONPATH=. python scripts/monai_v08_smoke.py --json-out /tmp/monai-v08-result.json
       - name: Upload synthetic engineering audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: monai-v07-synthetic-audit
-          path: /tmp/monai-v07-result.json
+          path: |
+            /tmp/monai-v07-result.json
+            /tmp/monai-v08-result.json
           if-no-files-found: ignore
