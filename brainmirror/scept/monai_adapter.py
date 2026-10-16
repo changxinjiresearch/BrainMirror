@@ -371,3 +371,62 @@ def substitute_decoder_skip(model, decoder_site:str, reference_skip:torch.Tensor
         yield used
     finally:
         handle.remove()
+
+
+def rank_monai_roi_atoms(observer:MonaiSwinObserver, roi:torch.Tensor, *, max_atoms:int=8,
+                         sites=None, kind:str='value_message'):
+    """Deterministically propose MONAI atoms from a fixed input-space 3D ROI.
+
+    Ranking is a HEURISTIC by absolute clean attention message norm, NOT causal
+    evidence. Effects require subsequent atomic_bidirectional_effect calls.
+    Multi-layer path isolation and exhaustive discovery are out of scope.
+    """
+    if roi.ndim!=3 or not roi.any():
+        raise ValueError('Nonempty 3D ROI mask required')
+    if max_atoms<1:
+        raise ValueError('max_atoms must be positive')
+    if kind not in ('value_message','qk_logit'):
+        raise ValueError('Unsupported atom kind')
+    names=list(observer.windows) if sites is None else list(sites)
+    choices=[]
+    for name in names:
+        if name not in observer.windows or name not in observer.geometry:
+            raise ValueError(f'No captured MONAI 3D geometry for {name}')
+        geom=observer.geometry[name]
+        site=observer.windows[name]
+        windows=site['input'];mask=site['mask'];module=observer.sites[name]
+        pooled=F.adaptive_max_pool3d(roi.float()[None,None].to(windows.device),
+                                     geom.input_shape)[0,0].bool()
+        parts=decompose_monai_attention(module,windows,mask)
+        weights=parts['weights'].detach().float()
+        vals=parts['v'].detach().float()
+        _,nh,n,_=vals.shape
+        for w in range(windows.shape[0]):
+            win=w%geom.total_windows
+            for q in range(n):
+                pos=geom.position(win,q)
+                if pos is None or not bool(pooled[pos]):
+                    continue
+                for k in range(n):
+                    if geom.position(win,k) is None:
+                        continue
+                    if mask is not None and float(mask[win,q,k])<-50:
+                        continue
+                    for head in range(nh):
+                        score=float(weights[w,head,q,k]*torch.linalg.vector_norm(vals[w,head,k]))
+                        choices.append((score,AttentionAtom(name,w,head,q,k,kind)))
+    choices.sort(key=lambda it:(-it[0],it[1].module,it[1].window,
+                                it[1].head,it[1].query,it[1].key))
+    return [{'screen_score':v,'atom':asdict(a),'evidence_status':'screened_only'}
+            for v,a in choices[:max_atoms]]
+
+
+def verify_ranked_monai_atoms(model,original,reference,ranked,*,class_index=0,target_roi=None):
+    """Run real prediction interventions for a bounded externally ranked set."""
+    results=[]
+    for item in ranked:
+        atom=AttentionAtom(**item['atom'])
+        effects=atomic_bidirectional_effect(model,original,reference,atom,
+                                            class_index=class_index,roi=target_roi)
+        results.append({'screen_score':item['screen_score'],**effects})
+    return results

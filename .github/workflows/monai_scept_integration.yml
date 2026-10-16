@@ -25,7 +25,7 @@ jobs:
       - name: Install official MONAI and CPU test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install 'torch>=2.3,<3' 'monai==1.5.1' 'pytest>=8,<10' 'numpy>=1.26,<3'
+          python -m pip install 'torch>=2.3,<3' 'monai==1.5.1' 'pytest>=8,<10' 'numpy>=1.26,<3' 'einops>=0.7,<1'
       - name: Verify installed MONAI version
         run: |
           python -c 'import torch,monai;print("torch",torch.__version__,"monai",monai.__version__)'

@@ -108,3 +108,19 @@ def test_actual_monai_shifted_and_window_geometry(input_volume):
         assert geom.total_windows>=1
         assert geom.position(0,0) is not None
         break
+
+
+def test_actual_monai_roi_to_atom_screening(model,input_volume):
+    from brainmirror.scept.monai_adapter import rank_monai_roi_atoms,verify_ranked_monai_atoms
+    obs=MonaiSwinObserver(model)
+    first=next(iter(obs.sites))
+    roi=torch.zeros(32,32,32,dtype=torch.bool)
+    roi[:8,:8,:8]=True
+    with torch.no_grad(),obs.recording(selected=[first]):
+        model(input_volume)
+    ranked=rank_monai_roi_atoms(obs,roi,max_atoms=2,sites=[first])
+    assert len(ranked)==2
+    reference=input_volume.clone();reference[:,:,:8,:8,:8]*=-0.8
+    checked=verify_ranked_monai_atoms(model,input_volume,reference,ranked,class_index=0)
+    assert len(checked)==2
+    assert all(r['evidence_status']=='intervened_not_crossvalidated' for r in checked)

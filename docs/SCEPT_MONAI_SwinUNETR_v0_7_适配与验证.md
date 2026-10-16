@@ -4,7 +4,7 @@
 
 ## 1. 版本范围与依赖
 
-- 依赖官方 `monai==1.5.1`、PyTorch 2.x，实际官方库的 CI 由 `.github/workflows/monai_scept_integration.yml` 执行。
+- 依赖官方 `monai==1.5.1`、`einops`、PyTorch 2.x，实际官方库的 CI 由 `.github/workflows/monai_scept_integration.yml` 执行。
 - 不替换或复制 MONAI 训练权重，也不在源码中修改 `SwinUNETR.forward`、`WindowAttention.forward`。
 - 未经验证的 MONAI 版本会拒绝构建；兼容其他版本必须新增官方库回归测试。
 - 当前本地研发环境没有 MONAI，**本地数值单元测试使用独立、结构相似的假模块**。GitHub 官方库集成测试结果需单独审计。
@@ -45,9 +45,13 @@
 ## 5. 操作与 CI
 
 ```bash
-pip install 'torch>=2.3,<3' 'monai==1.5.1' pytest numpy
+pip install 'torch>=2.3,<3' 'monai==1.5.1' 'einops>=0.7,<1' pytest numpy
 pytest -q tests/test_monai_integration_v07.py
 python scripts/monai_v07_smoke.py --json-out runs/scept_monai_v07_synthetic.json
 ```
 
 来源：MONAI 1.5.1 `monai/networks/nets/swin_unetr.py`（Apache-2.0）；MONAI 官方网络说明。所有代码为自行实现的适配/观察层，未拷贝 MONAI 源码。
+
+## 6. ROI 驱动的 MONAI 原子候选筛选（补充）
+
+`rank_monai_roi_atoms` 可将三维输入 ROI 按实际 stage 大小映射为候选 Query token，利用真实窗口空间索引与 shift mask 过滤不合法连接；按加权 Value 消息的绝对范数进行排序。此排序只是成本较低的**候选筛选启发式**，不能被当作因果解释。`verify_ranked_monai_atoms` 对限定数量的候选执行真实的完整模型正反向原子干预，并逐个记录效应。这仍不是 MONAI 版本的全局跨层回路联合优化。

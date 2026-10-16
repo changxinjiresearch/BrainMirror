@@ -158,3 +158,21 @@ def test_window_geometry_shift_disabled_on_small_axis():
     g=window_geometry(Block(),(2,4,5))
     assert g.window_size==(2,3,3)
     assert g.shift_size==(0,1,1)
+
+
+def test_rank_roi_atoms_respects_geometry_and_mask():
+    from brainmirror.scept.monai_adapter import WindowGeometry,rank_monai_roi_atoms
+    torch.manual_seed(54)
+    model=TinySwin().eval();obs=MonaiSwinObserver(model)
+    x=torch.randn(1,8,8)
+    with obs.recording(selected=['attn']):
+        model(x)
+    obs.geometry['attn']=WindowGeometry((2,2,2),(2,2,2),(0,0,0))
+    roi=torch.zeros(4,4,4,dtype=torch.bool)
+    roi[:2,:2,:2]=True
+    results=rank_monai_roi_atoms(obs,roi,max_atoms=3)
+    assert len(results)==3
+    assert all(r['evidence_status']=='screened_only' for r in results)
+    assert all(r['atom']['module']=='attn' for r in results)
+    with pytest.raises(ValueError):
+        rank_monai_roi_atoms(obs,torch.zeros_like(roi),max_atoms=3)
