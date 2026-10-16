@@ -27,7 +27,7 @@
 <label><input id="nativeRight" type="checkbox" checked/> 右半球</label>
 <label><input id="nativeDeep" type="checkbox"/> 显示 aseg 深部结构</label>
 </div>
-<p class="native-warning" id="nativeAlignmentNote">当前左侧默认仍为 IXI 467 人平均 MRI 的粗略群体外表面；个体精细脑沟、脑区与海马体等数据尚未导入。个体重建与群体均值不可默认空间对应。</p>
+<p class="native-warning" id="nativeAlignmentNote">当前左侧默认仍为 IXI 467 人平均 MRI 的粗略群体外表面；个体精细脑沟、脑区与海马体等数据尚未导入。个体重建与群体均值尚未配准，不能默认空间位置对应。</p>
 <a target="_blank" rel="noopener" href="https://github.com/changxinjiresearch/BrainMirror/blob/phase/p5-cortical-reconstruction/docs/P5_NATIVE_RECONSTRUCTION_zh.md">查看真实 FreeSurfer/FastSurfer 皮层重建指南 ↗</a>
 </section>
 <div class="anatomy-forms"><div><label>标准模板 / 个体 NIfTI（仅在本地浏览器中读取）</label><input type="file" id="volumeFile" accept=".nii,.nii.gz,.json,application/json"><p class="tiny">支持 NIfTI-1（.nii/.nii.gz）及审核过的 BrainMirror preview JSON。无文件上传请求。</p></div><div><label>可选解剖标签图（需匹配空间）</label><input type="file" id="maskFile" accept=".nii,.nii.gz,.json,application/json"><p class="tiny">脑区掩膜仅用于左侧定位；不赋予右侧 AI 单元医学语义。</p></div><div><label>当前 Label ID（0 表示未选）</label><input id="roiLabel" type="number" min="0" step="1" value="0"><p id="roiStatus" class="tiny">尚未导入解剖标签。</p></div><div><label>备用体素点云阈值（百分位） <strong id="thresholdDisplay">65%</strong></label><input id="surfaceThreshold" type="range" min="20" max="92" step="1" value="65"><p class="tiny">仅控制旧版备用点云；默认连续 3D 表面源于真实 MRI 脑组织支持范围，不修改原始体素或 AI 输入。</p></div></div>
