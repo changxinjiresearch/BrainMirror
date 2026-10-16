@@ -1,6 +1,6 @@
 'use strict';
 const $=id=>document.getElementById(id);
-let session=null,bytes=null,sha=null,selectedData=null,last=null,history=[],modelClass="UPLOADED_MODEL_UNVERIFIED",modelFileName="",externalMRI=null;
+let session=null,bytes=null,sha=null,selectedData=null,last=null,history=[],modelClass="UPLOADED_MODEL_UNVERIFIED",modelFileName="",externalMRI=null,graph=null;
 try{history=JSON.parse(localStorage.getItem('scept-audit-v2')||'[]')}catch{}
 const fmt=n=>Number.isFinite(n)?(Math.abs(n)>1e4?n.toExponential(3):n.toFixed(6)):'—';
 const err=e=>{$('notify').textContent=typeof e==='string'?e:(e?.message||String(e));};
@@ -9,7 +9,7 @@ const sumshape=a=>Array.isArray(a)?a.join('×'):String(a||'?');
 const sha256=async buffer=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer))).map(b=>b.toString(16).padStart(2,'0')).join('');
 function available(){if(!window.ort)throw Error('ONNX Runtime Web could not load. Check network/CDN connectivity.');}
 document.querySelectorAll('.navitem').forEach(b=>b.onclick=()=>{document.querySelectorAll('.navitem').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(b.dataset.target).classList.remove('hidden');if(b.dataset.target==='experiments')renderHistory()});
-async function selectModel(source,name,cls='UPLOADED_MODEL_UNVERIFIED'){clear();if(session){await session.release();session=null;}bytes=source;sha=await sha256(bytes);modelClass=cls;modelFileName=name;externalMRI=null;$('modelName').textContent=name+' · '+(bytes.byteLength/1048576).toFixed(3)+' MB';$('loadBtn').disabled=false;$('modelHash').textContent=sha.slice(0,16)+'…';last=null;$('statusPill').textContent=cls==='UPLOADED_MODEL_UNVERIFIED'?'MODEL SELECTED':'ENGINEERING FIXTURE';$('runBtn').disabled=true;}
+async function selectModel(source,name,cls='UPLOADED_MODEL_UNVERIFIED'){clear();if(session){await session.release();session=null;}bytes=source;sha=await sha256(bytes);modelClass=cls;modelFileName=name;externalMRI=null;try{graph=window.SCEPT_INSPECT_ONNX(source);renderGraph()}catch(e){graph=null;$('graphMeta').textContent='Graph inspector unavailable: '+e.message;$('graphNodes').replaceChildren()};$('modelName').textContent=name+' · '+(bytes.byteLength/1048576).toFixed(3)+' MB';$('loadBtn').disabled=false;$('modelHash').textContent=sha.slice(0,16)+'…';last=null;$('statusPill').textContent=cls==='UPLOADED_MODEL_UNVERIFIED'?'MODEL SELECTED':'ENGINEERING FIXTURE';$('runBtn').disabled=true;}
 $('modelFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await selectModel(await f.arrayBuffer(),f.name);}catch(ex){err(ex)}};
 async function selectFixture(key){try{const fixture=window.SCEPT_FIXTURES[key],bin=atob(fixture.b64),data=Uint8Array.from(bin,c=>c.charCodeAt(0)).buffer;await selectModel(data,fixture.name,fixture.classification);if(sha!==fixture.sha)throw Error('Engineering fixture integrity mismatch');$('tensorText').value=JSON.stringify(fixture.input);$('experimentKind').value=key==='ablation'?'ablation':'input';$('offset').value='0';$('count').value='1';await $('loadBtn').onclick();}catch(ex){err(ex)}}
 $('demoLinear').onclick=()=>selectFixture('linear');$('demoAblation').onclick=()=>selectFixture('ablation');
@@ -55,3 +55,19 @@ window.addEventListener('unhandledrejection',e=>err(e.reason));
 
 window.SCEPT_IMPORT_VOLUME_TENSOR=(tensor)=>{if(!tensor||!(tensor.data instanceof Float32Array)||!Array.isArray(tensor.dims))throw Error('Invalid MRI tensor');externalMRI={dims:tensor.dims,data:tensor.data};$('tensorText').value='';$('tensorText').placeholder='MRI tensor loaded in local memory ('+tensor.dims.join('×')+'). Type JSON here to replace it.';$('inputReport').textContent='MRI-derived tensor prepared locally. Verify model-specific normalization, orientation and channel layout before inference.';};
 $('tensorText').addEventListener('input',()=>{externalMRI=null});
+
+function renderGraph(){
+ if(!graph)return;
+ $('graphMeta').textContent=graph.totalNodes+' operators · '+graph.edges.length+' directed intermediate tensor dependencies · '+graph.initializers.length+' initializers · '+graph.inputs.length+' graph inputs · '+graph.outputs.length+' declared outputs. Node view limited to the first 120 operators.';
+ $('graphNodes').replaceChildren();const count=Math.min(graph.nodes.length,120);
+ for(let i=0;i<count;i++){
+  const node=graph.nodes[i],b=document.createElement('button');b.type='button';b.className='graphnode';
+  const label=document.createElement('strong');label.textContent=node.op||'Unknown';
+  const sub=document.createElement('small');sub.textContent=node.name||('#'+i);
+  b.append(label,sub);
+  b.onclick=()=>{
+   $('graphDetails').textContent='Node #'+i+' · '+(node.name||node.op)+' · inputs: '+node.inputs.join(', ')+' · outputs: '+node.outputs.join(', ')+' · incoming operators: '+graph.edges.filter(e=>e.to===i).length+' · outgoing operators: '+graph.edges.filter(e=>e.from===i).length+' (structural graph edges only)';
+  };
+  $('graphNodes').append(b);
+ }
+}
