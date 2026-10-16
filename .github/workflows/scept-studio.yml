@@ -1,0 +1,37 @@
+name: SCEPT Browser Studio validation
+on:
+  push:
+    branches: [main, 'phase/**']
+    paths:
+      - 'scept-studio/**'
+      - 'scripts/scept_instrument_onnx.py'
+      - 'tests/test_scept_static.py'
+      - '.github/workflows/scept-studio.yml'
+  pull_request:
+    branches: [main]
+jobs:
+  static-qa:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: JavaScript syntax
+        run: node --check scept-studio/studio.js
+      - name: Python syntax
+        run: python -m py_compile scripts/scept_instrument_onnx.py
+      - name: Static safety and DOM contract
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_scept_static.py
+      - name: Prevent private raw MRI/model weights
+        run: |
+          if git ls-files scept-studio | grep -Ei '\.(nii|nii.gz|dcm|pt|pth|onnx|ort)$'; then
+            echo 'Private model/medical file tracked in public SCEPT source'; exit 1
+          fi
