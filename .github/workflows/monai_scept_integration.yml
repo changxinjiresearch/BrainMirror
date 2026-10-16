@@ -1,0 +1,46 @@
+name: SCEPT MONAI SwinUNETR Integration (CPU)
+on:
+  push:
+    branches: ['phase/**']
+    paths:
+      - 'brainmirror/scept/monai_*.py'
+      - 'tests/test_monai_integration_v07.py'
+      - '.github/workflows/monai_scept_integration.yml'
+  pull_request:
+    paths:
+      - 'brainmirror/scept/monai_*.py'
+      - 'tests/test_monai_integration_v07.py'
+      - '.github/workflows/monai_scept_integration.yml'
+permissions:
+  contents: read
+jobs:
+  official-monai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official MONAI and CPU test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch>=2.3,<3' 'monai==1.5.1' 'pytest>=8,<10' 'numpy>=1.26,<3'
+      - name: Verify installed MONAI version
+        run: |
+          python -c 'import torch,monai;print("torch",torch.__version__,"monai",monai.__version__)'
+      - name: Run real-library SwinUNETR tests (skipping is forbidden)
+        env:
+          OMP_NUM_THREADS: '2'
+          MKL_NUM_THREADS: '2'
+          OPENBLAS_NUM_THREADS: '1'
+        run: |
+          python -m pytest -q -rs tests/test_monai_integration_v07.py
+          python scripts/monai_v07_smoke.py --json-out /tmp/monai-v07-result.json
+      - name: Upload synthetic engineering audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monai-v07-synthetic-audit
+          path: /tmp/monai-v07-result.json
+          if-no-files-found: ignore
