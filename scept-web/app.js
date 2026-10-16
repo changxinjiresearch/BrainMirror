@@ -3,6 +3,8 @@ const $=id=>document.getElementById(id);
 let session=null,bytes=null,sha=null,selectedData=null,last=null,history=[],modelClass="UPLOADED_MODEL_UNVERIFIED",modelFileName="",externalMRI=null,graph=null;
 try{history=JSON.parse(localStorage.getItem('scept-audit-v2')||'[]')}catch{}
 const fmt=n=>Number.isFinite(n)?(Math.abs(n)>1e4?n.toExponential(3):n.toFixed(6)):'—';
+function metaFor(name,which='input'){const names=which==='input'?session?.inputNames:session?.outputNames;const arr=which==='input'?session?.inputMetadata:session?.outputMetadata;return arr?.[names?.indexOf(name)]||graph?.[which+'Metadata']?.[name]||{};}
+
 const err=e=>{$('notify').textContent=typeof e==='string'?e:(e?.message||String(e));};
 const clear=()=>{$('notify').textContent='';};
 const sumshape=a=>Array.isArray(a)?a.join('×'):String(a||'?');
@@ -13,7 +15,7 @@ async function selectModel(source,name,cls='UPLOADED_MODEL_UNVERIFIED'){clear();
 $('modelFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await selectModel(await f.arrayBuffer(),f.name);}catch(ex){err(ex)}};
 async function selectFixture(key){try{const fixture=window.SCEPT_FIXTURES[key],bin=atob(fixture.b64),data=Uint8Array.from(bin,c=>c.charCodeAt(0)).buffer;await selectModel(data,fixture.name,fixture.classification);if(sha!==fixture.sha)throw Error('Engineering fixture integrity mismatch');$('tensorText').value=JSON.stringify(fixture.input);$('experimentKind').value=key==='ablation'?'ablation':'input';$('offset').value='0';$('count').value='1';await $('loadBtn').onclick();}catch(ex){err(ex)}}
 $('demoLinear').onclick=()=>selectFixture('linear');$('demoAblation').onclick=()=>selectFixture('ablation');
-$('loadBtn').onclick=async()=>{clear();try{available();if(!bytes)throw Error('Select a model file first.');$('loadBtn').disabled=true;$('execMode').textContent='Loading…';ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';ort.env.wasm.numThreads=1;const provider=$('runtimeSelect').value;if(provider==='webgpu'&&!navigator.gpu)throw Error('WebGPU unsupported on this device; select CPU/WASM.');session=await ort.InferenceSession.create(new Uint8Array(bytes),{executionProviders:[provider]});$('execMode').textContent=provider.toUpperCase()+' · local inference';$('engineState').textContent='● '+provider.toUpperCase()+' · active';$('statusPill').textContent='REAL MODEL LOADED';$('inputDefs').textContent=session.inputNames.map((n,i)=>n+': '+sumshape(session.inputMetadata[i]?.shape||'?')).join(' | ');$('outputDefs').textContent=session.outputNames.map((n,i)=>n+': '+sumshape(session.outputMetadata[i]?.shape||'?')).join(' | ');$('inputTensor').innerHTML=session.inputNames.filter(n=>n!=='scept_mask').map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');$('runBtn').disabled=false;$('modelName').textContent+=' · Ready';}catch(e){err(e);$('execMode').textContent='Load failed';}finally{$('loadBtn').disabled=false}};
+$('loadBtn').onclick=async()=>{clear();try{available();if(!bytes)throw Error('Select a model file first.');$('loadBtn').disabled=true;$('execMode').textContent='Loading…';ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';ort.env.wasm.numThreads=1;const provider=$('runtimeSelect').value;if(provider==='webgpu'&&!navigator.gpu)throw Error('WebGPU unsupported on this device; select CPU/WASM.');session=await ort.InferenceSession.create(new Uint8Array(bytes),{executionProviders:[provider]});$('execMode').textContent=provider.toUpperCase()+' · local inference';$('engineState').textContent='● '+provider.toUpperCase()+' · active';$('statusPill').textContent='REAL MODEL LOADED';$('inputDefs').textContent=session.inputNames.map((n,i)=>n+': '+sumshape(metaFor(n).shape||'?')).join(' | ');$('outputDefs').textContent=session.outputNames.map((n,i)=>n+': '+sumshape(metaFor(n,'output').shape||'?')).join(' | ');$('inputTensor').innerHTML=session.inputNames.filter(n=>n!=='scept_mask').map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');$('runBtn').disabled=false;$('modelName').textContent+=' · Ready';}catch(e){err(e);$('execMode').textContent='Load failed';}finally{$('loadBtn').disabled=false}};
 const escapeHtml=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 $('tensorFile').onchange=async e=>{const f=e.target.files[0];if(f)$('tensorText').value=await f.text();};
 function parseData(){if(externalMRI)return externalMRI;let d;try{d=JSON.parse($('tensorText').value)}catch{throw Error('Input must be valid JSON.')}if(d&&d.feeds)d=d.feeds[$('inputTensor').value];if(!d||!Array.isArray(d.shape)||!Array.isArray(d.data))throw Error('Required JSON: {shape,data} or {feeds:{inputName:{shape,data}}}.');const size=d.shape.reduce((a,b)=>a*b,1);if(!d.shape.length||!d.shape.every(v=>Number.isInteger(v)&&v>0)||size!==d.data.length||size>10000000)throw Error('Invalid shape or tensor length (10M element safety cap).');if(!d.data.every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Input tensor must contain finite numeric values.');return{dims:d.shape,data:Float32Array.from(d.data)}}
@@ -23,19 +25,19 @@ async function run(){clear();if(!session)throw Error('Load an ONNX model first.'
 let suppliedFeeds={};try{suppliedFeeds=JSON.parse($('tensorText').value).feeds||{}}catch{}
 if(otherNames.some(n=>n!=='scept_mask'&&!suppliedFeeds[n]))throw Error('Missing additional inputs. Use JSON {feeds:{inputName:{shape,data},...}}.');
 if(kind==='ablation'&&!session.inputNames.includes('scept_mask'))throw Error('Internal ablation requires an instrumented ONNX graph with a scept_mask input.');
-const inputMeta=session.inputMetadata[session.inputNames.indexOf(name)];const expected=inputMeta?.shape||[];if(inputMeta?.type!=='float32')throw Error('This adapter supports float32 model inputs only; convert/prepare compatible ONNX model.');
+const inputMeta=metaFor(name);const expected=inputMeta?.shape||[];if(inputMeta?.type!=='float32')throw Error('This adapter supports float32 model inputs only; convert/prepare compatible ONNX model.');
 if(expected.length && (expected.length!==original.dims.length || expected.some((v,i)=>typeof v==='number'&&v>0&&v!==original.dims[i])))throw Error('Input shape does not match model metadata: '+sumshape(expected));
 const baselineFeeds={[name]:new ort.Tensor('float32',original.data,original.dims)};
 const editedFeeds={[name]:new ort.Tensor('float32',kind==='ablation'?original.data:edited.data,original.dims)};
 for(const n of otherNames.filter(n=>n!=='scept_mask')){
  const v=suppliedFeeds[n];if(!v||!Array.isArray(v.shape)||!Array.isArray(v.data))throw Error('Additional feed '+n+' requires shape/data arrays');
  const k=v.shape.reduce((a,b)=>a*b,1);if(k!==v.data.length||k>10000000||!v.shape.every(x=>Number.isInteger(x)&&x>0)||!v.data.every(x=>Number.isFinite(x)))throw Error('Invalid extra input '+n);
- const meta=session.inputMetadata[session.inputNames.indexOf(n)];if(meta?.type!=='float32')throw Error('Only float32 ONNX inputs supported: '+n);
+ const meta=metaFor(n);if(meta?.type!=='float32')throw Error('Only float32 ONNX inputs supported: '+n);
  if(meta?.shape?.length && (v.shape.length!==meta.shape.length || meta.shape.some((x,i)=>typeof x==='number'&&x>0&&x!==v.shape[i])))throw Error('Shape mismatch for '+n);
  const tensor=new ort.Tensor('float32',Float32Array.from(v.data),v.shape);baselineFeeds[n]=tensor;editedFeeds[n]=tensor;
 }
 if(session.inputNames.includes('scept_mask')){
-const mi=session.inputNames.indexOf('scept_mask'),dims=session.inputMetadata[mi]?.shape||[];
+const mi=session.inputNames.indexOf('scept_mask'),dims=metaFor('scept_mask').shape||[];
 if(!dims.length||!dims.every(v=>Number.isInteger(v)&&v>0))throw Error('scept_mask requires fixed positive dimensions.');
 const len=dims.reduce((a,b)=>a*b,1);if(len>10000000)throw Error('Mask is too large');
 const ones=new Float32Array(len).fill(1),mask=new Float32Array(ones);
