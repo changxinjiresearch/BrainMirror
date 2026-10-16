@@ -1,5 +1,10 @@
 name: Zero-cost ARM CPU Compatibility Preflight
 on:
+  push:
+    branches:
+      - phase/scept-transformer-vib-alpha-20261016
+    paths:
+      - .github/workflows/scept_free_arm_preflight.yml
   workflow_dispatch:
 permissions:
   contents: read
