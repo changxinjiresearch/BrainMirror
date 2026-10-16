@@ -26,6 +26,14 @@ try{
   assert.match(await page.locator('#runMessage').textContent(),/PASS/);
   if(jsErrors.length)throw Error('Uncaught JS errors: '+jsErrors.join(' | '));
   console.log('PASS: real pretrained MNIST-8 browser ONNX inference, L1 trace, paired run, identity control');
+  await page.locator('#demoSqueeze').click();
+  await page.waitForFunction(()=>document.querySelector('#stateLabel')?.textContent?.includes('已加载预训练模型')||document.querySelector('#runMessage')?.textContent?.includes('模型加载失败'),undefined,{timeout:60000});
+  if((await page.locator('#runMessage').textContent()).includes('模型加载失败'))throw Error('SqueezeNet load failure: '+await page.locator('#runMessage').textContent());
+  assert.match(await page.locator('#modelName').textContent(),/SqueezeNet/);
+  await page.locator('#runExperiment').click();
+  await page.waitForFunction(()=>document.querySelector('#runMessage')?.textContent?.includes('完成两次真实前向传播')||document.querySelector('#runMessage')?.textContent?.includes('实验失败'),undefined,{timeout:60000});
+  if((await page.locator('#runMessage').textContent()).includes('实验失败'))throw Error('SqueezeNet inference failure: '+await page.locator('#runMessage').textContent());
+  console.log('PASS: real pretrained SqueezeNet ONNX browser paired inference');
 }catch(e){
   console.log('E2E FAILURE:',e?.stack||e);
   try{await page.screenshot({path:'scept-e2e-failure.png',fullPage:true})}catch{}
