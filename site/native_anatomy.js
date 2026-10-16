@@ -167,6 +167,8 @@ export function loadNativePack(pack,onSelect){
   meshItems=incoming;
   for(const mesh of meshItems)brain.add(mesh);
   data=pack;callback=onSelect;selecting='';showLH=true;showRH=true;showDeep=false;
+  const caption=document.getElementById('brainCanvasTop');
+  if(caption)caption.textContent='PRIVATE SINGLE-SUBJECT MRI · FREESURFER PIAL MESH · ANATOMICAL LABELS';
   setCamera();visibility();show(true);
   return {hemispheres:pack.hemispheres.map(h=>({hemi:h.hemisphere,vertices:h.vertex_count,regions:h.region_names})),subcortical:pack.subcortical.map(s=>({key:'sub:'+s.id,name:s.name})),source_kind:pack.provenance.source_kind};
 }
