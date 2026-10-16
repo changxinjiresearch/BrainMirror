@@ -5,6 +5,7 @@
 const {chromium}=require('playwright');
 const {createHash}=require('node:crypto');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
 
 const sources=[
  {name:'ViT tiny float32 (pretrained transformer)',url:'https://huggingface.co/onnx-community/vit-tiny-patch16-224-ONNX/resolve/ebffd7b9c0c53b51bada44116abd8f01aed41be6/onnx/model.onnx',sha:'32f1cf3b4868cc44757814cbf6237ae5a3658a45980bf0fe93914dca77b815e3'},
@@ -16,6 +17,7 @@ async function testModel(page,model){
  const buffer=Buffer.from(await res.arrayBuffer());
  const digest=createHash('sha256').update(buffer).digest('hex');
  assert.equal(digest,model.sha,model.name+' model integrity');
+ if(model.name.includes('ViT tiny'))fs.writeFileSync('/tmp/scept-vit-original.onnx',buffer);
  await page.locator('#modelFile').setInputFiles({name:'pretrained.onnx',mimeType:'application/octet-stream',buffer});
  await page.locator('#loadBtn').click();
  await page.waitForFunction(()=>!document.getElementById('runBtn').disabled || document.getElementById('notify').textContent.length>0,null,{timeout:120000});
