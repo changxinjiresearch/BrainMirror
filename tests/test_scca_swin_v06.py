@@ -301,3 +301,27 @@ def test_fine_to_coarse_merge_links_exact_spatial_grouping(setting):
         assert target==grid_index(*(v//2 for v in f),coarse)
     for coarse_index in range(math.prod(coarse)):
         assert sum(dst==coarse_index for _,dst in manifest['patch_merge_receptive_links'])==8
+
+
+def test_full_four_block_path_has_nonzero_isolated_effect_in_float64():
+    """End-to-end positive control, not merely a one-atom arithmetic check.
+
+    A single donor patch is injected, then each of 4 selected attention sites
+    is recomputed on the hybrid residual. The frozen reference skip must remain
+    out of this route. Double precision retains a very small 4-hop effect.
+    """
+    torch.manual_seed(165)
+    model=MultiLayerSwinVIB3D(dim=12,heads=3,patch=2,window=2,
+                              fine_depth=2,coarse_depth=2,max_tokens=512).double().eval()
+    baseline=torch.zeros(1,4,16,16,16,dtype=torch.float64)
+    donor=baseline.clone()
+    donor[:,1,0:2,0:2,0:2]+=10
+    base_logits,ref,_=_trace(model,baseline)
+    _,clean,_=_trace(model,donor)
+    fine,coarse=_simple_route(ref)
+    patched=execute_route(model,ref,clean,0,fine,coarse)
+    effect=(patched-base_logits).abs().max().item()
+    assert 1e-13 < effect < 0.2
+    with torch.no_grad():
+        full_effect=(model(donor)-base_logits).abs().max().item()
+    assert effect < full_effect  # other routes and skips remain frozen
