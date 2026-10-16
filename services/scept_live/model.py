@@ -2,6 +2,7 @@
 from __future__ import annotations
 from pathlib import Path
 import hashlib
+import os
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -21,7 +22,7 @@ def get_model():
     if _MODEL is not None:return _MODEL
     import monai
     if monai.__version__.split("+")[0]!="1.5.1":raise RuntimeError("MONAI 1.5.1 required")
-    path,sha=download("/tmp/scept_official")
+    path,sha=download(os.environ.get("SCEPT_MODEL_CACHE","/tmp/scept_official"))
     if sha!=EXPECTED_SHA256:
         raise RuntimeError("Checkpoint checksum mismatch; refuse unsafe deserialization")
     model=build_monai_model(in_channels=4,out_channels=3,feature_size=48,
