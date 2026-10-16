@@ -9,6 +9,7 @@ const ORT_VERSION='1.22.0';
 const ORT_BASE='https://cdn.jsdelivr.net/npm/onnxruntime-web@'+ORT_VERSION+'/dist/';
 const presets={
  mnist:{name:'MNIST-8 · ONNX Model Zoo',url:'https://huggingface.co/onnxmodelzoo/mnist-8/resolve/main/mnist-8.onnx',dims:[1,1,28,28],normalize:'unit',source:'draw',sha:'2f06e72de813a8635c9bc0397ac447a601bdbfa7df4bebc278723b958831c9bf',license:'Apache-2.0'},
+ vit:{name:'ViT-base · pretrained ImageNet',url:'https://huggingface.co/Xenova/vit-base-patch16-224/resolve/main/onnx/model_quantized.onnx',dims:[1,3,224,224],normalize:'signed',source:'file',sha:'fe13a717a54c0f6ef1a966e0dd67a82e532e0898018fc50f7c37d437c225074a',license:'Apache-2.0'},
  squeeze:{name:'SqueezeNet 1.1 · ONNX Model Zoo',url:'https://huggingface.co/onnxmodelzoo/squeezenet1.1-7/resolve/main/squeezenet1.1-7.onnx',dims:[1,3,224,224],normalize:'imagenet',source:'file',sha:'1eeff551a67ae8d565ca33b572fc4b66e3ef357b0eb2863bb9ff47a918cc4088',license:'Apache-2.0'}
 };
 let ort=null,session=null,modelHash='',modelName='',modelSource='',manifest=null,modelUrl='',actualProvider='wasm';
@@ -82,6 +83,7 @@ function setMode(mode){
 for(const b of $all('[data-source]'))b.addEventListener('click',()=>setMode(b.dataset.source));
 el('demoMnist').addEventListener('click',()=>loadPreset('mnist'));
 el('demoSqueeze').addEventListener('click',()=>loadPreset('squeeze'));
+el('demoVit').addEventListener('click',()=>{notice('ViT-base 模型约 88 MB，可能需要较长加载时间及较大浏览器内存');loadPreset('vit')});
 el('webgpu').addEventListener('change',()=>{if(session)notice('后端选项已修改；请重新导入模型使更改生效')});
 el('modelFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await setupModel(new Uint8Array(await f.arrayBuffer()),f.name,'local://'+f.name,null)}catch(err){setState('模型载入失败',false);notice(err.message,true)}});
 el('manifestFile').addEventListener('change',async e=>{try{const f=e.target.files?.[0];if(!f)return;const m=JSON.parse(await f.text());if(m.schema!=='scept.model.v1'||!m.input||!Array.isArray(m.input.shape))throw Error('无效 manifest：需要 schema=scept.model.v1 及 input.shape');
