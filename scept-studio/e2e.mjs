@@ -42,6 +42,28 @@ try{
   await page.waitForFunction(()=>document.querySelector('#runMessage')?.textContent?.includes('完成两次真实前向传播')||document.querySelector('#runMessage')?.textContent?.includes('实验失败'),undefined,{timeout:180000});
   if((await page.locator('#runMessage').textContent()).includes('实验失败'))throw Error('ViT inference failure: '+await page.locator('#runMessage').textContent());
   console.log('PASS: pretrained Vision Transformer in-browser inference and A/B trace');
+  if(!process.env.SCEPT_BASE_URL && process.env.SCEPT_TEST_INSTRUMENTED==='1'){
+    await page.locator('#modelFile').setInputFiles('scept-studio/fixture.instrumented.onnx');
+    await page.waitForFunction(()=>document.querySelector('#modelName')?.textContent==='fixture.instrumented.onnx'||document.querySelector('#runMessage')?.textContent?.includes('模型载入失败'),undefined,{timeout:30000});
+    if((await page.locator('#runMessage').textContent()).includes('模型载入失败'))throw Error('Instrumented model load failed: '+await page.locator('#runMessage').textContent());
+    assert.ok(await page.locator('#observedOutput option').count()>=1);
+    assert.ok(await page.locator('#maskInput option').count()>=2,'ONNX internal mask input not detected');
+    await page.locator('#maskInput').selectOption({index:1});
+    await page.locator('#ablateIndex').fill('0');
+    await page.locator('#runExperiment').click();
+    await page.waitForFunction(()=>document.querySelector('#runMessage')?.textContent?.includes('完成两次真实前向传播')||document.querySelector('#runMessage')?.textContent?.includes('实验失败'),undefined,{timeout:45000});
+    if((await page.locator('#runMessage').textContent()).includes('实验失败'))throw Error('Instrumented ONNX runtime intervention failed: '+await page.locator('#runMessage').textContent());
+    assert.ok(await page.locator('#observedOutput option').count()>=2,'Real intermediate hidden tensor not exposed');
+    const downloadPromise=page.waitForEvent('download');
+    await page.locator('#downloadJson').click();
+    const download=await downloadPromise;
+    const {readFile}=await import('node:fs/promises');
+    const saved=JSON.parse(await readFile(await download.path(),'utf8'));
+    assert.equal(saved.evidence_level,'L1_NUMERIC_INTERNAL_INTERVENTION');
+    assert.equal(saved.intervention.kind,'ONNX_MASK_SINGLE_ELEMENT');
+    assert.ok(Object.keys(saved.tensors).length>=2);
+    console.log('PASS: genuine pretrained ONNX hidden-layer observation, controlled mask and auditable browser trace');
+  }
 }catch(e){
   console.log('E2E FAILURE:',e?.stack||e);
   try{await page.screenshot({path:'scept-e2e-failure.png',fullPage:true})}catch{}

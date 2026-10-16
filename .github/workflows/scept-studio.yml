@@ -54,11 +54,15 @@ jobs:
         run: |
           npm install --no-save playwright@1.56.0
           npx playwright install --with-deps chromium
+      - name: Prepare instrumented pretrained MNIST ONNX fixture
+        run: |
+          python -m pip install onnx
+          PYTHONPATH=. python -m scripts.scept_prepare_pretrained_fixture
       - name: Serve browser app and run real pretrained model
         run: |
           python -m http.server 8999 --bind 127.0.0.1 --directory scept-studio > /tmp/scept-http.log 2>&1 &
           for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8999/ > /dev/null && break; sleep 0.25; done
-          node scept-studio/e2e.mjs
+          SCEPT_TEST_INSTRUMENTED=1 node scept-studio/e2e.mjs
       - name: Verify real production SCEPT site
         env:
           SCEPT_BASE_URL: https://scept-studio-brainmirror.vercel.app/
