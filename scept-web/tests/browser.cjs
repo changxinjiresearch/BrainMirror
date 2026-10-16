@@ -31,6 +31,10 @@ function syntheticMRI(){
   await page.locator('#runBtn').click();
   await page.waitForFunction(()=>document.querySelector('#changed').textContent.includes('/3'),null,{timeout:60000});
   assert.notEqual(await page.locator('#mae').innerText(),'—');
+  assert.equal(await page.locator('.graphnode').count(),3);
+  assert.equal(await page.locator('#graph3dCanvas').count(),1);
+  assert(await page.evaluate(()=>typeof window.SCEPT_GRAPH3D?.render==='function'));
+
   assert.equal(await page.locator('.barrow').count(),3);
   let downloadPromise=page.waitForEvent('download');
   await page.locator('#exportBtn').click();
