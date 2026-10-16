@@ -22,9 +22,12 @@ function syntheticMRI(){
   const page=await browser.newPage({viewport:{width:1360,height:900},acceptDownloads:true});
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
+  page.on('requestfailed',r=>errors.push('REQUEST '+r.url()+' '+r.failure()?.errorText));
+  page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.locator('#demoLinear').click();
-  await page.waitForFunction(()=>document.querySelector('#statusPill').textContent.includes('ENGINEERING FIXTURE'),null,{timeout:60000});
+  await page.waitForFunction(()=>!document.querySelector('#runBtn').disabled || document.querySelector('#notify').textContent.length>0,null,{timeout:60000});
+  if(await page.locator('#runBtn').isDisabled())throw Error('Baseline model load failed: '+await page.locator('#notify').innerText()+' | '+JSON.stringify(errors));
   await page.locator('#runBtn').click();
   await page.waitForFunction(()=>document.querySelector('#changed').textContent.includes('/3'),null,{timeout:60000});
   assert.notEqual(await page.locator('#mae').innerText(),'—');
@@ -33,7 +36,8 @@ function syntheticMRI(){
   await page.locator('#exportBtn').click();
   const download=await downloadPromise;assert(download.suggestedFilename().endsWith('.json'));
   await page.locator('#demoAblation').click();
-  await page.waitForFunction(()=>document.querySelector('#inputDefs').textContent.includes('scept_mask'),null,{timeout:60000});
+  await page.waitForFunction(()=>document.querySelector('#inputDefs').textContent.includes('scept_mask') || document.querySelector('#notify').textContent.length>0,null,{timeout:60000});
+  if(await page.locator('#runBtn').isDisabled())throw Error('Ablation model load failed: '+await page.locator('#notify').innerText()+' | '+JSON.stringify(errors));
   await page.locator('#runBtn').click();
   await page.waitForFunction(()=>document.querySelector('#resultType').textContent.includes('INTERNAL ABLATION'),null,{timeout:60000});
   const changed=(await page.locator('#changed').textContent()).trim();assert(changed.includes('/'));
