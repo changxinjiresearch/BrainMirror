@@ -25,6 +25,7 @@ jobs:
         run: |
           node --check site/app.js
           node --check --input-type=module < site/brain3d.js
+          node --check --input-type=module < site/native_anatomy.js
       - name: Prohibit tracked patient/secret artifacts
         run: |
           if git ls-files | grep -Ei '(\.nii(\.gz)?$|\.dcm$|\.npy$|\.npz$|\.pt$|\.pth$|(^|/)\.env$)'; then
