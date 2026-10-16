@@ -12,10 +12,12 @@ try{
   assert.equal(await page.title(),'SCEPT Studio · BrainMirror');
   assert.equal(await page.locator('#runExperiment').isDisabled(),true);
   await page.locator('#demoMnist').click();
-  await page.waitForFunction(()=>document.querySelector('#stateLabel')?.textContent?.includes('已加载预训练模型'),undefined,{timeout:120000});
+  await page.waitForFunction(()=>document.querySelector('#stateLabel')?.textContent?.includes('已加载预训练模型') || document.querySelector('#runMessage')?.textContent?.includes('模型加载失败'),undefined,{timeout:60000});
+  if(!(await page.locator('#stateLabel').textContent()).includes('已加载预训练模型'))throw Error('Model load failure: '+await page.locator('#runMessage').textContent());
   assert.equal(await page.locator('#runExperiment').isEnabled(),true);
   await page.locator('#runExperiment').click();
-  await page.waitForFunction(()=>document.querySelector('#runMessage')?.textContent?.includes('完成两次真实前向传播'),undefined,{timeout:120000});
+  await page.waitForFunction(()=>document.querySelector('#runMessage')?.textContent?.includes('完成两次真实前向传播')||document.querySelector('#runMessage')?.textContent?.includes('实验失败'),undefined,{timeout:60000});
+  if((await page.locator('#runMessage').textContent()).includes('实验失败'))throw Error('Inference failure: '+await page.locator('#runMessage').textContent());
   assert.match(await page.locator('#evidencePill').textContent(),/L1/);
   assert.notEqual(await page.locator('#statCount').textContent(),'—');
   assert.equal(await page.locator('#downloadJson').isEnabled(),true);
