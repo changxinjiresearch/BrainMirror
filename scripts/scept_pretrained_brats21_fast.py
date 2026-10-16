@@ -16,6 +16,8 @@ from scripts.scept_brats_v09 import read_split, save_json
 URL="https://github.com/Project-MONAI/MONAI-extra-test-data/releases/download/0.8.1/fold1_f48_ep300_4gpu_dice0_9059.zip"
 MODALITIES=("flair","t1ce","t1","t2") # official channel order
 PREDICTED=("TC","WT","ET") # official output order
+# SHA256 pinned from the exact official asset successfully loaded in Kaggle.
+EXPECTED_SHA256="62b649ecf98b05c73d7a36a7e290e85ad90a9b5d0dab442f296342406feb57ba"
 
 def normalize(v):
     v=np.asarray(v,np.float32); mask=v!=0; vals=v[mask]
@@ -56,13 +58,17 @@ def download(dest):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--root",required=True);p.add_argument("--split",required=True)
-    p.add_argument("--output",required=True);args=p.parse_args()
+    p.add_argument("--output",required=True)
+    p.add_argument("--auto-search",action="store_true",help="Run bounded ROI-guided 2-hop SCEPT search, not a random atom")
+    args=p.parse_args()
     import monai
     if monai.__version__.split("+")[0]!="1.5.1":raise ValueError("Need MONAI 1.5.1")
     if not torch.cuda.is_available():raise RuntimeError("GPU required")
     began=time.perf_counter()
     weights,digest=download("/kaggle/working/scept_official_model")
     print("Checkpoint SHA256:",digest,flush=True)
+    if digest!=EXPECTED_SHA256:
+        raise ValueError("Official pretrained checkpoint hash mismatch: refusing legacy pickle loading")
     model=build_monai_model(in_channels=4,out_channels=3,feature_size=48,
             depths=(2,2,2,2),num_heads=(3,6,12,24),window_size=7,
             norm_name="instance",use_checkpoint=False)
@@ -100,6 +106,41 @@ def main():
     score=dice_regions(pred,gt)
     print("REAL_PATCH_PREDICTION_PASS",json.dumps({k:v["dice"] for k,v in score.items()}),flush=True)
     ref,qc=region_reference(x,region,policy="tissue_median")
+    if args.auto_search:
+        from brainmirror.scept.monai_crosslayer import discover_monai_crosslayer
+        print("ROI_GUIDED_SCEPT_SEARCH_STARTED budget=2 candidate paths, max_hops=2",flush=True)
+        try:
+            with torch.no_grad():
+                search=discover_monai_crosslayer(
+                    model,x,ref,region,class_index=1,
+                    max_hops=2,max_sites=3,per_step=1,beam_width=1,
+                    max_exact=2,kinds=("value_message",),effect_tol=1e-6)
+        except torch.cuda.OutOfMemoryError:
+            torch.cuda.empty_cache()
+            raise RuntimeError("ROI-guided search exceeded T4 memory. No effect claim; stop and reduce candidate scope.")
+        output={
+            "schema":"scept/official-brats21-roi-guided-scca-fast/v1",
+            "case_id":chosen,"weights_sha256":digest,"weights_url":URL,
+            "official_modality_order":MODALITIES,"official_output_order":PREDICTED,
+            "target_output_channel":1,"target_region":"WT",
+            "independence":"UNVERIFIED_overlap_between_BraTS2021_and_BraTS2020",
+            "diagnostic_patch_selection":"ground_truth_WT_center_64cubed",
+            "patch_dice_not_patient_generalization":score,
+            "reference_qc":qc,
+            "search_max_exact_paths":2,"search_max_hops":2,
+            "scept_roi_guided_search":search,
+            "scientific_status":"exploratory_not_independent_validation",
+            "seconds":round(time.perf_counter()-began,2)}
+        save_json(args.output,output)
+        print("SCEPT_ROI_SEARCH_COMPLETE",json.dumps({
+            "case_id":chosen,"status":search["status"],
+            "reason":search["reason"],
+            "screened":search["screened"],
+            "tested_paths":search["forward_budget_used"],
+            "selected_effect":search.get("selected_effect"),
+            "negative_control":search.get("negative_control"),
+            "seconds":output["seconds"],"output":args.output}),flush=True)
+        return
     observer=MonaiSwinObserver(model)
     site=list(observer.sites)[-1] # smallest/deepest tensors for fast diagnostic
     atom=AttentionAtom(site,0,0,0,0,"value_message")
