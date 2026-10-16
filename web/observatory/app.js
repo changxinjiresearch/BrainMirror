@@ -71,7 +71,7 @@ function updateRecord(){
  $('dataQuality').textContent=S.recordQuality==='screenshot'?'截图转录':'原始实验 JSON';
  $('disruptVal').textContent=fmt(e.disruption,6);
  $('restoreVal').textContent=fmt(e.restoration,6);
- $('durationVal').textContent=typeof r.seconds==='number'?fmt(r.seconds,2)+' s':'—';
+ $('durationVal').textContent=typeof (r.seconds??r.elapsed_seconds)==='number'?fmt(r.seconds??r.elapsed_seconds,2)+' s':'—';
  const res=['WT','TC','ET'].map(k=>{
    const v=d[k],valid=typeof v==='number'&&Number.isFinite(v);
    return '<div class="dice-line"><span class="dice-label">'+k+'</span><div class="dice-track"><div class="dice-fill" style="width:'+(valid?Math.max(0,Math.min(100,v*100)):0)+'%"></div></div><span class="dice-number">'+(valid?fmt(v,4):'—')+'</span></div>';
@@ -147,13 +147,13 @@ function renderProvenance(){
  const items=[
  ['原始来源',S.recordQuality==='screenshot'?'2026-10-16 Kaggle 运行截图转录（未导入完整 JSON）':'用户导入的 SCEPT 实验 JSON'],
  ['患者 ID',r.case_id||'unknown'],
- ['模型',r.training_dataset||r.training_data||'MONAI SwinUNETR official BraTS21 Fold 1'],
+ ['模型',r.training_dataset||r.training_data||r.model||'MONAI SwinUNETR official BraTS21 Fold 1'],
  ['权重 SHA-256',r.checkpoint_sha256||r.weights_sha256||'unknown'],
- ['输入通道',JSON.stringify(r.official_modality_order||['flair','t1ce','t1','t2'])],
- ['输出通道',JSON.stringify(r.official_output_order||['TC','WT','ET'])],
+ ['输入通道',JSON.stringify(r.official_modality_order||r.input_modalities||['flair','t1ce','t1','t2'])],
+ ['输出通道',JSON.stringify(r.official_output_order||r.model_outputs||['TC','WT','ET'])],
  ['局部 Dice / WT',fmt(d.WT,6)],['局部 Dice / TC',fmt(d.TC,6)],['局部 Dice / ET',fmt(d.ET,6)],
  ['干预 Delta',fmt(e.disruption)],['恢复 Delta',fmt(e.restoration)],
- ['测试独立性','未证明；BraTS21 / BraTS20 病例来源可能重叠'],
+ ['测试独立性',S.recordQuality==='live'?'用户上传局部 MRI，未执行患者级独立泛化验证':'未证明；BraTS21 / BraTS20 病例来源可能重叠'],
  ['医学范围','局部 64³ Patch，非整例 MRI 泛化测试']
  ];
  $('provenance').innerHTML=items.map(([k,v])=>'<div><dt>'+escapeHTML(k)+'</dt><dd>'+escapeHTML(v)+'</dd></div>').join('');
@@ -206,7 +206,7 @@ async function loadNifti(file){
 function updateViewer(){
  const volume=S.mri,has=!!volume;
  $('mriEmpty').style.display=has?'none':'flex';
- $('mriTag').textContent=has?'真实 MRI · 未配对实验':'未导入影像';
+ $('mriTag').textContent=has?(S.recordQuality==='live'?'本次实验 FLAIR · 本地':'真实 MRI · 未配对实验'):'未导入影像';
  $('mriFilename').textContent=has?volume.name+' · '+volume.dims.join('×'):'等待导入真实 .nii/.nii.gz';
  $('viewKind').textContent=S.renderMode==='slice'?'AXIAL':'3D VOXEL PROJECTION';
  $('sliceSlider').disabled=!has;
