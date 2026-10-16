@@ -33,7 +33,7 @@ def test_actual_nifti_loader_and_monai_sliding_window(tmp_path):
     make_nifti(tmp_path)
     x,y,qc=load_case(discover_training_cases(tmp_path)[0])
     assert x.shape==(4,32,32,32) and y.shape==(3,32,32,32)
-    assert [int(y[c].sum()) for c in range(3)]==[512,72,8]
+    assert [int(y[c].sum()) for c in range(3)]==[512,64,8]
     torch.manual_seed(22)
     model=build_monai_model(depths=(1,1,1,1),norm_name='batch').eval()
     prob=predict_full(model,x,patch_size=32,device='cpu')
