@@ -24,3 +24,8 @@ from .atomic_chain import (AtomicPathHop, intervene_atomic_chain,
                            search_atomic_chains)
 from .multiscale import (MultiScaleTransformerVIB3D, CrossScaleSite,
                          intervene_merge_path, intervene_cross_scale_atomic)
+
+# v0.5: ROI-conditioned automatic fine/coarse mediator and atomic head/Q/K
+# discovery. Diagnostic references only; NO held-out patients or clinical claims.
+from .auto_discovery import (AutoDiscoveryConfig, discover_scca_multiscale,
+                             reference_from_region)
