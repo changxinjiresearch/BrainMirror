@@ -18,7 +18,7 @@ let history=[],drawActive=false,center={x:.5,y:.5},runBusy=false;
 const mainCanvas=el('inputCanvas'),c2d=mainCanvas.getContext('2d',{willReadFrequently:true}),viz=el('vizCanvas'),vctx=viz.getContext('2d');
 const encoder=new TextEncoder();
 function notice(msg,failed){el('runMessage').textContent=msg;el('runMessage').style.color=failed?'#ff9e9e':'#9ce9d8';if(failed) console.error('[SCEPT]',msg)}
-function setState(msg,ready){el('stateLabel').textContent=msg;el('statusLed').className=ready?'ready':'';el('runExperiment').disabled=!ready||runBusy}
+function setState(msg,ready){el('stateLabel').textContent=msg;el('statusLed').className=ready?'ready':'';el('runExperiment').disabled=!ready||runBusy;el('selfTest').disabled=!ready||runBusy}
 function compact(v){if(typeof v!=='number'||!Number.isFinite(v))return '—';if(Math.abs(v)>=1000)return v.toExponential(2);return v.toFixed(Math.abs(v)<1?.5:3)}
 function typedBytes(a){return new Uint8Array(a.buffer,a.byteOffset,a.byteLength)}
 async function hashBuffer(bytes){const digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}
@@ -192,7 +192,24 @@ function stats(a,b){const n=Math.min(a.length,b.length);let sum=0,max=0,changed=
  for(let i=0;i<n;i++){const d=b[i]-a[i];sum+=d*d;max=Math.max(max,Math.abs(d));if(Math.abs(d)>1e-8)changed++}
  return {l2:Math.sqrt(sum),max,count:n,changed};
 }
+function drawTopology(){
+ const W=viz.width,H=viz.height;vctx.clearRect(0,0,W,H);vctx.fillStyle='#0a1322';vctx.fillRect(0,0,W,H);
+ const nodes=manifest?.graph?.nodes;
+ vctx.fillStyle='#9eb4cc';vctx.font='14px sans-serif';
+ if(!Array.isArray(nodes)||!nodes.length){vctx.fillText('真实 ONNX 拓扑尚未导入：请上传由 scept_instrument_onnx.py 生成的模型配置 JSON',32,55);return}
+ const shown=nodes.slice(0,30),pos=new Map();const cols=6,space=(W-115)/cols;
+ shown.forEach((n,i)=>{const col=Math.floor(i/5),row=i%5;pos.set(n.id,{x:56+col*space,y:52+row*67})});
+ const producer=new Map();
+ for(const n of nodes)for(const k of n.outputs||[])producer.set(k,n.id);
+ vctx.strokeStyle='#447e84';vctx.lineWidth=1;
+ for(const node of shown){const to=pos.get(node.id);for(const input of node.inputs||[]){const from=pos.get(producer.get(input));if(!from||from.x===to.x&&from.y===to.y)continue;
+ vctx.beginPath();vctx.moveTo(from.x+38,from.y);vctx.lineTo(to.x-38,to.y);vctx.stroke()}}
+ for(const node of shown){const p=pos.get(node.id);vctx.fillStyle='#122c39';vctx.strokeStyle='#408f8c';vctx.beginPath();vctx.roundRect(p.x-39,p.y-21,78,43,7);vctx.fill();vctx.stroke();
+ vctx.fillStyle='#dcf0ff';vctx.font='11px sans-serif';vctx.textAlign='center';vctx.fillText(String(node.op).slice(0,12),p.x,p.y-3);vctx.fillStyle='#83abb5';vctx.font='9px sans-serif';vctx.fillText('node '+node.id,p.x,p.y+12)}
+ vctx.textAlign='left';vctx.fillStyle='#89a4bb';vctx.font='11px sans-serif';vctx.fillText('实际 ONNX 张量依赖 · 共 '+nodes.length+' 个节点 · 仅显示前 '+shown.length+' 个',16,H-12);
+}
 function drawPlot(){
+ if(el('displayMode').value==='topology'){drawTopology();return}
  if(!lastRecord)return;const key=el('observedOutput').value,entry=lastRecord.tensors[key];if(!entry)return;
  const mode=el('displayMode').value,a=entry.before,b=entry.after;
  const W=viz.width,H=viz.height;vctx.clearRect(0,0,W,H);vctx.fillStyle='#0a1322';vctx.fillRect(0,0,W,H);
@@ -266,4 +283,13 @@ async function execute(){
  finally{runBusy=false;setState(session?'模型就绪':'无模型',!!session)}
 }
 el('runExperiment').addEventListener('click',execute);
+el('selfTest').addEventListener('click',async()=>{
+ if(runBusy||!session)return;
+ const old=el('perturb').value,mask=el('maskInput').value,oldMask=mask;
+ el('perturb').value='none';el('maskInput').value='';
+ await execute();
+ const ok=lastRecord?.summary&&Object.values(lastRecord.summary).every(s=>s.max<1e-6);
+ notice(ok?'恒等对照 PASS：同模型同输入重复计算的输出差异小于 1e-6':'恒等对照 FAIL 或未执行：请审查实际输出。',!ok);
+ el('perturb').value=old;el('maskInput').value=oldMask;
+});
 renderDigit();readHistory();setState('未加载模型',false);
