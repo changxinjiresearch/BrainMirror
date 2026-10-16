@@ -37,6 +37,7 @@ async function setupModel(bytes,description,provenance,preset){
  setState('正在解析权重…',false);const lib=await ensureOrt();
  const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
  const hash=await hashBuffer(data);
+ if(manifest?.sha256&&manifest.sha256!==hash&&!preset)throw Error('模型权重与当前已导入 manifest 的 SHA-256 不匹配');
  if(preset&&preset.sha!==hash)throw Error('下载的预训练模型 SHA-256 与官方文件不一致，拒绝加载');
  const webgpu=el('webgpu').checked;
  let newSession,provider='wasm';
@@ -87,6 +88,7 @@ el('demoVit').addEventListener('click',()=>{notice('ViT-base 模型约 88 MB，�
 el('webgpu').addEventListener('change',()=>{if(session)notice('后端选项已修改；请重新导入模型使更改生效')});
 el('modelFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await setupModel(new Uint8Array(await f.arrayBuffer()),f.name,'local://'+f.name,null)}catch(err){setState('模型载入失败',false);notice(err.message,true)}});
 el('manifestFile').addEventListener('change',async e=>{try{const f=e.target.files?.[0];if(!f)return;const m=JSON.parse(await f.text());if(m.schema!=='scept.model.v1'||!m.input||!Array.isArray(m.input.shape))throw Error('无效 manifest：需要 schema=scept.model.v1 及 input.shape');
+ if(modelHash&&m.sha256&&m.sha256!==modelHash)throw Error('模型配置文件 SHA-256 与当前载入的权重不一致');
  manifest=m;el('shape').value=m.input.shape.join(',');if(m.input.name)el('inputName').value=m.input.name;if(m.input.normalize)el('normalize').value=m.input.normalize;notice('模型配置已导入：'+f.name);
  }catch(err){notice(err.message,true)}});
 function erase(){c2d.fillStyle='#05080e';c2d.fillRect(0,0,224,224);sourceTensor=null;sourceVolume=null}
@@ -285,10 +287,10 @@ async function execute(){
 el('runExperiment').addEventListener('click',execute);
 el('selfTest').addEventListener('click',async()=>{
  if(runBusy||!session)return;
- const old=el('perturb').value,mask=el('maskInput').value,oldMask=mask;
+ const old=el('perturb').value,mask=el('maskInput').value,oldMask=mask,previousId=lastRecord?.run_id;
  el('perturb').value='none';el('maskInput').value='';
  await execute();
- const ok=lastRecord?.summary&&Object.values(lastRecord.summary).every(s=>s.max<1e-6);
+ const ok=lastRecord?.run_id!==previousId&&lastRecord?.summary&&Object.values(lastRecord.summary).every(s=>s.max<1e-6);
  notice(ok?'恒等对照 PASS：同模型同输入重复计算的输出差异小于 1e-6':'恒等对照 FAIL 或未执行：请审查实际输出。',!ok);
  el('perturb').value=old;el('maskInput').value=oldMask;
 });
