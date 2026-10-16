@@ -22,14 +22,14 @@
 <div class="source-note" id="sourceNote">手绘数字适合 MNIST；SqueezeNet 请上传自然图片。图像点击位置设为扰动中心。</div>
 </div>
 <div class="panel observation-panel"><div class="panel-head"><div><div class="kicker">04 / SCEPT OBSERVATORY</div><h2>真实计算状态</h2></div><span class="pill" id="evidencePill">NO TRACE</span></div>
-<div class="visual-controls"><select id="observedOutput" aria-label="选择观测张量"><option value="">等待推理</option></select><select id="displayMode" aria-label="显示模式"><option value="delta">变化量 Δ</option><option value="base">基线值</option><option value="edited">扰动值</option></select></div>
+<div class="visual-controls"><select id="observedOutput" aria-label="选择观测张量"><option value="">等待推理</option></select><select id="displayMode" aria-label="显示模式"><option value="delta">变化量 Δ</option><option value="base">基线值</option><option value="edited">扰动值</option><option value="topology">计算图（ONNX）</option></select></div>
 <div class="viz-holder"><canvas id="vizCanvas" width="900" height="380"></canvas><div class="empty-viz" id="emptyViz"><div class="orbit">◈</div><strong>Awaiting real model execution</strong><span>只有实际前向传播结果才能进入观测图层</span></div></div>
 <div class="stat-grid"><div><small>Δ L2 NORM</small><strong id="statL2">—</strong></div><div><small>Δ MAX |VALUE|</small><strong id="statMax">—</strong></div><div><small>OUTPUT ELEMENTS</small><strong id="statCount">—</strong></div><div><small>INFERENCE TIME</small><strong id="statTime">—</strong></div></div>
 </div></section>
 <section class="bottom-grid"><div class="panel runs-panel"><div class="panel-head"><div><div class="kicker">05 / PAIRED EXPERIMENT</div><h2>可复现实验</h2></div><span class="pill">AUDIT READY</span></div>
 <div class="run-options"><label>内部干预输入（可选）<select id="maskInput"><option value="">仅输入扰动</option></select></label><label>置零元素索引 <input id="ablateIndex" type="number" min="0" value="0"></label></div><p class="hint">若模型由配套的 ONNX 仪器化工具加入 <code>__scept_mask</code> 输入，系统可对真实中间张量实施单元素置零。否则只运行输入扰动，不假称内部消融。</p>
 <button class="run-button" type="button" id="runExperiment" disabled><span>▶</span> 执行真实 A/B 推理</button><div id="runMessage" class="run-message">导入模型后可开始实验。</div>
-<div class="run-footer"><button id="downloadJson" class="outline-btn" type="button" disabled>↓ 导出审计 JSON</button><button id="downloadCsv" class="outline-btn" type="button" disabled>↓ 导出差异 CSV</button></div>
+<div class="run-footer"><button id="selfTest" class="outline-btn" type="button" disabled>✓ 恒等对照校验</button><button id="downloadJson" class="outline-btn" type="button" disabled>↓ 导出审计 JSON</button><button id="downloadCsv" class="outline-btn" type="button" disabled>↓ 导出差异 CSV</button></div>
 </div>
 <div class="panel history-panel" id="history"><div class="panel-head"><div><div class="kicker">06 / SCIENTIFIC RECORD</div><h2>实验记录</h2></div><button id="clearHistory" class="subtle-btn" type="button">清除本机记录</button></div><div id="historyList" class="history-list"><p class="hint">尚无真实运行记录。</p></div><div class="status-banner">◉ 证据层级：L1 表示真实数值，不等于因果解释。Attention、连接权重、节点消融必须分开解释。</div></div></section>
 <footer>© SCEPT / BrainMirror · Research software · No medical or clinical claims · Local-first · <span id="buildStamp">v1.1</span></footer>
