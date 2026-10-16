@@ -162,8 +162,6 @@ export function mount({container}) {
   renderer.domElement.className='brainmesh-canvas';
   root.appendChild(renderer.domElement);
   canvas=renderer.domElement;
-  const old=document.getElementById('brainCanvas');
-  if(old)old.style.visibility='hidden';
   scene=new THREE.Scene();
   camera=new THREE.PerspectiveCamera(38,1,0.1,2000);
   camera.up.set(0,0,1);
@@ -207,6 +205,8 @@ export function loadVolume(volume) {
   });
   current=new THREE.Mesh(geometry,material);
   group.add(current);
+  const fallback=document.getElementById('brainCanvas');
+  if(fallback)fallback.style.visibility='hidden';
   group.rotation.set(0,0,0);
   naturalDistance=Math.max(100,radius*3.3);
   zoom=1;
