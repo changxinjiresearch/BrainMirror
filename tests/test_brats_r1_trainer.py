@@ -122,3 +122,32 @@ def test_best_model_metadata_and_epoch_boundary_preemption(tmp_path):
     assert bm['metadata']['score']==pytest.approx((.42+.40+.39)/3)
     resumed,_=run(tmp_path,resume=True)
     assert resumed['steps']==8 and len(resumed['validation_history'])==2
+
+
+def test_explicit_kaggle_at_risk_mode():
+    from argparse import Namespace
+    from scripts.scept_brats_v09_r1 import validate_backup_policy
+    from pathlib import Path
+    args=Namespace(confirm_persistent_backup=False,hf_repo=None,accept_ephemeral_risk=False,
+                   work_dir='/kaggle/working/scept_r1_local',backup_dir='/kaggle/working/scept_r1_mirror')
+    with pytest.raises(SystemExit,match='Choose'):
+        validate_backup_policy(args)
+    args.accept_ephemeral_risk=True
+    assert validate_backup_policy(args)=='ephemeral_local_only_NO_DURABLE_BACKUP'
+    args.backup_dir='/kaggle/working/scept_r1_local/nested'
+    with pytest.raises(SystemExit,match='non-nested'):
+        validate_backup_policy(args)
+    args.backup_dir='/kaggle/working/scept_r1_mirror'
+    args.hf_repo='owner/private'
+    with pytest.raises(SystemExit,match='cannot be combined'):
+        validate_backup_policy(args)
+
+def test_ephemeral_folder_never_false_claims_persistence():
+    from argparse import Namespace
+    from scripts.scept_brats_v09_r1 import validate_backup_policy
+    args=Namespace(confirm_persistent_backup=True,hf_repo=None,accept_ephemeral_risk=False,
+                   work_dir='/kaggle/working/train',backup_dir='/kaggle/working/not-durable')
+    with pytest.raises(SystemExit,match='NOT independently persistent'):
+        validate_backup_policy(args)
+    args.backup_dir='/mnt/independent-mounted-volume/r1'
+    assert validate_backup_policy(args)=='user_attested_independent_mount'

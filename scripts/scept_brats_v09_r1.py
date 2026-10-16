@@ -32,6 +32,7 @@ def parse_args():
     p.add_argument('--work-dir', required=True, help='Local /kaggle/working checkpoint directory')
     p.add_argument('--backup-dir', required=True, help='Independently persistent mounted storage, writable')
     p.add_argument('--confirm-persistent-backup', action='store_true', help='Acknowledge backup-dir is independently mounted persistent storage (not Kaggle local)')
+    p.add_argument('--accept-ephemeral-risk', action='store_true', help='Explicitly accept possible loss of ALL Kaggle-local checkpoints if session is destroyed')
     p.add_argument('--hf-repo', default=None, help='PRIVATE Hugging Face model repo owner/name; enables verified remote backup of both slots')
     p.add_argument('--hf-secret-name', default='HF_TOKEN', help='Kaggle Secret containing HF write token; never paste token in code')
     p.add_argument('--report', required=True, help='Write no-PHI training status report JSON')
@@ -53,10 +54,35 @@ def parse_args():
     return p.parse_args()
 
 
+def validate_backup_policy(args):
+    """Allow Kaggle-local training only with explicit disclosure of checkpoint-loss risk."""
+    ephemeral = bool(args.accept_ephemeral_risk)
+    if ephemeral and (args.confirm_persistent_backup or args.hf_repo):
+        raise SystemExit('--accept-ephemeral-risk cannot be combined with another backup claim')
+    if not (args.confirm_persistent_backup or args.hf_repo or ephemeral):
+        raise SystemExit('Choose --hf-repo, genuine --confirm-persistent-backup, or --accept-ephemeral-risk')
+    if ephemeral:
+        root = Path('/kaggle/working')
+        local, mirror = Path(args.work_dir).resolve(), Path(args.backup_dir).resolve()
+        if not (local.is_relative_to(root) and mirror.is_relative_to(root)):
+            raise SystemExit('Ephemeral mode requires both paths inside /kaggle/working')
+        if local == mirror or local in mirror.parents or mirror in local.parents:
+            raise SystemExit('Ephemeral paths must be separate and non-nested')
+        return 'ephemeral_local_only_NO_DURABLE_BACKUP'
+    if args.hf_repo:
+        return 'hf_private_readback_verified'
+    if Path(args.backup_dir).resolve().is_relative_to(Path('/kaggle/working')):
+        raise SystemExit('Kaggle local folder is NOT independently persistent; use --accept-ephemeral-risk to acknowledge possible loss')
+    return 'user_attested_independent_mount'
+
+
 def main():
     args=parse_args()
-    if not (args.confirm_persistent_backup or args.hf_repo):
-        raise SystemExit('Refusing to train: provide --hf-repo for verified PRIVATE remote backup or a truly persistent mounted backup with --confirm-persistent-backup.')
+    backup_mode = validate_backup_policy(args)
+    if args.accept_ephemeral_risk:
+        print(json.dumps({'severity':'WARNING','backup_mode':backup_mode,
+              'risk':'SESSION_DESTRUCTION_MAY_DELETE_ALL_CHECKPOINTS',
+              'independent_persistent_backup':False}),flush=True)
     remote = None
     if args.hf_repo:
         from brainmirror.scept.hf_backup import HFPrivateBackup
@@ -69,8 +95,6 @@ def main():
                 raise SystemExit(f'Missing Kaggle Secret {args.hf_secret_name}; add HF write token in Add-ons > Secrets') from e
         remote = HFPrivateBackup(args.hf_repo, token)
         remote.probe_writable()
-    elif Path(args.backup_dir).resolve().is_relative_to(Path('/kaggle/working')):
-        raise SystemExit('Refusing ephemeral Kaggle folder as independently persistent backup; set --hf-repo')
     if args.device.startswith('cuda') and not torch.cuda.is_available():
         raise SystemExit('CUDA was requested but no GPU is available; refusing to silently use CPU for real training')
     if args.patch_size%32 or args.patch_size<64 or args.validation_patch%32 or args.validation_patch<64:
@@ -166,7 +190,9 @@ def main():
           resume=args.resume,stop_after_steps=args.stop_after_steps,
           on_progress=on_progress)
     report.update({'dataset':'BraTS2020_369','subjects':{k:len(v) for k,v in split.items()},
-         'backup_mode':'hf_private_readback_verified' if remote else 'user_attested_independent_mount',
+         'backup_mode':backup_mode,
+         'ephemeral_loss_risk_acknowledged':bool(args.accept_ephemeral_risk),
+         'durable_backup_confirmed':not bool(args.accept_ephemeral_risk),
          'remote_backup_repo':args.hf_repo,
          'model_selection':'full_validation_macro_WT_TC_ET_Dice',
          'test_set_used':False,
