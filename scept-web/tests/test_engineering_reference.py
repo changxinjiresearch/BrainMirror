@@ -15,9 +15,11 @@ SOURCE = (ROOT / "scept-web" / "fixtures.js").read_text()
 X = np.array([[.2, .4, .6, .8]], dtype=np.float32)
 
 def _fixture(name):
-    match = re.search(r"\\b" + name + r":\\{.*?b64:\\"([^\\"]+)\\", SOURCE)
-    assert match, "fixture not present: " + name
-    raw = base64.b64decode(match.group(1))
+    marker = name + ":{"
+    assert marker in SOURCE, "fixture not present: " + name
+    encoded = SOURCE.split(marker, 1)[1].split('b64:"', 1)[1].split('"', 1)[0]
+
+    raw = base64.b64decode(encoded)
     model = onnx.load_from_string(raw)
     onnx.checker.check_model(model)
     return raw
