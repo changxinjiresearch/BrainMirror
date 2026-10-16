@@ -36,7 +36,7 @@ jobs:
           OPENBLAS_NUM_THREADS: '1'
         run: |
           python -m pytest -q -rs tests/test_monai_integration_v07.py
-          python scripts/monai_v07_smoke.py --json-out /tmp/monai-v07-result.json
+          PYTHONPATH=. python scripts/monai_v07_smoke.py --json-out /tmp/monai-v07-result.json
       - name: Upload synthetic engineering audit
         if: always()
         uses: actions/upload-artifact@v4
