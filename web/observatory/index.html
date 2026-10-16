@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06111c">
+<meta name="description" content="BrainMirror SCEPT: real-model MRI, Transformer attention mechanism and experiment audit workspace.">
+<title>BrainMirror · SCEPT Mechanism Observatory</title>
+<link rel="stylesheet" href="./style.css">
+<script defer src="./app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-symbol" aria-hidden="true">◈</span><div><strong>BRAINMIRROR</strong><small>SCIENCE / COMPUTATION</small></div></div>
+    <div class="side-section"><span class="side-label">RESEARCH WORKSPACE</span>
+      <button class="side-item selected" data-view="observatory"><span>◫</span> 机制观测台</button>
+      <button class="side-item" data-view="evidence"><span>⌁</span> 实验证据</button>
+      <button class="side-item" data-view="history"><span>▤</span> 实验记录</button>
+    </div>
+    <div class="side-section"><span class="side-label">INPUT & SOURCES</span>
+      <label class="side-item file-action" for="traceInput"><span>↥</span> 导入 SCEPT JSON</label>
+      <input class="visually-hidden" id="traceInput" type="file" accept=".json,application/json">
+      <label class="side-item file-action" for="mriInput"><span>⊞</span> 导入 MRI NIfTI</label>
+      <input class="visually-hidden" id="mriInput" type="file" accept=".nii,.gz,.nii.gz">
+      <label class="side-item file-action" for="maskInput"><span>◉</span> 导入 ROI 掩膜</label>
+      <input class="visually-hidden" id="maskInput" type="file" accept=".nii,.gz,.nii.gz">
+    </div>
+    <div class="sidebar-space"></div>
+    <div class="side-model">
+      <span class="side-label">FIXED PRETRAINED MODEL</span>
+      <div class="model-name"><i></i> MONAI SwinUNETR</div>
+      <div class="muted mini">BraTS2021 Fold 1 · feature 48<br>62.1M parameters · no retraining</div>
+      <div class="side-rule"></div>
+      <span class="side-label">COMPUTATION</span>
+      <div class="side-status"><span class="status-dot idle"></span> 可视化回放已就绪</div>
+      <div class="muted mini">实时 GPU worker：尚未连接<br>实验重放：无需 Kaggle</div>
+    </div>
+    <div class="sidebar-bottom">SCEPT / OBSERVATORY v1.0<br><span>Research software · not clinical use</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Research / <b id="crumbView">机制观测台</b></div>
+      <div class="top-actions"><span class="connection"><i></i> 真实记录回放</span><button class="secondary" id="exportBtn" type="button">↓ 导出审计记录</button><button class="primary" id="newRunBtn" type="button">＋ 新实验</button></div>
+    </header>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <section class="page page-active" id="page-observatory">
+      <div class="page-heading"><div><div class="eyebrow">MODEL INTERPRETABILITY / INTERVENTION</div><h1>SCEPT 机制观测台<span class="heading-mark">.</span></h1><p>观察真实 MRI、Transformer 计算结构与干预数值。视觉变化必须由原始记录驱动。</p></div><div class="heading-markers"><span class="tag cyan">REAL MODEL RECORD</span><span class="tag amber">EXPLORATORY</span></div></div>
+      <div class="hero-strip">
+        <div class="stat"><span>当前模型</span><strong>SwinUNETR <em>Fold 1</em></strong><small>官方预训练权重</small></div>
+        <div class="stat"><span>病例</span><strong id="heroCase">Training_002</strong><small id="caseSource">截屏转录 · 非独立测试</small></div>
+        <div class="stat"><span>模型权重 SHA</span><strong id="heroHash" class="mono compact">62b649ecf98b</strong><small>完整哈希在审计记录中</small></div>
+        <div class="stat"><span>干预效应</span><strong id="heroEffect">0.000000</strong><small id="effectDescription">单个预设 Attention 原子</small></div>
+      </div>
+      <div class="workbench">
+        <section class="panel mri-panel">
+          <div class="panel-head"><div><div class="panel-kicker">01 / INPUT DOMAIN</div><h2>脑 MRI · 影像空间</h2></div><span class="small-pill" id="mriTag">未导入影像</span></div>
+          <div class="toolbar">
+            <div class="seg" role="group" aria-label="MRI 渲染模式"><button id="sliceMode" class="active" type="button">正交切片</button><button id="voxelMode" type="button">3D 体素</button></div>
+            <span id="mriFilename" class="filename">等待导入真实 .nii/.nii.gz</span>
+          </div>
+          <div class="viewer">
+            <canvas id="mriCanvas" width="720" height="580" aria-label="MRI voxel preview canvas"></canvas>
+            <div id="mriEmpty" class="empty-overlay">
+              <div class="empty-icon">◉</div><strong>尚未加载 MRI 体素</strong><p>上传 NIfTI 即可在浏览器本地查看真实影像。<br>数据不会自动上传服务器。</p><label for="mriInput" class="outline-btn">＋ 选择 MRI</label>
+            </div>
+            <div class="view-corner">VOXEL SPACE / <span id="viewKind">AXIAL</span></div>
+          </div>
+          <div class="viewer-controls">
+            <label for="sliceSlider">切片 <strong id="sliceValue">—</strong></label><input id="sliceSlider" type="range" min="0" max="1" step="1" value="0" disabled>
+            <label for="roiOpacity">ROI <strong id="roiValue">65%</strong></label><input id="roiOpacity" type="range" min="0" max="100" value="65">
+          </div>
+          <p class="help">切片和 3D 预览均使用浏览器中的真实体素；不作仿射重定向或临床配准。尚未导入 MRI 时绝不模拟患者解剖图像。</p>
+        </section>
+        <section class="panel network-panel">
+          <div class="panel-head"><div><div class="panel-kicker">02 / INTERNAL COMPUTATION</div><h2>Transformer · 计算图</h2></div><span class="small-pill">模型结构 / 原子记录</span></div>
+          <div class="toolbar">
+            <div class="seg"><button id="architectureMode" class="active" type="button">层级结构</button><button id="pathMode" type="button">候选路径</button></div>
+            <span class="filename" id="graphLabel">Swin Attention · 4 stages</span>
+          </div>
+          <div class="graph-wrap"><svg id="networkSvg" viewBox="0 0 800 390" role="img" aria-label="Swin Transformer architecture or measured SCEPT path"></svg><div class="graph-key"><span><i class="key-structure"></i> 架构依赖</span><span><i class="key-observed"></i> 已记录原子</span></div></div>
+          <div class="inspector"><span class="inspector-label">SELECTED COMPUTATION</span><strong id="inspectorTitle">Swin Transformer Stage 1</strong><p id="inspectorDescription">这是模型架构层级，并非凭空生成的神经元激活。点击节点检查细节，导入完整 SCEPT JSON 后可定位真实 Attention 原子。</p><div class="inspector-values"><span>来源 <b id="inspectorType">MONAI topology</b></span><span>测量 <b id="inspectorMeasured">暂无原子张量</b></span></div></div>
+        </section>
+      </div>
+      <div class="analytics">
+        <section class="panel results-panel"><div class="panel-head"><div><div class="panel-kicker">03 / EXPERIMENT MEASURES</div><h2>模型预测与机制效应</h2></div><span class="small-pill" id="dataQuality">截图转录</span></div>
+          <div class="measure-label">PATCH DICE · WT / TC / ET <span>非独立患者测试</span></div>
+          <div id="diceBars" class="dice-bars"></div>
+          <div class="divider"></div>
+          <div class="effect-row"><div><span class="measure-label">DISRUPTION Δ</span><strong id="disruptVal">0.000000</strong></div><div><span class="measure-label">RESTORATION Δ</span><strong id="restoreVal">0.000000</strong></div><div><span class="measure-label">RUN DURATION</span><strong id="durationVal">14.25 s</strong></div></div>
+          <p class="help" id="effectNote">当前记录的单一 Attention 原子干预效应为零，不能据此声称已发现有效机制。</p>
+        </section>
+        <section class="panel event-panel"><div class="panel-head"><div><div class="panel-kicker">04 / SCIENTIFIC CONTROLS</div><h2>实验动作与记录</h2></div></div>
+          <div class="event-actions"><button id="snapshotBtn" class="secondary" type="button">◎ 记录当前视觉状态</button><button id="downloadMriBtn" class="secondary" type="button">↓ 保存 MRI 视图 PNG</button><button id="showSourceBtn" class="secondary" type="button">⌁ 查看原始数值</button></div>
+          <div class="event-box"><div class="event-head"><span class="status-dot"></span> 可审计事件流 <small id="eventCount">1 条记录</small></div><div id="eventList"></div></div>
+          <p class="help">视觉快照只记录选择、切片和显示参数；不能代替模型输出或因果证据。</p>
+        </section>
+      </div>
+    </section>
+    <section class="page" id="page-evidence"><div class="page-heading"><div><div class="eyebrow">EVIDENCE / PROVENANCE</div><h1>实验数据与证据边界<span class="heading-mark">.</span></h1><p>保持原始数值、计算来源、数据划分和局限性可检查。</p></div></div>
+      <div class="evidence-grid"><section class="panel"><div class="panel-head"><h2>模型和数据身份</h2></div><dl id="provenance"></dl></section><section class="panel"><div class="panel-head"><h2>证据级别</h2></div><div class="caution-block"><strong>工程计算：已完成一次真实运行</strong><p>预训练 SwinUNETR 成功推理真实 MRI，且执行了 Attention 原子干预；首次原子效应为零。</p></div><div class="caution-block muted-block"><strong>科学有效性：尚未证实</strong><p>预训练集与 BraTS2020 存在可能重叠；局部 Patch Dice 不是独立泛化性能；真实因果计算路径还需要正负对照、重复病例及独立验证。</p></div></section></div>
+      <section class="panel raw-panel"><div class="panel-head"><h2>完整记录 JSON</h2><button class="secondary" id="copyJson" type="button">复制记录</button></div><pre id="rawJson"></pre></section>
+    </section>
+    <section class="page" id="page-history"><div class="page-heading"><div><div class="eyebrow">SESSION / EXPERIMENT REGISTRY</div><h1>实验记录<span class="heading-mark">.</span></h1><p>在浏览器中保留本次会话的导入记录和视觉操作；下载审计包后可重复回放。</p></div></div>
+      <section class="panel history-panel"><div class="panel-head"><h2>本次会话</h2><span class="small-pill" id="historyCount">1 项</span></div><div class="history-table"><table><thead><tr><th>时间</th><th>事件</th><th>病例 / 对象</th><th>科学来源</th></tr></thead><tbody id="historyBody"></tbody></table></div></section>
+      <div class="caution-block"><strong>隐私与保存策略</strong><p>原始 MRI 仅在当前页面本地内存中读取；默认不存入浏览器持久存储。导出审计包不会包含可还原的影像体素。关闭页面之前请导出重要记录。</p></div>
+    </section>
+  </main>
+</div>
+<div id="modal" class="modal-backdrop hidden"><div class="modal-card"><button id="closeModal" class="modal-close" type="button" aria-label="关闭">×</button><div class="eyebrow">LIVE COMPUTE / SERVICE STATUS</div><h2>实时 SCEPT 计算服务尚未部署</h2><p>现在网站已经能够使用真实记录、查看实际 MRI 体素、研究架构和保存视觉状态。但网页静态托管不能执行 62.1M 参数的 3D SwinUNETR GPU 干预。</p><p>要让“新增 MRI → 点击节点 → 重新推理 / 搜索路径”在网页中实时运行，还需要受保护的独立 GPU worker。这不需要 Kaggle，也不需要重新训练模型；在服务连接之前，我们不会伪造运行结果。</p><button id="modalOk" class="primary" type="button">了解，继续使用研究工作台</button></div></div>
+</body>
+</html>
