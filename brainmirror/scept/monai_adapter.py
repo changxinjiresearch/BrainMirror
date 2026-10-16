@@ -34,13 +34,13 @@ def require_monai():
 
 def build_monai_model(*, in_channels=4, out_channels=3, feature_size=12,
                       depths=(1, 1, 1, 1), num_heads=(3, 3, 6, 12),
-                      window_size=2, norm_name='batch'):
+                      window_size=2, norm_name='batch', use_checkpoint=False):
     """Tiny synthetic test config; NOT a pretrained clinical model."""
     SwinUNETR, _, _ = require_monai()
     return SwinUNETR(in_channels=in_channels, out_channels=out_channels,
                      feature_size=feature_size, depths=depths, num_heads=num_heads,
                      window_size=window_size, norm_name=norm_name, spatial_dims=3,
-                     use_checkpoint=False)
+                     use_checkpoint=use_checkpoint)
 
 
 def is_window_attention(module):

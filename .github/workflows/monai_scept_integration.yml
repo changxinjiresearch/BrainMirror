@@ -6,6 +6,7 @@ on:
       - 'brainmirror/scept/monai_*.py'
       - 'brainmirror/scept/brats*.py'
       - 'tests/test_brats_v09*.py'
+      - 'tests/test_brats_r1*.py'
       - 'scripts/scept_brats_v09*.py'
       - 'tests/test_monai_integration_v07.py'
       - 'tests/test_scept_monai_crosslayer_v08.py'
@@ -17,6 +18,7 @@ on:
       - 'brainmirror/scept/monai_*.py'
       - 'brainmirror/scept/brats*.py'
       - 'tests/test_brats_v09*.py'
+      - 'tests/test_brats_r1*.py'
       - 'scripts/scept_brats_v09*.py'
       - 'tests/test_monai_integration_v07.py'
       - 'tests/test_scept_monai_crosslayer_v08.py'
@@ -50,7 +52,8 @@ jobs:
           python -m pytest -q -rs tests/test_monai_integration_v07.py
           PYTHONPATH=. python scripts/monai_v07_smoke.py --json-out /tmp/monai-v07-result.json
           PYTHONPATH=. python scripts/monai_v08_smoke.py --json-out /tmp/monai-v08-result.json
-          python -m pytest -q -rs tests/test_brats_v09.py tests/test_brats_v09_monai.py
+          python -m pytest -q -rs tests/test_brats_v09.py tests/test_brats_v09_monai.py tests/test_brats_r1_trainer.py tests/test_brats_r1_monai.py
+          PYTHONPATH=. python -m scripts.scept_r1_resume_smoke --output /tmp/scept-v09-R1-SYNTHETIC-resume.json
           PYTHONPATH=. python scripts/scept_brats_v09_synthetic_smoke.py --json-out /tmp/scept-brats-v09-SYNTHETIC.json
       - name: Upload synthetic engineering audit
         if: always()
@@ -68,4 +71,12 @@ jobs:
         with:
           name: scept-brats-v09-SYNTHETIC-not-medical-evidence
           path: /tmp/scept-brats-v09-SYNTHETIC.json
+          if-no-files-found: ignore
+
+      - name: Upload synthetic R1 resume audit (NO PATIENT DATA)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-v09-R1-SYNTHETIC-resume
+          path: /tmp/scept-v09-R1-SYNTHETIC-resume.json
           if-no-files-found: ignore
