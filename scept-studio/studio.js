@@ -52,7 +52,7 @@ async function setupModel(bytes,description,provenance,preset){
  session=newSession;actualProvider=provider;modelHash=hash;modelName=description;modelSource=provenance;modelUrl=preset?.url||'local-file';el('backend').textContent=provider.toUpperCase();
  const first=session.inputNames.find(n=>!n.includes('__scept_mask'))||session.inputNames[0];
  el('inputName').value=first||'';
- if(preset){el('shape').value=preset.dims.join(',');el('normalize').value=preset.normalize;setMode(preset.source)}
+ if(preset){manifest=null;el('shape').value=preset.dims.join(',');el('normalize').value=preset.normalize;setMode(preset.source)}
  else if(manifest?.input?.shape)el('shape').value=manifest.input.shape.join(',');
  else reportedShapes();
  populateMaskInputs();showModel();setState('已加载预训练模型',true);
@@ -96,7 +96,11 @@ erase();
 function paint(ev){const r=mainCanvas.getBoundingClientRect();const x=(ev.clientX-r.left)/r.width*224,y=(ev.clientY-r.top)/r.height*224;
  c2d.lineWidth=22;c2d.lineCap='round';c2d.lineJoin='round';c2d.strokeStyle='#fff';if(!paint.previous)paint.previous=[x,y];c2d.beginPath();c2d.moveTo(...paint.previous);c2d.lineTo(x,y);c2d.stroke();paint.previous=[x,y];center={x:x/224,y:y/224};
 }
-mainCanvas.addEventListener('pointerdown',e=>{drawActive=true;mainCanvas.setPointerCapture(e.pointerId);if(sourceMode!=='draw')setMode('draw');paint.previous=null;paint(e)});
+mainCanvas.addEventListener('pointerdown',e=>{
+ const rect=mainCanvas.getBoundingClientRect();
+ if(sourceMode==='mri'){center={x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};renderSlice();return}
+ drawActive=true;mainCanvas.setPointerCapture(e.pointerId);if(sourceMode!=='draw')setMode('draw');paint.previous=null;paint(e)
+});
 mainCanvas.addEventListener('pointermove',e=>{if(drawActive)paint(e)});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>mainCanvas.addEventListener(n,()=>{drawActive=false;paint.previous=null}));
 el('clearCanvas').addEventListener('click',()=>{erase();setMode('draw')});
@@ -117,10 +121,22 @@ async function niftiVolume(file){
  sourceVolume={data:arr,w,h,d,filename:file.name,spacing:[v.getFloat32(80,little),v.getFloat32(84,little),v.getFloat32(88,little)],affineWarning:'NIfTI 原始存储轴向预览；本模块尚不支持临床级 affine 重采样'};
  sourceTensor=null;setMode('mri');el('slice').max=d-1;el('slice').value=Math.floor(d/2);renderSlice();notice('已本地加载 NIfTI '+w+'×'+h+'×'+d+'。空间方向/预处理需与模型要求核对。')
 }
+function renderOrthogonal(id,v,plane){
+ const cv=el(id);const w=plane==='coronal'?v.w:v.h,h=v.d;const layer=document.createElement('canvas');layer.width=w;layer.height=h;
+ const lc=layer.getContext('2d'),img=lc.createImageData(w,h);
+ const fixed=plane==='coronal'?Math.min(v.h-1,Math.floor(center.y*v.h)):Math.min(v.w-1,Math.floor(center.x*v.w));
+ let min=Infinity,max=-Infinity;const values=new Float32Array(w*h);
+ for(let z=0;z<h;z++)for(let x=0;x<w;x++){const p=plane==='coronal'?v.data[z*v.w*v.h+fixed*v.w+x]:v.data[z*v.w*v.h+x*v.w+fixed];values[z*w+x]=p;min=Math.min(min,p);max=Math.max(max,p)}
+ const range=max-min||1;for(let i=0;i<values.length;i++){const k=i*4,q=255*(values[i]-min)/range;img.data[k]=img.data[k+1]=img.data[k+2]=q;img.data[k+3]=255}
+ lc.putImageData(img,0,0);const ctx=cv.getContext('2d');ctx.fillStyle='#060e19';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(layer,0,0,cv.width,cv.height);
+}
 function renderSlice(){const v=sourceVolume;if(!v)return;const z=+el('slice').value,cv=document.createElement('canvas');cv.width=v.w;cv.height=v.h;const cx=cv.getContext('2d'),img=cx.createImageData(v.w,v.h);
  let lo=Infinity,hi=-Infinity;for(let y=0;y<v.h;y++)for(let x=0;x<v.w;x++){const p=v.data[z*v.w*v.h+y*v.w+x];if(p<lo)lo=p;if(p>hi)hi=p}
  const range=hi-lo||1;for(let i=0;i<v.w*v.h;i++){let q=Math.max(0,Math.min(255,255*(v.data[z*v.w*v.h+i]-lo)/range));img.data[i*4]=q;img.data[i*4+1]=q;img.data[i*4+2]=q;img.data[i*4+3]=255}
- cx.putImageData(img,0,0);c2d.fillStyle='#000';c2d.fillRect(0,0,224,224);c2d.drawImage(cv,0,0,224,224);el('sliceLabel').textContent='Z='+z+'/'+(v.d-1)+' · 仅原始存储方向预览';
+ cx.putImageData(img,0,0);c2d.fillStyle='#000';c2d.fillRect(0,0,224,224);c2d.drawImage(cv,0,0,224,224);
+ c2d.strokeStyle='#64f2c9';c2d.lineWidth=1.8;c2d.setLineDash([5,5]);c2d.beginPath();c2d.arc(center.x*224,center.y*224,(+el('radius').value)*224,0,Math.PI*2);c2d.stroke();c2d.setLineDash([]);
+ renderOrthogonal('coronalCanvas',v,'coronal');renderOrthogonal('sagittalCanvas',v,'sagittal');
+ el('sliceLabel').textContent='Z='+z+'/'+(v.d-1)+' · 3D ROI 中心 ('+Math.round(center.x*v.w)+','+Math.round(center.y*v.h)+','+z+') · 非临床 QC';
 }
 el('slice').addEventListener('input',renderSlice);
 el('sourceFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{
@@ -129,7 +145,7 @@ el('sourceFile').addEventListener('change',async e=>{const f=e.target.files?.[0]
   if(j.data.some(v=>!Number.isFinite(Number(v))))throw Error('Tensor JSON 存在非有限数据');sourceTensor={dims:j.dims,data:Float32Array.from(j.data),filename:f.name};sourceVolume=null;setMode('tensor');notice('已加载 Tensor JSON：'+f.name)}
  else await openImage(f);
  }catch(err){notice('输入文件读取失败：'+err.message,true)}});
-['strength','radius'].forEach(id=>el(id).addEventListener('input',()=>{el('strengthText').textContent=(+el('strength').value).toFixed(2);el('radiusText').textContent=Math.round(+el('radius').value*100)+'%'}));
+['strength','radius'].forEach(id=>el(id).addEventListener('input',()=>{el('strengthText').textContent=(+el('strength').value).toFixed(2);el('radiusText').textContent=Math.round(+el('radius').value*100)+'%';if(sourceMode==='mri')renderSlice()}));
 function imageInput(dims){
  const H=dims[dims.length-2],W=dims[dims.length-1],C=dims.length===4?dims[1]:1;
  if(dims.length!==4||dims[0]!==1||![1,3,4].includes(C))throw Error('图像模式当前只支持 [1,1/3/4,H,W]；其他模型请导入 Tensor JSON 或 NIfTI');
@@ -160,16 +176,19 @@ function getInput(dims){
 function modifyInput(base,dims){
  const mode=el('perturb').value,r=+el('radius').value,s=+el('strength').value;
  const copy=Float32Array.from(base);if(mode==='none'||s===0)return copy;
- const H=dims[dims.length-2],W=dims[dims.length-1],area=H*W,C=copy.length/area,cx=center.x*W,cy=center.y*H;
- for(let c=0;c<C;c++)for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-  const dist=Math.hypot((x-cx)/W,(y-cy)/H);if(dist>r)continue;
-  const k=c*area+y*W+x;
+ const H=dims[dims.length-2],W=dims[dims.length-1],D=dims.length===5?dims[2]:1,C=dims[1],is3d=dims.length===5;
+ const cx=center.x*W,cy=center.y*H,cz=is3d&&sourceVolume?(+el('slice').value/Math.max(1,sourceVolume.d-1))*D:(D-1)/2;
+ for(let c=0;c<C;c++)for(let z=0;z<D;z++)for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  const dx=(x-cx)/W,dy=(y-cy)/H,dz=is3d?(z-cz)/Math.max(1,D):0;
+  const distance=Math.sqrt(dx*dx+dy*dy+dz*dz);if(distance>r)continue;
+  const k=((c*D+z)*H+y)*W+x;
   if(mode==='occlusion')copy[k]*=(1-s);
   else if(mode==='intensity')copy[k]+=s;
   else if(mode==='noise'){const u=Math.sin((k+1)*12.9898)*43758.5453;copy[k]+=(u-Math.floor(u)-.5)*s}
  }
  return copy;
 }
+
 function additionalFeeds(lib,maskName,ablate){
  const result={};
  for(const n of session.inputNames){if(n===baseInputName())continue;
