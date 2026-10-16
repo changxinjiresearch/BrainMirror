@@ -50,3 +50,7 @@ jobs:
         run: node scept-web/tests/browser.cjs
       - name: Two externally pretrained architectures (ViT / CNN), verified SHA-256, Chrome CPU
         run: node scept-web/tests/pretrained_models.cjs
+      - name: Instrument actual pretrained transformer middle-layer probes without training
+        run: python scept-web/tests/instrument_pretrained_vit.py
+      - name: Verify real pretrained Transformer intermediate activations with browser CPU
+        run: node scept-web/tests/pretrained_probes.cjs
