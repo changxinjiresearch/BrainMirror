@@ -48,3 +48,5 @@ jobs:
           exit 1
       - name: Chrome CPU/WASM, MRI and audit end-to-end test
         run: node scept-web/tests/browser.cjs
+      - name: Two externally pretrained architectures (ViT / CNN), verified SHA-256, Chrome CPU
+        run: node scept-web/tests/pretrained_models.cjs
