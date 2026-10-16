@@ -71,3 +71,19 @@ def test_reject_cross_modality_affine_mismatch(tmp_path):
         paths[name]=p
     with pytest.raises(ValueError,match="matching shape and affine"):
         prepare(paths)
+
+
+def test_prediction_overlay_is_real_tensor_compacted_not_fake_dice():
+    import base64
+    import torch
+    from services.scept_live.model import pack_axial_prediction
+    p=torch.zeros(1,3,64,64,64)
+    p[0,1,3,4,32]=0.91
+    obj=pack_axial_prediction(p,{"start":[11,12,13]})
+    assert obj["full_z"]==45
+    assert obj["kind"]=="measured_model_prediction_axial_mask"
+    wt=base64.b64decode(obj["mask_base64"]["wt"])
+    assert len(wt)==4096
+    assert wt[3*64+4]==1
+    assert sum(wt)==1
+    assert sum(base64.b64decode(obj["mask_base64"]["tc"]))==0
