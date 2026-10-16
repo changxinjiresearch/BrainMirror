@@ -6,7 +6,7 @@ Status: research engineering candidate, **not independently E2E verified**. I-JE
 
 - Self-contained browser UI in \`scept-studio/\`, independent of any model training pipeline.
 - Local ONNX Runtime Web WASM execution; experimental optional WebGPU. No paid inference endpoint.
-- Two official pretrained ONNX model zoo demos (MNIST-8 and SqueezeNet 1.1), each verified against its published SHA-256 when downloaded.
+- Two official pretrained ONNX model zoo demos (MNIST-8 and SqueezeNet 1.1) plus a pretrained ViT-base Transformer (88 MB, ImageNet), each verified against its published SHA-256 when downloaded.
 - Local .onnx file import, a \`scept.model.v1\` manifest, .nii/.nii.gz NIfTI-1 basic decoding, JPG/PNG image import and tensor JSON import.
 - Baseline and intervention are two genuine ONNX Runtime forward passes on the same frozen weights.
 - Visualizes **only tensors actually exported as model outputs**. Model-hidden activations not exposed by the model are *not* magically observable.
