@@ -10,6 +10,7 @@ import threading
 import time
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from .model import run
 
 app=FastAPI(title="BrainMirror SCEPT live backend",version="1.0")
@@ -28,6 +29,17 @@ def require_auth(value):
     supplied=value[7:] if isinstance(value,str) and value.startswith("Bearer ") else ""
     if not secrets.compare_digest(supplied,SECRET):
         raise HTTPException(401,"Private SCEPT access token required")
+
+
+@app.middleware("http")
+async def reject_private_endpoint_without_auth(request, call_next):
+    # Authenticate before Starlette parses large multipart uploads.
+    if request.url.path.startswith("/api/v1/runs") and request.method!="OPTIONS":
+        try:
+            require_auth(request.headers.get("authorization"))
+        except HTTPException as e:
+            return JSONResponse({"detail":e.detail},status_code=e.status_code)
+    return await call_next(request)
 
 
 @app.get("/health")
