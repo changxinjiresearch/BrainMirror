@@ -22,6 +22,7 @@ class SCCAConfig:
     beam_width: int = 3
     sparsity_penalty: float = 0.04
     off_target_penalty: float = 0.02
+    disruption_penalty: float = 0.15
     min_input_effect: float = 1e-6
 
     def validate(self):
@@ -29,6 +30,7 @@ class SCCAConfig:
                 self.max_circuit_size < 1 or self.beam_width < 1 or
                 not 0 <= self.sparsity_penalty <= 10 or
                 not 0 <= self.off_target_penalty <= 10 or
+                not 0 <= self.disruption_penalty <= 10 or
                 not math.isfinite(self.min_input_effect) or self.min_input_effect <= 0):
             raise ValueError('Invalid SCCA configuration')
 
@@ -107,7 +109,8 @@ def _score(model, x, roi, channel, patches=None):
 
 def evaluate_edge_set(model, clean_x, altered_x, clean_trace, ref_trace,
                       edge_names, roi, channel, score_clean, score_ref,
-                      sparsity_penalty=0.04, off_target_penalty=0.02):
+                      sparsity_penalty=0.04, off_target_penalty=0.02,
+                      disruption_penalty=0.15):
     """Measured two-direction interventions; no gradient approximation here."""
     sites = tuple(sorted(edge_names))
     declared = valid_declared_edges(model)
@@ -125,17 +128,20 @@ def evaluate_edge_set(model, clean_x, altered_x, clean_trace, ref_trace,
     d_restore = score_r - score_ref
     target_delta = abs(d_input)
     relative_error = abs(d_input - d_restore) / max(target_delta, 1e-8)
+    disruption_error = abs(d_input - d_disrupt) / max(target_delta, 1e-8)
     other = ~roi
     off_target = float((restored_logits[:, channel, other] -
                         reference_logits[:, channel, other]).abs().mean()) if other.any() else 0.0
-    objective = (relative_error ** 2 + sparsity_penalty * len(sites) +
+    objective = (relative_error ** 2 + disruption_penalty * disruption_error ** 2 +
+                 sparsity_penalty * len(sites) +
                  off_target_penalty * off_target / max(target_delta, 1e-8))
     if not all(math.isfinite(y) for y in (d_disrupt, d_restore, objective, off_target)):
         raise ArithmeticError('Non-finite intervention effect')
     aligned = (d_input * d_restore > 0 and d_input * d_disrupt >= 0)
     return dict(edges=list(sites), input_effect=d_input, disruption=d_disrupt,
                 restoration=d_restore, fractional_recovery=d_restore / d_input if d_input else None,
-                relative_restoration_error=relative_error, off_target_change=off_target,
+                relative_restoration_error=relative_error,
+                relative_disruption_error=disruption_error, off_target_change=off_target,
                 objective=objective, direction_aligned=bool(aligned),
                 evidence_status='intervened_selection_only')
 
@@ -190,7 +196,8 @@ def explain_scca(model, x, region: Region, roi, config: Optional[SCCAConfig] = N
         if key not in evaluated:
             evaluated[key] = evaluate_edge_set(
                 model, x, reference, clean, ref, key, roi, config.channel,
-                score_clean, score_ref, config.sparsity_penalty, config.off_target_penalty)
+                score_clean, score_ref, config.sparsity_penalty,
+                config.off_target_penalty, config.disruption_penalty)
         return evaluated[key]
     beam = [()]
     for size in range(1, min(config.max_circuit_size, len(names)) + 1):
@@ -227,7 +234,8 @@ def explain_scca(model, x, region: Region, roi, config: Optional[SCCAConfig] = N
         verified = evaluate_edge_set(
             model, x, validation_ref, clean_v, ref_v, best, roi,
             config.channel, score_clean_v, score_ref_v,
-            config.sparsity_penalty, config.off_target_penalty)
+            config.sparsity_penalty, config.off_target_penalty,
+            config.disruption_penalty)
         validation.update({'status':'evaluated_on_reserved_reference',
                            'disruption':verified['disruption'],
                            'restoration':verified['restoration'],

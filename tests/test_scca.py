@@ -163,3 +163,48 @@ def test_gradient_screen_has_no_parameter_update(known_case):
     assert grads['decoy_to_residual']==0
     assert torch.equal(m.scale,old)
     assert m.scale.grad is None
+
+
+class TwoNecessaryRoutes(nn.Module):
+    """Both explicitly wired branches contribute half of the target score."""
+    def __init__(self):
+        super().__init__()
+        self.left_to_residual = nn.Identity()
+        self.right_to_residual = nn.Identity()
+        self.anchor = nn.Parameter(torch.tensor(1.0))
+
+    def scca_edge_routes(self):
+        return {name:{'source':name.split('_to_')[0], 'consumer':'joint_add',
+                      'intervention_unit':'whole_branch_tensor'}
+                for name in ('left_to_residual','right_to_residual')}
+
+    def forward(self,x,sample=False,return_details=False):
+        left=self.left_to_residual(x[:,0:1]*self.anchor*0.5)
+        right=self.right_to_residual(x[:,1:2]*self.anchor*0.5)
+        score=left+right
+        output=torch.cat([torch.zeros_like(score),torch.zeros_like(score),score],1)
+        return (output,{}) if return_details else output
+
+
+def test_joint_search_recovers_both_contributing_edges():
+    x=torch.zeros(1,4,8,8,8)
+    x[:,0:2,2:6,2:6,2:6] = 2.0
+    roi=torch.zeros(8,8,8,dtype=torch.bool);roi[2:6,2:6,2:6]=True
+    result=explain_scca(TwoNecessaryRoutes().eval(),x,Region(2,6,2,6,2,6),roi,
+                        SCCAConfig(max_circuit_size=2,beam_width=2))
+    assert result['selected']['edges']==['left_to_residual','right_to_residual']
+    assert abs(result['selected']['restoration']-result['input_effect'])<1e-6
+    assert result['selected']['relative_disruption_error']<1e-6
+    assert len(result['tested_edge_sets'])==3
+    single=[a for a in result['tested_edge_sets'] if len(a['edges'])==1]
+    assert all(abs(s['fractional_recovery']-.5)<1e-5 for s in single)
+
+
+def test_negative_signed_effect_is_preserved(known_case):
+    model,x,roi,region=known_case
+    with torch.no_grad(): model.scale.fill_(-1.0)
+    result=explain_scca(model,x,region,roi)
+    assert result['input_effect']<0
+    assert result['selected']['edges']==['signal_to_residual']
+    assert result['selected']['restoration']<0
+    assert result['selected']['direction_aligned'] is True
