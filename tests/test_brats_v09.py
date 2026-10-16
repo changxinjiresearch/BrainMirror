@@ -131,3 +131,31 @@ def test_source_audited_355_segment_suffix(tmp_path):
     assert len(cases)==1 and cases[0].paths['seg'].name.endswith('_segm.nii')
     (d/f'{d.name}_seg.nii').write_bytes(b'duplicate')
     with pytest.raises(ValueError,match='ambiguous'):discover_training_cases(tmp_path)
+
+
+def test_source_audited_355_nonstandard_w39_segmentation_filename(tmp_path):
+    """Actual Awsaf Kaggle mirror: the 355 mask has a W39 filename."""
+    d=tmp_path/'BraTS20_Training_355';d.mkdir()
+    for mod in ('t1','t1ce','t2','flair'):
+        (d/f'{d.name}_{mod}.nii').write_bytes(b'ok')
+    observed=d/'W39_1998.09.19_Segm.nii'
+    observed.write_bytes(b'observed segmentation filename')
+    cases=discover_training_cases(tmp_path)
+    assert len(cases)==1 and cases[0].paths['seg']==observed
+    # Detect ambiguous segmentation rather than silently preferring one label.
+    (d/f'{d.name}_segm.nii').write_bytes(b'conflicting mask')
+    with pytest.raises(ValueError,match='ambiguous'):
+        discover_training_cases(tmp_path)
+    (d/f'{d.name}_segm.nii').unlink()
+    (d/f'{d.name}_seg.nii').write_bytes(b'conflicting canonical mask')
+    with pytest.raises(ValueError,match='ambiguous'):
+        discover_training_cases(tmp_path)
+
+
+def test_case355_w39_alias_not_applied_to_other_subjects(tmp_path):
+    d=tmp_path/'BraTS20_Training_354';d.mkdir()
+    for mod in ('t1','t1ce','t2','flair'):
+        (d/f'{d.name}_{mod}.nii').write_bytes(b'ok')
+    (d/'W39_1998.09.19_Segm.nii').write_bytes(b'not case354 mask')
+    with pytest.raises(ValueError,match='Missing or ambiguous seg'):
+        discover_training_cases(tmp_path)

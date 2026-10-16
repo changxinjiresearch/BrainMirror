@@ -51,9 +51,11 @@ def discover_training_cases(root: Path, *, strict=True) -> list[CaseFiles]:
         files={}
         for suffix in (*MODALITIES,'seg'):
             options = [d / f'{d.name}_{suffix}{ext}' for ext in ('.nii.gz','.nii')]
-            # Source-audited BraTS20_Training_355 uses the '_segm' suffix.
+            # BraTS2020 case 355 has nonstandard mask filenames across mirrors.
+            # Accept only the confirmed case-355 alias, never broad filename guesses.
             if suffix=='seg' and d.name=='BraTS20_Training_355':
                 options += [d / f'{d.name}_segm{ext}' for ext in ('.nii.gz','.nii')]
+                options.append(d / 'W39_1998.09.19_Segm.nii')
             found=[p for p in options if p.is_file()]
             if len(found)!=1:
                 if strict:
