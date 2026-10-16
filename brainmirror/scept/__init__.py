@@ -11,3 +11,6 @@ __all__ = ['TransformerVIB3D', 'SpatialVIB', 'brats_dice_bce', 'IJEPAPretrainer'
 
 from .scca import (SCCAConfig, explain_scca, valid_declared_edges, reference_volume,
                    evaluate_edge_set, gradient_screen)
+
+from .paths import (PathHop, PathSearchConfig, capture_path_baseline,
+                    route_delta, intervene_path, evaluate_path, explain_scca_paths)

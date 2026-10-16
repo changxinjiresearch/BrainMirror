@@ -1,0 +1,468 @@
+{
+  "status": "ENGINEERING_SYNTHETIC_ONLY",
+  "method": "SCCA controlled cross-layer path patching v0.3",
+  "seed": 240216,
+  "data_source": "torch.randn synthetic voxel tensor",
+  "model": "untrained 3D TransformerVIB3D (depth 3; 16 dim; 4 heads)",
+  "path_semantics": "frozen-offpath residual propagation with Q/K/V or MLP site recomputation",
+  "path_test": {
+    "path": [
+      {
+        "edge": "blocks.0.attn_to_residual",
+        "input_role": "qkv"
+      },
+      {
+        "edge": "blocks.1.attn_to_residual",
+        "input_role": "q"
+      },
+      {
+        "edge": "blocks.2.mlp_to_residual",
+        "input_role": "mlp"
+      }
+    ],
+    "source_token_mask_applied": false,
+    "input_effect": 0.002055400051176548,
+    "restoration": -6.0480087995529175e-06,
+    "disruption": -3.6582350730895996e-06,
+    "fractional_recovery": -0.002942497153335638,
+    "off_target_change": 2.896294063248206e-05,
+    "objective": 1.2767098956344654,
+    "direction_aligned": false,
+    "route_delta_norm": 0.010656498372554779,
+    "reverse_route_delta_norm": 0.011053888127207756,
+    "evidence_status": "controlled_path_intervention_same_case",
+    "semantics": "frozen_offpath_residual_path_final_edge_patch",
+    "independent_patient_validation": false
+  },
+  "candidate_search": {
+    "method": "SCCA",
+    "version": "cross_layer_path_alpha_v0.3",
+    "interpretation": "isolated frozen-offpath residual route; not complete causal circuit",
+    "source_region": {
+      "z0": 2,
+      "z1": 6,
+      "y0": 2,
+      "y1": 6,
+      "x0": 2,
+      "x1": 6
+    },
+    "target_channel": 2,
+    "selection_reference": "channel_mean",
+    "validation_reference": "local_blur",
+    "input_effect": 0.002055400051176548,
+    "independent_patient_validation": false,
+    "selection_budget": 12,
+    "status": "candidate_selected_not_independently_validated",
+    "gradient_proposal_scores": {
+      "blocks.0.attn_to_residual": 0.0007051451248116791,
+      "blocks.0.mlp_to_residual": -7.008813554421067e-05,
+      "blocks.1.attn_to_residual": -0.00035190017661079764,
+      "blocks.1.mlp_to_residual": -0.0002479697286617011,
+      "blocks.2.attn_to_residual": 0.0009372557979077101,
+      "blocks.2.mlp_to_residual": -2.908283204305917e-05
+    },
+    "proposed_path_count": 12,
+    "tested_paths": [
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "v"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": 0.00016083009541034698,
+        "disruption": 0.0001340443268418312,
+        "fractional_recovery": 0.07824758752841567,
+        "off_target_change": 0.0006924475892446935,
+        "objective": 1.067438604229187,
+        "direction_aligned": true,
+        "route_delta_norm": 0.17534399032592773,
+        "reverse_route_delta_norm": 0.17333421111106873,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "k"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -1.0803341865539551e-07,
+        "disruption": 7.24010169506073e-06,
+        "fractional_recovery": -5.2560774528323684e-05,
+        "off_target_change": 0.00011158754205098376,
+        "objective": 1.23013604082229,
+        "direction_aligned": false,
+        "route_delta_norm": 0.027231667190790176,
+        "reverse_route_delta_norm": 0.025916798040270805,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.1.attn_to_residual",
+            "input_role": "q"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "v"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": 9.568408131599426e-06,
+        "disruption": 5.5283308029174805e-06,
+        "fractional_recovery": 0.0046552534267586,
+        "off_target_change": 7.933961023809388e-05,
+        "objective": 1.260677362529667,
+        "direction_aligned": true,
+        "route_delta_norm": 0.019228391349315643,
+        "reverse_route_delta_norm": 0.01763220876455307,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.1.attn_to_residual",
+            "input_role": "k"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "k"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": 1.259148120880127e-06,
+        "disruption": 7.068738341331482e-07,
+        "fractional_recovery": 0.0006126048893301175,
+        "off_target_change": 1.1896510841324925e-05,
+        "objective": 1.2687877686641862,
+        "direction_aligned": true,
+        "route_delta_norm": 0.0028689817991107702,
+        "reverse_route_delta_norm": 0.002239672467112541,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.1.attn_to_residual",
+            "input_role": "k"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "v"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": 9.57399606704712e-07,
+        "disruption": 1.2498348951339722e-06,
+        "fractional_recovery": 0.0004657972087510065,
+        "off_target_change": 1.5813029676792212e-05,
+        "objective": 1.2690401240213827,
+        "direction_aligned": true,
+        "route_delta_norm": 0.004673851188272238,
+        "reverse_route_delta_norm": 0.0038932268507778645,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.1.attn_to_residual",
+            "input_role": "q"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "k"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -2.4866312742233276e-07,
+        "disruption": -2.1513551473617554e-07,
+        "fractional_recovery": -0.00012098040344019332,
+        "off_target_change": 7.976394044817425e-06,
+        "objective": 1.2703509916479756,
+        "direction_aligned": false,
+        "route_delta_norm": 0.002173381857573986,
+        "reverse_route_delta_norm": 0.00244629243388772,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.1.attn_to_residual",
+            "input_role": "q"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "q"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -5.317851901054382e-07,
+        "disruption": 1.6363337635993958e-06,
+        "fractional_recovery": -0.00025872588151442093,
+        "off_target_change": 2.2679541871184483e-05,
+        "objective": 1.2704994619324408,
+        "direction_aligned": false,
+        "route_delta_norm": 0.005544673651456833,
+        "reverse_route_delta_norm": 0.00449485844001174,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.1.attn_to_residual",
+            "input_role": "k"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "q"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -5.085021257400513e-07,
+        "disruption": -7.310882210731506e-07,
+        "fractional_recovery": -0.0002473981283833167,
+        "off_target_change": 1.1047152838727925e-05,
+        "objective": 1.2707090778179608,
+        "direction_aligned": false,
+        "route_delta_norm": 0.0026226453483104706,
+        "reverse_route_delta_norm": 0.0018624826334416866,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.0.mlp_to_residual",
+            "input_role": "mlp"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "k"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -2.948567271232605e-06,
+        "disruption": 9.30391252040863e-07,
+        "fractional_recovery": -0.0014345466565230413,
+        "off_target_change": 2.234495696029626e-05,
+        "objective": 1.272952811707932,
+        "direction_aligned": false,
+        "route_delta_norm": 0.004944277461618185,
+        "reverse_route_delta_norm": 0.004990460816770792,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.0.mlp_to_residual",
+            "input_role": "mlp"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "q"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -1.6588717699050903e-05,
+        "disruption": -1.2286007404327393e-05,
+        "fractional_recovery": -0.00807079755084915,
+        "off_target_change": 5.8169036492472515e-05,
+        "objective": 1.288571332777626,
+        "direction_aligned": false,
+        "route_delta_norm": 0.015350821428000927,
+        "reverse_route_delta_norm": 0.014788267202675343,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "q"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -5.362369120121002e-05,
+        "disruption": -2.8191134333610535e-05,
+        "fractional_recovery": -0.026089174791308803,
+        "off_target_change": 0.0003798291436396539,
+        "objective": 1.290697820012608,
+        "direction_aligned": false,
+        "route_delta_norm": 0.1051492691040039,
+        "reverse_route_delta_norm": 0.09916464984416962,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      },
+      {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.0.mlp_to_residual",
+            "input_role": "mlp"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "v"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.002055400051176548,
+        "restoration": -2.3216940462589264e-05,
+        "disruption": -2.711918205022812e-05,
+        "fractional_recovery": -0.011295582312211908,
+        "off_target_change": 0.00010816359281307086,
+        "objective": 1.2977555837666486,
+        "direction_aligned": false,
+        "route_delta_norm": 0.030881119892001152,
+        "reverse_route_delta_norm": 0.031101003289222717,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      }
+    ],
+    "selected": {
+      "path": [
+        {
+          "edge": "blocks.0.attn_to_residual",
+          "input_role": "qkv"
+        },
+        {
+          "edge": "blocks.2.attn_to_residual",
+          "input_role": "v"
+        }
+      ],
+      "source_token_mask_applied": false,
+      "input_effect": 0.002055400051176548,
+      "restoration": 0.00016083009541034698,
+      "disruption": 0.0001340443268418312,
+      "fractional_recovery": 0.07824758752841567,
+      "off_target_change": 0.0006924475892446935,
+      "objective": 1.067438604229187,
+      "direction_aligned": true,
+      "route_delta_norm": 0.17534399032592773,
+      "reverse_route_delta_norm": 0.17333421111106873,
+      "evidence_status": "controlled_path_intervention_same_case",
+      "semantics": "frozen_offpath_residual_path_final_edge_patch",
+      "independent_patient_validation": false
+    },
+    "validation": {
+      "status": "evaluated_same_case_reserved_reference",
+      "strategy": "local_blur",
+      "independent_patient_validation": false,
+      "same_case_different_reference": true,
+      "fixed_path": {
+        "path": [
+          {
+            "edge": "blocks.0.attn_to_residual",
+            "input_role": "qkv"
+          },
+          {
+            "edge": "blocks.2.attn_to_residual",
+            "input_role": "v"
+          }
+        ],
+        "source_token_mask_applied": false,
+        "input_effect": 0.00024447496980428696,
+        "restoration": 0.00017249491065740585,
+        "disruption": 0.00015532691031694412,
+        "fractional_recovery": 0.7055728886907959,
+        "off_target_change": 0.0006333860219456255,
+        "objective": 0.2384489064759004,
+        "direction_aligned": true,
+        "route_delta_norm": 0.15284770727157593,
+        "reverse_route_delta_norm": 0.15359331667423248,
+        "evidence_status": "controlled_path_intervention_same_case",
+        "semantics": "frozen_offpath_residual_path_final_edge_patch",
+        "independent_patient_validation": false
+      }
+    }
+  },
+  "not_claimed": [
+    "patient validation",
+    "real MRI",
+    "complete multihead circuits",
+    "clinical counterfactual MRI",
+    "Grad-CAM superiority",
+    "uniqueness of the causal route"
+  ]
+}
