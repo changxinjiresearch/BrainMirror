@@ -58,6 +58,10 @@ jobs:
         run: |
           python -m http.server 8999 --bind 127.0.0.1 --directory scept-studio > /tmp/scept-http.log 2>&1 &
           node scept-studio/e2e.mjs
+      - name: Verify real production SCEPT site
+        env:
+          SCEPT_BASE_URL: https://scept-studio-brainmirror.vercel.app/
+        run: node scept-studio/e2e.mjs
       - name: Screenshot on failure
         if: failure()
         uses: actions/upload-artifact@v4
