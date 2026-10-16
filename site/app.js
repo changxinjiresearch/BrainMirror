@@ -22,18 +22,53 @@ function drawBrain(){
 function index3(shape,x,y,z){return x+shape[0]*(y+shape[1]*z)}
 function colorIntensity(t){return Math.max(0,Math.min(255,Math.round(t*255)))}
 function sampleVolume(v,x,y,z){return v.data[index3(v.shape,x,y,z)]||0}
-function drawSlices(){for(const [axis,name] of [[2,'axialSlice'],[1,'coronalSlice'],[0,'sagittalSlice']]){
- const canvas=$(name),{ctx,w,h}=prepCanvas(canvas);if(!state.volume)continue;
- const v=state.volume,[nx,ny,nz]=v.shape,loc=Math.min(v.shape[axis]-1,Math.max(0,Math.round(v.shape[axis]*Number($('slicePosition').value)/100)));
- const dims=axis===2?[nx,ny]:axis===1?[nx,nz]:[ny,nz];const cw=Math.min(256,dims[0]),ch=Math.min(256,dims[1]);const img=ctx.createImageData(cw,ch);
- for(let py=0;py<ch;py++)for(let px=0;px<cw;px++){
- const u=Math.min(dims[0]-1,Math.floor(px*dims[0]/cw)),v2=Math.min(dims[1]-1,Math.floor((ch-1-py)*dims[1]/ch));
- const xyz=axis===2?[u,v2,loc]:axis===1?[u,loc,v2]:[loc,u,v2];const raw=sampleVolume(v,...xyz),q=colorIntensity(raw),pos=4*(py*cw+px);const isroi=state.mask&&state.mask.data[index3(state.mask.shape,...xyz)]===Number($('roiLabel').value)&&Number($('roiLabel').value)>0;
- img.data[pos]=isroi?235:q;img.data[pos+1]=isroi?161:q;img.data[pos+2]=isroi?80:q;img.data[pos+3]=255;
+function drawSlices(){
+ if(!state.volume)return;
+ const v=state.volume;
+ const affine=v.affine;
+ // RAS coordinate rows identify the actual physical scan plane.
+ // Do not call NIfTI axis 2 "axial" unless it maps to superior/inferior.
+ const rasAxis=Array.isArray(affine)&&affine.length>=3
+  ? [0,1,2].map(r=>{
+      const a=affine[r].slice(0,3).map(Math.abs);
+      return a.indexOf(Math.max(...a));
+    })
+  : [0,1,2];
+ if(new Set(rasAxis).size!==3)throw Error('Ambiguous NIfTI affine orientation');
+ const sign=ras=>Array.isArray(affine)&&affine[ras][rasAxis[ras]]<0?-1:1;
+ const planes=[
+  {id:'axialSlice',fix:rasAxis[2],u:rasAxis[0],vr:rasAxis[1],uflip:sign(0)<0,vflip:sign(1)<0},
+  {id:'coronalSlice',fix:rasAxis[1],u:rasAxis[0],vr:rasAxis[2],uflip:sign(0)<0,vflip:sign(2)<0},
+  {id:'sagittalSlice',fix:rasAxis[0],u:rasAxis[1],vr:rasAxis[2],uflip:sign(1)<0,vflip:sign(2)<0}
+ ];
+ for(const plane of planes){
+  const {ctx,w,h}=prepCanvas($(plane.id));
+  const [width,height]=[v.shape[plane.u],v.shape[plane.vr]];
+  const [cw,ch]=[Math.min(256,width),Math.min(256,height)];
+  const img=ctx.createImageData(cw,ch);
+  const coords=[0,0,0];
+  coords[plane.fix]=Math.min(v.shape[plane.fix]-1,
+      Math.max(0,Math.round((v.shape[plane.fix]-1)*Number($('slicePosition').value)/100)));
+  for(let py=0;py<ch;py++)for(let px=0;px<cw;px++){
+    const uu=Math.min(width-1,Math.floor(px*width/cw));
+    const vv=Math.min(height-1,Math.floor((ch-1-py)*height/ch));
+    coords[plane.u]=plane.uflip?width-1-uu:uu;
+    coords[plane.vr]=plane.vflip?height-1-vv:vv;
+    const raw=sampleVolume(v,...coords),q=colorIntensity(raw),pos=4*(py*cw+px);
+    const isroi=state.mask&&state.mask.data[index3(state.mask.shape,...coords)]===Number($('roiLabel').value)&&Number($('roiLabel').value)>0;
+    img.data[pos]=isroi?235:q;
+    img.data[pos+1]=isroi?161:q;
+    img.data[pos+2]=isroi?80:q;
+    img.data[pos+3]=255;
+  }
+  const off=document.createElement('canvas');
+  off.width=cw;off.height=ch;
+  off.getContext('2d').putImageData(img,0,0);
+  ctx.imageSmoothingEnabled=true;
+  const factor=Math.min(w/cw,h/ch);
+  ctx.drawImage(off,(w-cw*factor)/2,(h-ch*factor)/2,cw*factor,ch*factor);
  }
- const off=document.createElement('canvas');off.width=cw;off.height=ch;off.getContext('2d').putImageData(img,0,0);ctx.imageSmoothingEnabled=true;
- const factor=Math.min(w/cw,h/ch),dw=cw*factor,dh=ch*factor;ctx.drawImage(off,(w-dw)/2,(h-dh)/2,dw,dh);
- }}
+}
 function recomputeSurface(){if(!state.volume)return;const v=state.volume,[nx,ny,nz]=v.shape,thr=Number($('surfaceThreshold').value)/100;let pts=[];
  const stride=Math.max(1,Math.ceil(Math.max(nx,ny,nz)/90));for(let z=1;z<nz-1;z+=stride)for(let y=1;y<ny-1;y+=stride)for(let x=1;x<nx-1;x+=stride){const val=sampleVolume(v,x,y,z);if(val<thr)continue;
  if(sampleVolume(v,x-1,y,z)>thr&&sampleVolume(v,x+1,y,z)>thr&&sampleVolume(v,x,y-1,z)>thr&&sampleVolume(v,x,y+1,z)>thr&&sampleVolume(v,x,y,z-1)>thr&&sampleVolume(v,x,y,z+1)>thr)continue;
@@ -88,7 +123,15 @@ function updateAnatomyMeta(){const v=state.volume;if(!v){$('anatomyStatus').text
 $('provAnatomy').textContent=`${v.source}; ${v.rawDims.join('×')} 原始尺寸；预览尺寸 ${v.shape.join('×')}；浏览器端加载，未上传。`;status(`已载入 ${v.source}
 Preview shape: ${v.shape.join('×')}
 Mode: ${state.mode}
-NO ONLINE MODEL INFERENCE · NOT COUPLED`);recomputeSurface();render()}
+NO ONLINE MODEL INFERENCE · NOT COUPLED`);recomputeSurface();
+ if(window.BrainMirror3D){
+  try{
+    const result=window.BrainMirror3D.loadVolume(v);
+    $('anatomySourceTag').textContent=v.kind.includes('group')?'IXI 467 · CONTINUOUS 3D · UNREVIEWED':'MRI-DERIVED 3D SURFACE';
+    $('anatomyInfo').textContent+=' 已从体素支持区域构建 '+result.polygons+' 个连续网格三角形。此表面不等于经 FreeSurfer 认证的皮层重建。';
+  }catch(e){status('3D 表面生成失败，已保留 MRI 原始切片：'+e.message,true);}
+ }
+ render()}
 async function importVolume(file){if(!file)return;state.anatomyBusy=true;status(`本地读取 ${file.name}，可能需要数秒…`);try{const v=await decodeFile(file);state.volume=v;state.mask=null;state.mode=(v.kind==='reference'||v.kind.includes('group'))?'template':'subject';syncMode();updateAnatomyMeta();}catch(e){status('导入失败：'+e.message,true)}finally{state.anatomyBusy=false}}
 async function importMask(file){if(!file)return;try{if(!state.volume)throw Error('请先加载 MRI');let v,labels;
  if(file.name.endsWith('.json')){const obj=JSON.parse(await file.text());v=decodePreview(obj);if(!obj.labels_b64)throw Error('缺少 labels_b64');const raw=b64bytes(obj.labels_b64),n=v.shape.reduce((a,b)=>a*b,1);
@@ -136,5 +179,12 @@ function events(){setupRotate('brainSpace','brain');setupRotate('networkSpace','
  $('exportBtn').onclick=()=>{if(!state.trace){status('无模型记录可导出',true);return}let data={schema:'brainmirror.web.v0.4.export',provenance:state.trace.provenance,anatomy_provenance:state.volume?{source:state.volume.source,kind:state.volume.kind,raw_dims:state.volume.rawDims,preview_shape:state.volume.shape,linked_to_model:false}:null,model_id:state.modelId,model_is_coupled_to_current_mri:false,trace_sha_prefix:state.trace.sha,frame:frame(),baseline:baseline(),selected_unit:nodeParts(state.node),selected_activation:frame().a[state.node],connection_weights:state.node===42?state.trace.weights:null,source_note:'Actual prerecorded PyTorch synthetic traces, NOT current MRI inference'};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='brainmirror-experiment-record.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
  document.querySelectorAll('[data-scroll]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.scroll)?.scrollIntoView({behavior:'smooth'}));window.addEventListener('resize',render);
 }
-async function init(){events();const response=await fetch('./trace.json',{cache:'no-store'});if(!response.ok)throw Error('Trace HTTP '+response.status);let d=await response.json();if(d.dataset!=='SYNTHETIC PHANTOM; NO REAL HUMAN MRI'||d.frames.length!==6||d.frames.some(f=>f.a.length!==512||f.inputs.length!==216)||d.weights.length!==216)throw Error('Trace source invalid');state.trace=d;$('provenanceModel').textContent=`${d.model}：${d.provenance.training_examples} 个合成样本，${d.provenance.epochs} epochs，seed ${d.provenance.seed}；无真实脑 MRI 权重。`;$('traceFingerprint').textContent='PyTorch trace prefix: '+d.sha;render();await loadIXIPopulation();}
+async function init(){events();const response=await fetch('./trace.json',{cache:'no-store'});if(!response.ok)throw Error('Trace HTTP '+response.status);let d=await response.json();if(d.dataset!=='SYNTHETIC PHANTOM; NO REAL HUMAN MRI'||d.frames.length!==6||d.frames.some(f=>f.a.length!==512||f.inputs.length!==216)||d.weights.length!==216)throw Error('Trace source invalid');state.trace=d;$('provenanceModel').textContent=`${d.model}：${d.provenance.training_examples} 个合成样本，${d.provenance.epochs} epochs，seed ${d.provenance.seed}；无真实脑 MRI 权重。`;$('traceFingerprint').textContent='PyTorch trace prefix: '+d.sha;render();
+ try{
+  const viewer=await import('./brain3d.js');
+  viewer.mount({container:$('brainSpace')});
+  window.BrainMirror3D=viewer;
+ }catch(e){status('连续 3D 渲染器启动失败：'+e.message+'；请检查网络是否允许加载 Three.js。',true)}
+ await loadIXIPopulation();
+}
 init().catch(e=>{status('模型记录无法加载：'+e.message,true);console.error(e)});
