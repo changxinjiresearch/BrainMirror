@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const state={trace:null,frame:0,node:42,brainYaw:0.5,brainPitch:-0.28,netYaw:0.6,netPitch:-0.18,brainScale:1,netScale:1,brainProjected:[],netProjected:[],error:null,mode:'template',volume:null,mask:null,surfacePoints:[],modelId:'brainae',anatomyBusy:false};
+const state={trace:null,frame:0,node:42,brainYaw:0.5,brainPitch:-0.28,netYaw:0.6,netPitch:-0.18,brainScale:1,netScale:1,brainProjected:[],netProjected:[],error:null,mode:'template',volume:null,mask:null,surfacePoints:[],modelId:'brainae',anatomyBusy:false,nativeAnatomy:false};
 const style={cyan:'#6de0d3',blue:'#66c7e7',orange:'#f5a46c',muted:'#7b9cb6'};
 const IXI_PUBLIC_URL='https://raw.githubusercontent.com/changxinjiresearch/BrainMirror/main/data/ixi_population_467.json';
 const IXI_PUBLIC_SHA256='36b25fbf1f6749b309cc93adc811ee2137fa83fdab89cf72ba87886e542cda21';
@@ -132,7 +132,58 @@ NO ONLINE MODEL INFERENCE · NOT COUPLED`);recomputeSurface();
   }catch(e){status('3D 表面生成失败，已保留 MRI 原始切片：'+e.message,true);}
  }
  render()}
-async function importVolume(file){if(!file)return;state.anatomyBusy=true;status(`本地读取 ${file.name}，可能需要数秒…`);try{const v=await decodeFile(file);state.volume=v;state.mask=null;state.mode=(v.kind==='reference'||v.kind.includes('group'))?'template':'subject';syncMode();updateAnatomyMeta();}catch(e){status('导入失败：'+e.message,true)}finally{state.anatomyBusy=false}}
+/* P5: Native individual high-resolution cortical reconstruction import. */
+async function importNativeAnatomy(file){
+ if(!file)return;
+ state.anatomyBusy=true;
+ status('正在本地解析 FreeSurfer 个体皮层网格；不会上传服务器…');
+ try{
+  if(!file.name.endsWith('.json')&&!file.name.endsWith('.json.gz'))throw Error('请选择原生重建导出的 .json 或 .json.gz');
+  if(file.size>110*1024*1024)throw Error('个体重建文件超过当前浏览器预设的 110 MB 上限');
+  let text;
+  if(file.name.endsWith('.gz')){
+   if(!('DecompressionStream' in window))throw Error('浏览器需要支持 gzip 解压');
+   const decompressed=new Response(file.stream().pipeThrough(new DecompressionStream('gzip')));
+   const buffer=await decompressed.arrayBuffer();
+   if(buffer.byteLength>175*1024*1024)throw Error('解压后的个体网格过大');
+   text=new TextDecoder().decode(buffer);
+  }else text=await file.text();
+  const obj=JSON.parse(text);
+  if(obj.schema!=='brainmirror.native-anatomy.v1'||obj.provenance?.source_kind!=='individual_native_surface')throw Error('文件不是 BrainMirror 原生皮层重建格式');
+  if(!window.BrainMirrorNative){
+   const viewer=await import('./native_anatomy.js');
+   viewer.mount($('brainSpace'));
+   window.BrainMirrorNative=viewer;
+  }
+  const result=window.BrainMirrorNative.loadNativePack(obj,({key,name,source})=>{
+   $('nativeRegion').value=key;
+   $('nativePicked').textContent='已选：'+name+' · '+source;
+  });
+  const select=$('nativeRegion');select.replaceChildren();
+  select.add(new Option('选择真实脑区（或点击 3D 表面）',''));
+  for(const h of result.hemispheres){
+   const group=document.createElement('optgroup');
+   group.label=h.hemi==='lh'?'左半球皮层 (FreeSurfer annotation)':'右半球皮层 (FreeSurfer annotation)';
+   for(let i=0;i<h.regions.length;i++)group.appendChild(new Option(h.regions[i],h.hemi+':'+i));
+   select.appendChild(group);
+  }
+  if(result.subcortical.length){
+   const group=document.createElement('optgroup');group.label='深部结构 (aseg)';
+   for(const region of result.subcortical)group.appendChild(new Option(region.name,region.key));
+   select.appendChild(group);
+  }
+  state.nativeAnatomy=true;state.mode='subject';syncMode();
+  $('anatomyStatus').textContent='个体皮层重建 · 私有本地';
+  $('anatomySourceTag').textContent='INDIVIDUAL NATIVE SURFACE · NOT IXI GROUP';
+  $('nativePicked').textContent='已读取两个真实皮层表面，可选择脑区；浏览器本地数据不上传。';
+  $('nativeAlignmentNote').textContent='注意：当前 3D 表面来自单名 IXI 受试者；下方切片仍来自 467 人群体平均 MRI。两者未配准，不能按图叠加或认为位置对应。';
+  $('provAnatomy').textContent='左侧主 3D：单名 IXI MRI 的 FreeSurfer/FastSurfer 原生皮层+注释（未独立复核）。下方切片：467 人群体均值。空间未配准，禁止一一对应。右侧模型未联动。';
+  window.BrainMirrorNative.show(true);
+  status('真实个体皮层导入成功：左右半球、真实注释与深部结构可选；科研审核仍待完成。');
+ }catch(e){status('精细脑表面导入失败：'+e.message,true)}
+ finally{state.anatomyBusy=false}
+}
+async function importVolume(file){if(!file)return;if(window.BrainMirrorNative)window.BrainMirrorNative.show(false);state.nativeAnatomy=false;state.anatomyBusy=true;status(`本地读取 ${file.name}，可能需要数秒…`);try{const v=await decodeFile(file);state.volume=v;state.mask=null;state.mode=(v.kind==='reference'||v.kind.includes('group'))?'template':'subject';syncMode();updateAnatomyMeta();}catch(e){status('导入失败：'+e.message,true)}finally{state.anatomyBusy=false}}
 async function importMask(file){if(!file)return;try{if(!state.volume)throw Error('请先加载 MRI');let v,labels;
  if(file.name.endsWith('.json')){const obj=JSON.parse(await file.text());v=decodePreview(obj);if(!obj.labels_b64)throw Error('缺少 labels_b64');const raw=b64bytes(obj.labels_b64),n=v.shape.reduce((a,b)=>a*b,1);
  if(obj.label_dtype==='uint16'){if(raw.length!==n*2)throw Error('标签长度不匹配');const view=new DataView(raw.buffer);labels=new Uint16Array(n);for(let i=0;i<n;i++)labels[i]=view.getUint16(i*2,true)}else{if(raw.length!==n)throw Error('标签长度不匹配');labels=raw;}}
@@ -159,7 +210,7 @@ async function loadIXIPopulation(){
      json.provenance.status!=='RESEARCH_CANDIDATE_UNREVIEWED'||json.provenance.license!=='CC BY-SA 3.0')throw Error('群体数据来源或验收状态不符合发布记录');
   const v=decodePreview(json);
   if(v.data.some(x=>!Number.isFinite(x)))throw Error('非有限体素');
-  state.volume=v;state.mask=null;state.mode='template';
+  if(window.BrainMirrorNative)window.BrainMirrorNative.show(false);state.nativeAnatomy=false;state.volume=v;state.mask=null;state.mode='template';
   syncMode();updateAnatomyMeta();
   status('已载入真实 IXI 467 人群体平均脑（研究候选版，未获独立解剖审核）');
  }catch(e){
@@ -174,8 +225,8 @@ try{const response=await fetch(TEMPLATE_URL,{mode:'cors'});if(!response.ok)throw
 function syncMode(){document.querySelectorAll('[data-brain-mode]').forEach(b=>b.classList.toggle('active',b.dataset.brainMode===state.mode));$('modeBadge').textContent=state.mode==='template'?'群体参考':state.mode==='subject'?'真实个体':'结构实验';}
 function events(){setupRotate('brainSpace','brain');setupRotate('networkSpace','net');$('strength').addEventListener('input',e=>{state.frame=Number(e.target.value);render()});$('viewMode').addEventListener('change',drawNetwork);$('prevBtn').onclick=()=>{state.frame=Math.max(0,state.frame-1);render()};$('nextBtn').onclick=()=>{state.frame=Math.min(5,state.frame+1);render()};
  $('modelSelect').onchange=e=>{state.modelId=e.target.value;render()};$('surfaceThreshold').oninput=e=>{$('thresholdDisplay').textContent=e.target.value+'%';recomputeSurface();drawBrain()};$('slicePosition').oninput=e=>{$('sliceLocation').textContent=e.target.value+'%';drawSlices()};$('roiLabel').oninput=()=>{recomputeSurface();drawBrain()};
- for(const button of document.querySelectorAll('[data-brain-mode]'))button.onclick=()=>{state.mode=button.dataset.brainMode;syncMode();if(state.mode==='experiment'&&!state.mask)status('结构实验模式已打开，但缺少经过空间核对的脑区标签；变形预览保持禁用。');};
- $('loadIXIBtn').onclick=loadIXIPopulation; $('loadTemplateBtn').onclick=loadReference;$('loadTemplateBtn2').onclick=loadReference;$('volumeFile').onchange=e=>importVolume(e.target.files?.[0]);$('maskFile').onchange=e=>importMask(e.target.files?.[0]);$('resetBrainBtn').onclick=()=>{state.brainYaw=.5;state.brainPitch=-.28;state.brainScale=1;if(window.BrainMirror3D)window.BrainMirror3D.resetView();drawBrain()};
+ for(const button of document.querySelectorAll('[data-brain-mode]'))button.onclick=()=>{state.mode=button.dataset.brainMode;const show=state.mode==='subject'&&state.nativeAnatomy;if(window.BrainMirrorNative)window.BrainMirrorNative.show(show);syncMode();if(state.mode==='experiment'&&!state.mask)status('结构实验模式已打开，但缺少经过空间核对的脑区标签；变形预览保持禁用。');};
+ $('loadIXIBtn').onclick=loadIXIPopulation; $('loadTemplateBtn').onclick=loadReference;$('loadTemplateBtn2').onclick=loadReference;$('volumeFile').onchange=e=>importVolume(e.target.files?.[0]);$('maskFile').onchange=e=>importMask(e.target.files?.[0]);$('nativeAnatomyFile').onchange=e=>importNativeAnatomy(e.target.files?.[0]);$('nativeRegion').onchange=e=>{window.BrainMirrorNative?.setSelection(e.target.value);$('nativePicked').textContent=e.target.options[e.target.selectedIndex]?.text||'未选择脑区'};$('nativeLeft').onchange=$('nativeRight').onchange=$('nativeDeep').onchange=()=>{window.BrainMirrorNative?.setVisibility({left:$('nativeLeft').checked,right:$('nativeRight').checked,deep:$('nativeDeep').checked})};$('resetBrainBtn').onclick=()=>{state.brainYaw=.5;state.brainPitch=-.28;state.brainScale=1;if(window.BrainMirror3D)window.BrainMirror3D.resetView();if(window.BrainMirrorNative&&state.nativeAnatomy&&state.mode==='subject')window.BrainMirrorNative.reset();drawBrain()};
  $('exportBtn').onclick=()=>{if(!state.trace){status('无模型记录可导出',true);return}let data={schema:'brainmirror.web.v0.4.export',provenance:state.trace.provenance,anatomy_provenance:state.volume?{source:state.volume.source,kind:state.volume.kind,raw_dims:state.volume.rawDims,preview_shape:state.volume.shape,linked_to_model:false}:null,model_id:state.modelId,model_is_coupled_to_current_mri:false,trace_sha_prefix:state.trace.sha,frame:frame(),baseline:baseline(),selected_unit:nodeParts(state.node),selected_activation:frame().a[state.node],connection_weights:state.node===42?state.trace.weights:null,source_note:'Actual prerecorded PyTorch synthetic traces, NOT current MRI inference'};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='brainmirror-experiment-record.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
  document.querySelectorAll('[data-scroll]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.scroll)?.scrollIntoView({behavior:'smooth'}));window.addEventListener('resize',render);
 }
