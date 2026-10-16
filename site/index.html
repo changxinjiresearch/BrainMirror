@@ -15,6 +15,21 @@
 <section class="panel visual"><div class="paneltitle"><div><span class="eyebrow">MODEL INTERNALS</span><h2>选定 AI 模型</h2></div><select class="viewselect" id="modelSelect" aria-label="模型选择"><option value="brainae">BrainAE · PyTorch 离线记录</option><option value="vae">3D VAE · 待训练</option><option value="mae">3D MAE · 待训练</option><option value="vit">3D ViT · 待训练</option></select></div><div class="model-legend"><span id="modelTrust">真实计算单元 · 来源为合成输入</span><select id="viewMode"><option value="delta">激活变化 Δ</option><option value="absolute">激活强度</option></select></div><div class="canvas-area" id="networkSpace"><canvas id="networkCanvas" aria-label="PyTorch BrainAE 实际卷积张量 512 个计算单元"></canvas><span class="canvas-top" id="networkCaption">CONV3 · 512 ACTUAL PYTORCH UNITS</span><span class="hint">点击节点选中 · 拖动旋转</span><div class="legend"><i></i>增强 <i class="orange"></i>降低</div><div class="empty-brain hidden" id="modelEmpty"><b>当前模型尚未接入</b><p>不会用 BrainAE 的神经元或连接冒充其他模型。需安装对应推理适配器并加载已核实权重。</p></div></div><p class="panelnote">网络坐标用于排布真实计算张量索引，并非神经元在人体大脑中的位置。无依据的跨层边不会被绘制。</p></section>
 </div>
 <div class="panel anatomy-tools" id="anatomytools"><div class="section-head"><div><span class="eyebrow">ANATOMY INPUT & REGIONS</span><h2>真实 MRI 导入与解剖操作</h2></div><span class="small-chip" id="modeBadge">群体参考</span></div>
+<section class="native-anatomy-tools" aria-label="MRI 精细皮层重建">
+<div class="native-header"><strong>真实高精度皮层及脑区</strong><span class="small-chip">NATIVE MRI · LOCAL ONLY · P5</span></div>
+<p class="tiny">需先从一名真实 IXI T1 运行 FreeSurfer/FastSurfer 分割与皮层表面重建。群体平均 MRI 不能恢复被平均掉的脑沟；此功能不生成虚假的皮层结构。</p>
+<div class="anatomy-forms">
+<div><label for="nativeAnatomyFile">导入私有皮层重建包 (.json.gz)</label><input type="file" id="nativeAnatomyFile" accept=".json,.gz,application/json,application/gzip"/><p class="tiny">在本地浏览器读取，不向网站服务器上传个体脑结构。</p></div>
+<div><label for="nativeRegion">真实解剖分区 · 点击脑区可高亮</label><select id="nativeRegion"><option value="">等待导入原生分割</option></select><p class="tiny" id="nativePicked">尚未载入任何个体皮层数据。</p></div>
+</div>
+<div class="native-visibility">
+<label><input id="nativeLeft" type="checkbox" checked/> 左半球</label>
+<label><input id="nativeRight" type="checkbox" checked/> 右半球</label>
+<label><input id="nativeDeep" type="checkbox"/> 显示 aseg 深部结构</label>
+</div>
+<p class="native-warning" id="nativeAlignmentNote">当前左侧默认仍为 IXI 467 人平均 MRI 的粗略群体外表面；个体精细脑沟、脑区与海马体等数据尚未导入。个体重建与群体均值不可默认空间对应。</p>
+<a target="_blank" rel="noopener" href="https://github.com/changxinjiresearch/BrainMirror/blob/phase/p5-cortical-reconstruction/docs/P5_NATIVE_RECONSTRUCTION_zh.md">查看真实 FreeSurfer/FastSurfer 皮层重建指南 ↗</a>
+</section>
 <div class="anatomy-forms"><div><label>标准模板 / 个体 NIfTI（仅在本地浏览器中读取）</label><input type="file" id="volumeFile" accept=".nii,.nii.gz,.json,application/json"><p class="tiny">支持 NIfTI-1（.nii/.nii.gz）及审核过的 BrainMirror preview JSON。无文件上传请求。</p></div><div><label>可选解剖标签图（需匹配空间）</label><input type="file" id="maskFile" accept=".nii,.nii.gz,.json,application/json"><p class="tiny">脑区掩膜仅用于左侧定位；不赋予右侧 AI 单元医学语义。</p></div><div><label>当前 Label ID（0 表示未选）</label><input id="roiLabel" type="number" min="0" step="1" value="0"><p id="roiStatus" class="tiny">尚未导入解剖标签。</p></div><div><label>备用体素点云阈值（百分位） <strong id="thresholdDisplay">65%</strong></label><input id="surfaceThreshold" type="range" min="20" max="92" step="1" value="65"><p class="tiny">仅控制旧版备用点云；默认连续 3D 表面源于真实 MRI 脑组织支持范围，不修改原始体素或 AI 输入。</p></div></div>
 <div class="anatomy-forms secondary-tools"><div><label>切片位置 <strong id="sliceLocation">50%</strong></label><input id="slicePosition" type="range" min="10" max="90" value="50"></div><div><label>区域形变预览</label><input id="editStrength" type="range" min="0" max="20" step="1" value="0" disabled><p class="tiny">需通过空间几何与医学合理性校验后启用，禁止假装修改了模型输入。</p></div><div><button id="loadTemplateBtn2" class="outline">载入 MNI152 外部参考</button><p class="tiny">MNI152 只做界面/解剖参考，绝非 IXI 群体融合结果。</p></div><div><button id="resetBrainBtn" class="outline">重置三维视角</button></div></div>
 <div class="anatomy-receipt" id="anatomyReceipt">等待 MRI 数据。浏览器不会将扫描文件传到本站服务器。</div></div>
