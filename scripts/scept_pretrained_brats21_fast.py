@@ -66,7 +66,14 @@ def main():
     model=build_monai_model(in_channels=4,out_channels=3,feature_size=48,
             depths=(2,2,2,2),num_heads=(3,6,12,24),window_size=7,
             norm_name="instance",use_checkpoint=False)
-    obj=torch.load(weights,map_location="cpu",weights_only=True)
+    # This official 2022 MONAI artifact contains NumPy scalar metadata that
+    # PyTorch's restricted weights_only unpickler cannot deserialize.
+    # Explicit pickle loading is safe ONLY when this fixed official GitHub
+    # release asset is trusted; never use this loader for arbitrary uploads.
+    if weights.resolve() != Path("/kaggle/working/scept_official_model/official_fold1_model.pt").resolve():
+        raise RuntimeError("Refusing legacy pickle from a non-official checkpoint path")
+    print("Loading trusted official MONAI legacy checkpoint (weights_only=False)",flush=True)
+    obj=torch.load(weights,map_location="cpu",weights_only=False)
     state=obj["state_dict"]
     if all(k.startswith("module.") for k in state):state={k[7:]:v for k,v in state.items()}
     model.load_state_dict(state,strict=True) # MUST NOT silently use random weights
