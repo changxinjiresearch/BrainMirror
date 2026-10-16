@@ -1,0 +1,444 @@
+{
+  "method": "SCCA",
+  "version": "0.6-swin-multiblock",
+  "model": "executed_3d_window_shifted_window_two_scale_model_NOT_MONAI_SWINUNETR",
+  "status": "unresolved_or_conflicting_references",
+  "execution": "deterministic_VIB_mu",
+  "source_voxels": 216,
+  "target_voxels": 216,
+  "target_channel": 2,
+  "main_input_effect": -0.005716919898986816,
+  "reference_primary": "blur",
+  "reference_reserved": "outside_mean",
+  "candidate_screening": "per-layer linearized output-gradient, NOT causal effect",
+  "path_semantics": "selected_attention_atom_at_each_block_merge_spatialVIB_decoder_frozen_fine_skip",
+  "clinical_reference_validity": "NOT_ASSESSED_synthetic_diagnostic_references",
+  "independent_patient_validation": false,
+  "config": {
+    "primary_reference": "blur",
+    "reserved_reference": "outside_mean",
+    "beam_width": 3,
+    "max_source_tokens": 3,
+    "per_state_proposals": 8,
+    "max_exact_paths": 8,
+    "validate_top": 3,
+    "min_input_effect": 1e-10,
+    "min_source_amplitude": 1e-11,
+    "min_proxy": 1e-14,
+    "min_supported_fraction": 0.01,
+    "off_target_weight": 0.1,
+    "modes": [
+      "weighted_value",
+      "logit"
+    ]
+  },
+  "source_candidates": [
+    {
+      "token": 283,
+      "zyx": [
+        4,
+        3,
+        3
+      ],
+      "proxy": 0.002262551337480545
+    },
+    {
+      "token": 153,
+      "zyx": [
+        2,
+        3,
+        1
+      ],
+      "proxy": 0.002102050930261612
+    },
+    {
+      "token": 282,
+      "zyx": [
+        4,
+        3,
+        2
+      ],
+      "proxy": 0.0016705564921721816
+    }
+  ],
+  "screened_atomic_count": 136224,
+  "exact_tested_count": 3,
+  "candidates": [
+    {
+      "source_fine_token": 153,
+      "fine_atoms": [
+        {
+          "stage": "fine",
+          "layer": 0,
+          "window": 20,
+          "head": 2,
+          "query": 209,
+          "key": 153,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "fine",
+          "layer": 1,
+          "window": 16,
+          "head": 0,
+          "query": 274,
+          "key": 209,
+          "mode": "weighted_value"
+        }
+      ],
+      "coarse_atoms": [
+        {
+          "stage": "coarse",
+          "layer": 0,
+          "window": 4,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "coarse",
+          "layer": 1,
+          "window": 0,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        }
+      ],
+      "proxy_abs": 4.855088553412656e-10,
+      "restoration": 0.0,
+      "disruption": 0.0,
+      "off_target_mean_abs": 8.065061812834173e-11,
+      "objective": 2.0000000014107355,
+      "direction_aligned": false,
+      "input_effect": -0.005716919898986816
+    },
+    {
+      "source_fine_token": 153,
+      "fine_atoms": [
+        {
+          "stage": "fine",
+          "layer": 0,
+          "window": 20,
+          "head": 2,
+          "query": 209,
+          "key": 153,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "fine",
+          "layer": 1,
+          "window": 16,
+          "head": 0,
+          "query": 274,
+          "key": 209,
+          "mode": "weighted_value"
+        }
+      ],
+      "coarse_atoms": [
+        {
+          "stage": "coarse",
+          "layer": 0,
+          "window": 4,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "coarse",
+          "layer": 1,
+          "window": 0,
+          "head": 2,
+          "query": 41,
+          "key": 37,
+          "mode": "weighted_value"
+        }
+      ],
+      "proxy_abs": 5.107344547283788e-10,
+      "restoration": 0.0,
+      "disruption": 0.0,
+      "off_target_mean_abs": 2.371512153320765e-10,
+      "objective": 2.000000004148234,
+      "direction_aligned": false,
+      "input_effect": -0.005716919898986816
+    },
+    {
+      "source_fine_token": 153,
+      "fine_atoms": [
+        {
+          "stage": "fine",
+          "layer": 0,
+          "window": 20,
+          "head": 2,
+          "query": 209,
+          "key": 153,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "fine",
+          "layer": 1,
+          "window": 16,
+          "head": 0,
+          "query": 274,
+          "key": 209,
+          "mode": "weighted_value"
+        }
+      ],
+      "coarse_atoms": [
+        {
+          "stage": "coarse",
+          "layer": 0,
+          "window": 4,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "coarse",
+          "layer": 1,
+          "window": 0,
+          "head": 2,
+          "query": 26,
+          "key": 37,
+          "mode": "weighted_value"
+        }
+      ],
+      "proxy_abs": 4.932136365987105e-10,
+      "restoration": 0.0,
+      "disruption": 0.0,
+      "off_target_mean_abs": 4.013328280816353e-10,
+      "objective": 2.000000007020088,
+      "direction_aligned": false,
+      "input_effect": -0.005716919898986816
+    }
+  ],
+  "reserved_validation": [
+    {
+      "source_fine_token": 153,
+      "fine_atoms": [
+        {
+          "stage": "fine",
+          "layer": 0,
+          "window": 20,
+          "head": 2,
+          "query": 209,
+          "key": 153,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "fine",
+          "layer": 1,
+          "window": 16,
+          "head": 0,
+          "query": 274,
+          "key": 209,
+          "mode": "weighted_value"
+        }
+      ],
+      "coarse_atoms": [
+        {
+          "stage": "coarse",
+          "layer": 0,
+          "window": 4,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "coarse",
+          "layer": 1,
+          "window": 0,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        }
+      ],
+      "restoration": 0.0,
+      "disruption": 0.0,
+      "relative_min_effect": 0.0,
+      "cross_reference_direction_supported": false
+    },
+    {
+      "source_fine_token": 153,
+      "fine_atoms": [
+        {
+          "stage": "fine",
+          "layer": 0,
+          "window": 20,
+          "head": 2,
+          "query": 209,
+          "key": 153,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "fine",
+          "layer": 1,
+          "window": 16,
+          "head": 0,
+          "query": 274,
+          "key": 209,
+          "mode": "weighted_value"
+        }
+      ],
+      "coarse_atoms": [
+        {
+          "stage": "coarse",
+          "layer": 0,
+          "window": 4,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "coarse",
+          "layer": 1,
+          "window": 0,
+          "head": 2,
+          "query": 41,
+          "key": 37,
+          "mode": "weighted_value"
+        }
+      ],
+      "restoration": 0.0,
+      "disruption": 0.0,
+      "relative_min_effect": 0.0,
+      "cross_reference_direction_supported": false
+    },
+    {
+      "source_fine_token": 153,
+      "fine_atoms": [
+        {
+          "stage": "fine",
+          "layer": 0,
+          "window": 20,
+          "head": 2,
+          "query": 209,
+          "key": 153,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "fine",
+          "layer": 1,
+          "window": 16,
+          "head": 0,
+          "query": 274,
+          "key": 209,
+          "mode": "weighted_value"
+        }
+      ],
+      "coarse_atoms": [
+        {
+          "stage": "coarse",
+          "layer": 0,
+          "window": 4,
+          "head": 1,
+          "query": 37,
+          "key": 37,
+          "mode": "weighted_value"
+        },
+        {
+          "stage": "coarse",
+          "layer": 1,
+          "window": 0,
+          "head": 2,
+          "query": 26,
+          "key": 37,
+          "mode": "weighted_value"
+        }
+      ],
+      "restoration": 0.0,
+      "disruption": 0.0,
+      "relative_min_effect": 0.0,
+      "cross_reference_direction_supported": false
+    }
+  ],
+  "best": {
+    "source_fine_token": 153,
+    "fine_atoms": [
+      {
+        "stage": "fine",
+        "layer": 0,
+        "window": 20,
+        "head": 2,
+        "query": 209,
+        "key": 153,
+        "mode": "weighted_value"
+      },
+      {
+        "stage": "fine",
+        "layer": 1,
+        "window": 16,
+        "head": 0,
+        "query": 274,
+        "key": 209,
+        "mode": "weighted_value"
+      }
+    ],
+    "coarse_atoms": [
+      {
+        "stage": "coarse",
+        "layer": 0,
+        "window": 4,
+        "head": 1,
+        "query": 37,
+        "key": 37,
+        "mode": "weighted_value"
+      },
+      {
+        "stage": "coarse",
+        "layer": 1,
+        "window": 0,
+        "head": 1,
+        "query": 37,
+        "key": 37,
+        "mode": "weighted_value"
+      }
+    ],
+    "proxy_abs": 4.855088553412656e-10,
+    "restoration": 0.0,
+    "disruption": 0.0,
+    "off_target_mean_abs": 8.065061812834173e-11,
+    "objective": 2.0000000014107355,
+    "direction_aligned": false,
+    "input_effect": -0.005716919898986816
+  },
+  "reserved_input_effect": 0.017635703086853027,
+  "provenance": {
+    "seed": 260616,
+    "pytorch": "2.10.0+cpu",
+    "weights_sha256": "3116f61f7aee25b27dafa788467ea2c2f0758c2a11e837b1ae5ef0548d06f898",
+    "data_kind": "fully_synthetic_not_medical",
+    "signal": "constructed_nonmedical_channel1_ROI_intensity",
+    "model_training": "random_initialized_untrained",
+    "artifact_kind": "engineering_numeric_smoke"
+  },
+  "topology_summary": {
+    "fine_grid": [
+      8,
+      8,
+      8
+    ],
+    "coarse_grid": [
+      4,
+      4,
+      4
+    ],
+    "fine_shifts": [
+      0,
+      1
+    ],
+    "coarse_shifts": [
+      0,
+      1
+    ],
+    "attention_edges_including_heads": 22704,
+    "patch_merge_links": 512,
+    "skip_bypasses_VIB": true
+  }
+}

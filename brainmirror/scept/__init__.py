@@ -29,3 +29,10 @@ from .multiscale import (MultiScaleTransformerVIB3D, CrossScaleSite,
 # discovery. Diagnostic references only; NO held-out patients or clinical claims.
 from .auto_discovery import (AutoDiscoveryConfig, discover_scca_multiscale,
                              reference_from_region)
+
+# v0.6: executable shifted-window Swin-style stages and bounded multi-block
+# ROI-conditioned path discovery. NOT a drop-in MONAI SwinUNETR adapter.
+from .swin3d import (WindowAttention3D, SwinBlock3D, MultiLayerSwinVIB3D,
+                     execution_topology)
+from .swin_discovery import (WindowAtom, SwinDiscoveryConfig,
+                             discover_scca_swin, execute_route, validate_fixed_route)
