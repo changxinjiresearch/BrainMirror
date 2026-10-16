@@ -41,22 +41,42 @@ function inspect(arrayBuffer){
   });
   return{name,op,inputs,outputs};
  }
+
+ function valueInfo(span){
+  let name='',tt=null,shape=[];
+  entries(...span,(f,w,v)=>{
+   if(f===1&&w===2)name=str(v);
+   if(f===2&&w===2){entries(...v,(tf,tw,tv)=>{
+    if(tf!==1||tw!==2)return;
+    entries(...tv,(ff,fw,fv)=>{
+     if(ff===1&&fw===0)tt=fv;
+     if(ff===2&&fw===2)entries(...fv,(sf,sw,sv)=>{
+      if(sf!==1||sw!==2)return;
+      let dimension=null;
+      entries(...sv,(df,dw,dv)=>{if(df===1&&dw===0)dimension=dv;if(df===2&&dw===2)dimension=str(dv)});
+      shape.push(dimension??'?');
+     });
+    });
+   });}
+  });
+  return{name,shape,type:({1:'float32',10:'float16',7:'int64',6:'int32',11:'float64'})[tt]||'unknown'};
+ }
  let graph=null;
  entries(0,bytes.length,(f,w,v)=>{if(f===7&&w===2)graph=v;});
  if(!graph)throw Error('No ONNX graph found');
- const nodes=[],initializers=[],inputs=[],outputs=[];
+ const nodes=[],initializers=[],inputs=[],outputs=[],inputMetadata={},outputMetadata={};
  entries(...graph,(f,w,v)=>{
   if(w!==2)return;
   if(f===1){if(nodes.length<10000)nodes.push(decodeNode(v));}
   if(f===5){let name='';entries(...v,(sf,sw,sv)=>{if(sf===8&&sw===2)name=str(sv);});initializers.push(name);}
-  if(f===11||f===12){let name='';entries(...v,(sf,sw,sv)=>{if(sf===1&&sw===2)name=str(sv);});(f===11?inputs:outputs).push(name);}
+  if(f===11||f===12){const meta=valueInfo(v);(f===11?inputs:outputs).push(meta.name);(f===11?inputMetadata:outputMetadata)[meta.name]=meta;}
  });
  const producer=new Map(),edges=[];
  nodes.forEach((n,i)=>n.outputs.forEach(o=>producer.set(o,i)));
  nodes.forEach((n,i)=>n.inputs.forEach(inp=>{
   const p=producer.get(inp);if(p!==undefined&&p!==i)edges.push({from:p,to:i,tensor:inp});
  }));
- return {nodes,edges,initializers,inputs,outputs,totalNodes:nodes.length,exceedsNodeLimit:nodes.length===10000};
+ return {nodes,edges,initializers,inputs,outputs,inputMetadata,outputMetadata,totalNodes:nodes.length,exceedsNodeLimit:nodes.length===10000};
 }
 window.SCEPT_INSPECT_ONNX=inspect;
 })();
