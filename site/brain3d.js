@@ -220,3 +220,10 @@ export function loadVolume(volume) {
   redraw();
   return {polygons,origin:'real-ixi-group-volume',reviewed:false};
 }
+
+export function resetView(){
+ if(!camera||!group)return;
+ group.rotation.set(0,0,0);zoom=1;
+ camera.position.set(naturalDistance*.68,-naturalDistance*.74,naturalDistance*.40);
+ camera.position.setLength(naturalDistance);camera.lookAt(0,0,0);redraw();
+}
