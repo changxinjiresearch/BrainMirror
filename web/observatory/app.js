@@ -206,7 +206,7 @@ async function loadNifti(file){
 function updateViewer(){
  const volume=S.mri,has=!!volume;
  $('mriEmpty').style.display=has?'none':'flex';
- $('mriTag').textContent=has?'真实 MRI · 本地':'未导入影像';
+ $('mriTag').textContent=has?'真实 MRI · 未配对实验':'未导入影像';
  $('mriFilename').textContent=has?volume.name+' · '+volume.dims.join('×'):'等待导入真实 .nii/.nii.gz';
  $('viewKind').textContent=S.renderMode==='slice'?'AXIAL':'3D VOXEL PROJECTION';
  $('sliceSlider').disabled=!has;
@@ -294,7 +294,7 @@ async function importMRI(file,isMask=false){
    S.mri=image;S.mask=null;S.pointCloud=null;S.slice=Math.floor(image.dims[2]/2);
    event('导入 MRI',image.dims.join('×'),file.name);
   }
-  updateViewer();notice('真实 NIfTI 已载入浏览器内存，没有自动发送至服务器。');
+  updateViewer();notice('真实 NIfTI 已在浏览器中载入；尚未证明它与当前实验记录属于同一患者。数据未自动上传。');
  }catch(ex){notice('NIfTI 导入失败：'+ex.message,true)}
  finally{$(isMask?'maskInput':'mriInput').value=''}
 }
