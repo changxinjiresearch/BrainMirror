@@ -7,10 +7,10 @@ def test_official_modalities_and_output_labels():
     assert PREDICTED==("TC","WT","ET")
 
 def test_nonzero_channelwise_zscore():
-    x=np.zeros((4,4,4),np.float32)
-    x[:,:,:2]=np.arange(32).reshape(4,4,2)+1
+    x=np.zeros((6,6,6),np.float32)
+    x[:,:,:3]=np.arange(108).reshape(6,6,3)+1
     y=normalize(x)
-    assert not y[:,:,2:].any()
+    assert not y[:,:,3:].any()
     assert np.mean(y[x!=0])==pytest.approx(0,abs=1e-6)
     assert np.std(y[x!=0])==pytest.approx(1,abs=1e-6)
-    with pytest.raises(ValueError):normalize(np.zeros((4,4,4),np.float32))
+    with pytest.raises(ValueError):normalize(np.zeros((6,6,6),np.float32))
