@@ -27,3 +27,9 @@ def test_safe_private_release_and_reproducible_train_split():
     assert '"PRIVATE_p5_seg_receipt.json"' in CODE
     assert '"PRIVATE_p5_aparc_DKTatlas_aseg_deep.mgz"' in CODE
     assert 'FreeSurfer license' not in CODE.split('def backup_segmentation')[1].split('def main')[0]
+
+
+def test_restore_on_gpu_session_reset_uses_real_legacy_helper():
+    assert 'backup=WORK/"ixi_github_backup.py"' in CODE
+    assert 'backup=fetch("ixi_github_backup.py")' not in CODE
+    assert 'ddd904035c91bffad459db28ef15495789349dc6' in CODE
