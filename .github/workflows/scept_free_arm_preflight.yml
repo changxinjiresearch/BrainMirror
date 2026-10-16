@@ -1,0 +1,28 @@
+name: Zero-cost ARM CPU Compatibility Preflight
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  arm:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install verified CPU PyTorch and MONAI
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.6.0+cpu'
+          python -m pip install -r services/scept_live/requirements.txt pytest
+      - name: Real attention adapter import and medical-free security tests
+        run: |
+          python -m compileall -q services/scept_live
+          python -m pytest -q tests/test_scept_live_api.py
+          python - <<'PY'
+          import platform, torch, monai
+          print({'arch':platform.machine(),'torch':torch.__version__,'monai':monai.__version__,'cuda':torch.cuda.is_available()})
+          assert platform.machine()=='aarch64'
+          assert not torch.cuda.is_available()
+          PY
