@@ -1,3 +1,13 @@
+## SCEPT Browser Studio (separate from model training)
+
+**Online research studio:** https://scept-studio-brainmirror.vercel.app  
+**Source:** [scept-studio/](scept-studio/)  
+**Audit:** [SCEPT v1.1 engineering gates](docs/SCEPT_BROWSER_STUDIO_V1.md)
+
+SCEPT now has its own browser-first, frozen-pretrained-model interface. It is designed for ONNX model import, real CPU/WebAssembly inference, visible exported internal tensors, paired numeric interventions, audit traces and local data handling. This **does not mean universal model compatibility or scientific validity is complete**. I-JEPA is deferred. The original BrainMirror P0 training-first documents below refer to the separate legacy MRI learning research.
+
+---
+
 # BrainMirror — AI Black Box Observatory
 
 **交互式神经网络机制观测研究平台**：训练模型学习真实正常脑 MRI，左侧修改三维脑结构，右侧直接查看**真实计算单元、真实连接、激活和干预效应**。目的是形成可检验的 AI 内部计算机制假设，而非播放动画或模拟生物神经电活动。
