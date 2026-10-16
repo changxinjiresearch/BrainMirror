@@ -258,6 +258,15 @@ function historyItem(r){const elx=document.createElement('div');elx.className='h
  title.textContent=r.model.name;small.textContent=new Date(r.timestamp).toLocaleString()+' · '+r.mode+' · '+r.run_id.slice(0,8);info.append(title,small);btn.textContent='载入记录';btn.addEventListener('click',async()=>{const stored=await dbOperation('get',r.run_id);if(stored?.tensors){lastRecord=stored;setOutputOptions(stored);el('evidencePill').textContent='STORED TRACE';notice('已打开保存的运行结果 '+r.run_id)}else notice('记录数据不可用，请重新执行实验。',true)});
  elx.append(info,btn);return elx}
 function renderHistory(){const host=el('historyList');host.innerHTML='';if(!history.length){host.textContent='尚无运行记录。';return}for(const r of history.slice(0,20))host.append(historyItem(r))}
+el('traceImport').addEventListener('change',async e=>{
+ try{const file=e.target.files?.[0];if(!file)return;if(file.size>35000000)throw Error('Trace JSON 超过 35 MB；请使用更小的审计导出');
+  const r=JSON.parse(await file.text());if(r.schema!=='scept.trace.v1'||!r.run_id||!r.model||!r.tensors)throw Error('只接受 scept.trace.v1 格式');
+  for(const t of Object.values(r.tensors)){if(!Array.isArray(t.before)||!Array.isArray(t.after)||t.before.length!==t.after.length)throw Error('Trace 张量结构不合法')}
+  lastRecord=r;setOutputOptions(r);el('evidencePill').textContent='IMPORTED · UNVERIFIED';
+  el('downloadJson').disabled=false;el('downloadCsv').disabled=false;
+  await saveRun(r);notice('已导入本机 Trace。导入记录尚未通过独立真实性验证：'+r.run_id);
+ }catch(err){notice('导入失败：'+err.message,true)}
+});
 el('clearHistory').addEventListener('click',async()=>{if(!confirm('确定清空此设备保存的 SCEPT 实验记录吗？'))return;await dbOperation('clear');history=[];renderHistory();notice('本机记录已清空')});
 async function readHistory(){const all=await dbOperation('read');history=all.map(x=>({run_id:x.run_id,model:x.model,timestamp:x.timestamp,mode:x.mode})).sort((a,b)=>b.timestamp.localeCompare(a.timestamp));renderHistory()}
 async function saveRun(r){await dbOperation('put',r);history.unshift({run_id:r.run_id,model:r.model,timestamp:r.timestamp,mode:r.mode});history=history.slice(0,20);renderHistory()}
@@ -277,8 +286,9 @@ async function execute(){
  notice('执行干预前向传播（真实 ONNX）…');
  const a=await runOnce(lib,edited,shape,selectedMask,true);
  const outputNames=Object.keys(b.outputs);if(outputNames.join(',')!==Object.keys(a.outputs).join(','))throw Error('两个运行的输出结构不一致');
- const tensors={},fingerprints={};
+ const tensors={},fingerprints={},fullStats={};
  for(const key of outputNames){const tb=b.outputs[key],ta=a.outputs[key];if(tb.values.length!==ta.values.length)throw Error('输出张量维度不一致：'+key);
+  fullStats[key]=stats(tb.values,ta.values);
   const cap=2000000,trimmed=tb.values.length>cap;
   const valBefore=tb.values.slice(0,cap),valAfter=ta.values.slice(0,cap);
   tensors[key]={dims:tb.dims,type:tb.type,before:valBefore,after:valAfter,complete:!trimmed,original_length:tb.values.length};
@@ -286,7 +296,7 @@ async function execute(){
  }
  const source={kind:sourceMode,filename:sourceMode==='mri'?sourceVolume?.filename:sourceMode==='tensor'?sourceTensor?.filename:null,warning:sourceMode==='mri'?sourceVolume?.affineWarning:null};
  const inputSha=await hashFloat(original),editedSha=await hashFloat(edited),runId=crypto.randomUUID();
- const changed=Object.fromEntries(Object.entries(tensors).map(([k,v])=>[k,stats(v.before,v.after)]));
+ const changed=fullStats;
  const r={schema:'scept.trace.v1',run_id:runId,timestamp:new Date().toISOString(),runtime:'onnxruntime-web@'+ORT_VERSION,
   execution_provider_requested:el('webgpu').checked?'webgpu':'wasm',execution_provider_session:actualProvider,location:'local browser',scientific_validation:'NOT_PERFORMED',
   evidence_level:selectedMask?'L1_NUMERIC_INTERNAL_INTERVENTION':'L1_NUMERIC_INPUT_PERTURBATION',
