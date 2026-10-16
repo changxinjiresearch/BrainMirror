@@ -6,7 +6,7 @@ const page = await browser.newPage({viewport:{width:1440,height:960}});
 const jsErrors=[];
 page.on('pageerror', err=>jsErrors.push(err.message));
 page.on('console', msg=>{if(msg.type()==='error') console.log('Browser console:',msg.text())});
-const base='http://127.0.0.1:8999/';
+const base=process.env.SCEPT_BASE_URL || 'http://127.0.0.1:8999/';
 try{
   await page.goto(base,{waitUntil:'domcontentloaded'});
   assert.equal(await page.title(),'SCEPT Studio · BrainMirror');
