@@ -7,7 +7,7 @@ const {createHash}=require('node:crypto');
 const assert=require('node:assert/strict');
 
 const sources=[
- {name:'ViT tiny (pretrained transformer)',url:'https://huggingface.co/onnx-community/vit-tiny-patch16-224-ONNX/resolve/ebffd7b9c0c53b51bada44116abd8f01aed41be6/onnx/model_int8.onnx',sha:'f6e708134eeacd8adb7237777731bd6fd9e004979867b85a6f799c5bd6482d68'},
+ {name:'ViT tiny float32 (pretrained transformer)',url:'https://huggingface.co/onnx-community/vit-tiny-patch16-224-ONNX/resolve/ebffd7b9c0c53b51bada44116abd8f01aed41be6/onnx/model.onnx',sha:'32f1cf3b4868cc44757814cbf6237ae5a3658a45980bf0fe93914dca77b815e3'},
  {name:'SqueezeNet (pretrained CNN)',url:'https://huggingface.co/onnxmodelzoo/squeezenet1.1-7/resolve/main/squeezenet1.1-7.onnx',sha:'1eeff551a67ae8d565ca33b572fc4b66e3ef357b0eb2863bb9ff47a918cc4088'}
 ];
 async function testModel(page,model){
