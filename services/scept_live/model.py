@@ -91,6 +91,23 @@ def screen(model,x,ref,roi,site):
             if len(choices)>4000:break
         return sorted(choices,key=lambda pair:-pair[0])[:2]
 
+def pack_axial_prediction(prob, crop):
+    """Compress one measured full-resolution 64x64 output slice, never raw MRI."""
+    import base64
+    if tuple(prob.shape)!=(1,3,64,64,64):
+        raise ValueError("Unexpected pretrained tensor output")
+    # Official channel order TC, WT, ET. Each 64x64 tile uses x-major 2D bytes.
+    tiles={}
+    for i,name in enumerate(("tc","wt","et")):
+        image=(prob[0,i,:,:,32]>0.5).to(dtype=torch.uint8).cpu().numpy()
+        tiles[name]=base64.b64encode(image.tobytes(order="C")).decode("ascii")
+    return {"kind":"measured_model_prediction_axial_mask",
+            "patch_start":crop["start"],"full_z":int(crop["start"][2])+32,
+            "tile_width":64,"tile_height":64,"order":"x_major_y_minor",
+            "mask_base64":tiles,
+            "warning":"Local patch model output; not ground truth and not full MRI segmentation"}
+
+
 def run(paths,progress=lambda _:None):
     import time
     begin=time.monotonic()
@@ -111,6 +128,7 @@ def run(paths,progress=lambda _:None):
             roi=wt>=torch.quantile(wt.float().flatten(),0.99)
             roi_policy="top_1_percent_WT_probability_low_confidence"
         summary={name:float(prob[0,i].mean()) for i,name in enumerate(("TC","WT","ET"))}
+        preview=pack_axial_prediction(prob,crop)
         ref,qc=region_reference(x,roi,policy="tissue_median")
     progress("screening_actual_attention_messages")
     obs=MonaiSwinObserver(model)
@@ -131,6 +149,7 @@ def run(paths,progress=lambda _:None):
         "model_outputs":["TC","WT","ET"],
         "cropping":crop,"roi_policy":roi_policy,"roi_voxels":int(roi.sum()),
         "mean_region_probability":summary,
+        "prediction_overlay":preview,
         "scept_single_atom_intervention":best["effect"] if best else None,
         "screening_magnitude":best["screening_magnitude"] if best else None,
         "candidate_effects":attempts,
