@@ -36,3 +36,32 @@ jobs:
           if git ls-files scept-studio | grep -Ei '\.(nii|nii.gz|dcm|pt|pth|onnx|ort)$'; then
             echo 'Private model/medical file tracked in public SCEPT source'; exit 1
           fi
+
+  browser-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Serve browser app and run real pretrained model
+        run: |
+          python -m http.server 8999 --bind 127.0.0.1 --directory scept-studio > /tmp/scept-http.log 2>&1 &
+          node scept-studio/e2e.mjs
+      - name: Screenshot on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-browser-failure
+          path: scept-e2e-failure.png
+          if-no-files-found: ignore
