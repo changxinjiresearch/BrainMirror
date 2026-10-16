@@ -29,7 +29,8 @@ function sessionMetadata(name){return session&&session.inputMetadata&&session.in
 function baseInputName(){return el('inputName').value.trim()||session?.inputNames.find(n=>!n.includes('__scept_mask'))}
 function reportedShapes(){const first=baseInputName(),meta=sessionMetadata(first);const dimensions=meta?.dims||meta?.dimensions;if(Array.isArray(dimensions)&&dimensions.every(v=>Number.isInteger(v)&&v>0)){el('shape').value=dimensions.join(',');return dimensions}return null}
 function showModel(){el('modelName').textContent=modelName||'未选择模型';el('modelSha').textContent=modelHash?modelHash.slice(0,17)+'…':'—';el('modelSha').title=modelHash;el('modelIO').textContent=session?session.inputNames.length+' input / '+session.outputNames.length+' output':'—';el('runExperiment').disabled=!session}
-async function ensureOrt(){if(ort)return ort;notice('正在加载 ONNX Runtime Web (CPU/WASM)…');ort=await import(ORT_BASE+'esm/ort.min.js');ort.env.wasm.wasmPaths=ORT_BASE;ort.env.wasm.numThreads=1;return ort}
+function loadRuntimeScript(url){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=url;node.onload=()=>resolve();node.onerror=()=>reject(Error('无法加载 ONNX Runtime 库：'+url));document.head.appendChild(node)})}
+async function ensureOrt(){if(ort)return ort;notice('正在加载 ONNX Runtime Web (CPU/WASM)…');await loadRuntimeScript(ORT_BASE+'ort.min.js');if(!window.ort)throw Error('ONNX Runtime 未初始化');ort=window.ort;ort.env.wasm.wasmPaths=ORT_BASE;ort.env.wasm.numThreads=1;return ort}
 function metadataType(name){return sessionMetadata(name)?.type||'float32'}
 function bytesToTensorData(values,type){switch(type){case 'float64':return Float64Array.from(values);case 'int64':return BigInt64Array.from(values,v=>BigInt(Math.round(v)));case 'int32':return Int32Array.from(values);case 'uint8':return Uint8Array.from(values);case 'bool':return Uint8Array.from(values,v=>v?1:0);default:return Float32Array.from(values)}}
 async function setupModel(bytes,description,provenance,preset){
@@ -42,7 +43,9 @@ async function setupModel(bytes,description,provenance,preset){
  const webgpu=el('webgpu').checked;
  let newSession,provider='wasm';
  if(webgpu){try{
-  const gpuOrt=await import(ORT_BASE+'esm/ort.webgpu.min.js');
+  await loadRuntimeScript(ORT_BASE+'ort.webgpu.min.js');
+  const gpuOrt=window.ort;
+  if(!gpuOrt)throw Error('WebGPU runtime unavailable');
   gpuOrt.env.wasm.wasmPaths=ORT_BASE;
   newSession=await gpuOrt.InferenceSession.create(data,{executionProviders:['webgpu','wasm'],graphOptimizationLevel:'all'});
   ort=gpuOrt;provider='webgpu / wasm fallback';
