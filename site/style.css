@@ -6,3 +6,13 @@
 .canvas-area .brainmesh-canvas{z-index:3;touch-action:none}
 .canvas-area .canvas-top,.canvas-area .hint,.canvas-area .axes{z-index:4}
 .canvas-area .empty-brain{z-index:5}
+
+.native-anatomy-tools{border:1px solid #345c65;border-radius:10px;background:linear-gradient(140deg,#13313a,#132434);padding:16px;margin:16px 0;}
+.native-anatomy-tools .native-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.native-anatomy-tools .native-header strong{font-size:14px;color:#baf5eb}
+.native-anatomy-tools select{max-width:100%;width:100%;background:#102938;color:#ebf2fa}
+.native-anatomy-tools .native-visibility{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0;font-size:12px;color:#c5dce9}
+.native-anatomy-tools .native-visibility label{display:flex;align-items:center;gap:6px}
+.native-warning{border-left:3px solid #d9b56b;background:#3a30213d;padding:10px 12px;font-size:11px;line-height:1.5;color:#eed1a0}
+.native-anatomy-tools>a{font-size:11px;color:#85dfd5}
+.native-anatomy-tools input[type=file]{max-width:100%;font-size:12px;color:#d7e5ee}
