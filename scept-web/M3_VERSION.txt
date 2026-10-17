@@ -1,0 +1,7 @@
+SCEPT Universal Core V1
+Milestone: M3
+Release phase: engineering acceptance candidate
+Scope: U0-U9 real ONNX, plugin SDK, evidence audit, numerical replay, visual research workbench
+Version: 1.0.0
+Scientific claim: no causal, biological or clinical validity established
+Public deployment: separate GitHub Pages activation and successful publish required
