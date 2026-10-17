@@ -4,6 +4,10 @@ on:
     workflows: ["SCEPT Browser Engine Acceptance"]
     types: [completed]
     branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/scept-pages.yml"
 permissions:
   contents: read
   pages: write
@@ -14,6 +18,7 @@ concurrency:
 jobs:
   deploy:
     if: |
+      github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch == 'main'
@@ -70,4 +75,25 @@ jobs:
           PAGE_URL: ${{ steps.deploy.outputs.page_url }}
         run: |
           set -euo pipefail
-          curl --fail --location --retry 4 --retry-delay 2 --max-time 30 "${PAGE_URL%/}/universal.html" | grep -q 'SCEPT Universal Core'
+          curl --fail --location --retry 4 --retry-delay 2 --max-time 30 \
+            --output "$RUNNER_TEMP/scept-public-universal.html" \
+            "${PAGE_URL%/}/universal.html"
+          grep --fixed-strings --quiet 'SCEPT Universal Core' "$RUNNER_TEMP/scept-public-universal.html"
+          echo "PASS actual public Universal Core page downloaded entirely and title matched"
+
+  verify-public-on-workflow-fix:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Verify existing deployed U11 workbench with complete HTTP transfer, no broken pipe
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --retry-delay 2 --max-time 30 \
+            --output "$RUNNER_TEMP/scept-public-universal.html" \
+            "https://changxinjiresearch.github.io/BrainMirror/universal.html"
+          grep --fixed-strings --quiet 'SCEPT Universal Core' "$RUNNER_TEMP/scept-public-universal.html"
+          grep --fixed-strings --quiet 'M4 尚未通过' "$RUNNER_TEMP/scept-public-universal.html"
+          echo "PASS live U11 scientific status is truthful and publicly reachable"
