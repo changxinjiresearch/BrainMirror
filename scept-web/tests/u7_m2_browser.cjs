@@ -71,6 +71,48 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU7Snapshot().completed===3,null,{timeout:75000});
   const replay=await page.evaluate(()=>SCEPT_UNIVERSAL.getU7Evidence());
   assert.deepEqual(evidence.tasks.map(t=>t.target),replay.tasks.map(t=>t.target));
+  // M2 file import: a complete external JSON is loaded, registered, and executed
+  // without modifying universal.js or its HTML.
+  await page.locator('#u7ManifestFile').setInputFiles(path.join(__dirname,'..','plugins','m2_engineering_cnn.json'));
+  await page.waitForFunction(()=>document.querySelector('#u7Manifest').value.includes('"m2-engineering-cnn-demo"'),null,{timeout:15000});
+  await page.locator('#u7Register').click();
+  await page.locator('#u7Prepare').click();
+  await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU7Snapshot().pending===3||
+    document.querySelector('#u7Status').dataset.state==='error',null,{timeout:15000});
+  assert.equal((await page.evaluate(()=>SCEPT_UNIVERSAL.getU7Snapshot())).pending,3,
+    await page.locator('#u7Status').innerText());
+  await page.locator('#u7Run').click();
+  await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU7Snapshot().completed===3||
+    document.querySelector('#u7Status').dataset.state==='error',null,{timeout:75000});
+  const fileEvidence=await page.evaluate(()=>SCEPT_UNIVERSAL.getU7Evidence());
+  assert.equal(fileEvidence.execution.completed,3,await page.locator('#u7Status').innerText());
+  assert.equal(fileEvidence.experiment.id,'m2-engineering-cnn-demo');
+  assert.equal(fileEvidence.provenance.modelSha256,snap.hash);
+
+  // M2 independent algorithm code: a new trusted extension file registers
+  // method and evaluator by public registry; core and universal.js unchanged.
+  await page.addScriptTag({url:'/plugins/m2_external_method_example.js'});
+  await page.evaluate(()=>SCEPT_RESEARCH_EXAMPLE.register(SCEPT_UNIVERSAL.xaiRegistry));
+  const addon={...manifest,id:'m2-addon-in-an-independent-js-file',
+   intervention:{pluginId:'u5.occlusion',mode:'ab',baseSeed:187,
+     config:{region,fill:0}},
+   method:{adapterId:'research.method.signed-double'},
+   evaluations:[{adapterId:'research.eval.signed-double-nonzero'}]};
+  await page.locator('#u7Manifest').fill(JSON.stringify(addon));
+  await page.locator('#u7Register').click();
+  await page.locator('#u7Prepare').click();
+  await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU7Snapshot().pending===1||
+    document.querySelector('#u7Status').dataset.state==='error',null,{timeout:15000});
+  assert.equal((await page.evaluate(()=>SCEPT_UNIVERSAL.getU7Snapshot())).pending,1,
+    await page.locator('#u7Status').innerText());
+  await page.locator('#u7Run').click();
+  await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU7Snapshot().completed===1||
+    document.querySelector('#u7Status').dataset.state==='error',null,{timeout:75000});
+  const addonEvidence=await page.evaluate(()=>SCEPT_UNIVERSAL.getU7Evidence());
+  assert.equal(addonEvidence.execution.completed,1,await page.locator('#u7Status').innerText());
+  assert.equal(addonEvidence.tasks[0].explanation.method,'signed-double');
+  assert.equal(addonEvidence.tasks[0].tests[0].plugin,'research.eval.signed-double-nonzero');
+
   // Test a second manifest derived from the same loader with no code modifications:
   // a sparse "lesion removal" hypothesis using an EXPLICIT synthetic tensor mask.
   const hash=await page.evaluate(async()=>SCEPT_CORE.sha256(Uint32Array.from([0,1])));
@@ -97,6 +139,6 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   assert.equal(lesionEvidence.claims.causal,'NOT_ESTABLISHED');
   assert.equal(errors.length,0,errors.join(' | '));
   await page.screenshot({path:'/tmp/scept-u7-m2-experiment.png',fullPage:true});
-  console.log('PASS M2 Chrome real ONNX: two new JSON experiment plugins executed without main edits, target/explanation/evaluation evidence, seeded replay, sparse lesion hypothesis fail-closed semantics');
+  console.log('PASS M2 Chrome real ONNX: new file-imported JSON and independent algorithm plugins executed without main edits, target/explanation/evaluation evidence, seeded replay, sparse lesion hypothesis fail-closed semantics');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
