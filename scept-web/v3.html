@@ -77,7 +77,12 @@
 </div>
 <div class="metric-row"><div><small>已观测中间层</small><strong id="metricLayers">—</strong></div><div><small>发生变化的数值</small><strong id="metricChanged">—</strong></div><div><small>当前层平均 |Δ|</small><strong id="metricMean">—</strong></div></div>
 <div class="layer-heading"><h3>多层内部激活差异</h3><label>查看层 <select id="layerSelect"><option>等待模型加载</option></select></label></div><div id="layerTable" class="layer-table"><div class="empty">运行实验后显示多个真实 Transformer 隐藏层的响应。</div></div>
-<div class="plotframe"><canvas id="responseChart" width="800" height="185"></canvas></div><div class="explain-box" id="interpretation">当前没有计算结果。改变 MRI 后点击「开始实验」，右侧将更新真实模型多层响应；不再仅显示一张固定网络图。</div>
+<div class="plotframe"><canvas id="responseChart" width="800" height="185"></canvas></div>
+<details class="extra-observations">
+ <summary>扩展真实观测点 · Patch Embedding / Query / Key / Attention / Residual <span id="extraProbeStatus">等待实际模型返回</span></summary>
+ <div id="extraProbeList">等待模型运行后核对原始 ONNX 输出。</div>
+ <p>这些是实际模型计算张量，不是模拟节点。Attention Softmax 数值本身不等于解释证据；不同张量的量纲和维度也不能直接比较。</p>
+</details><div class="explain-box" id="interpretation">当前没有计算结果。改变 MRI 后点击「开始实验」，右侧将更新真实模型多层响应；不再仅显示一张固定网络图。</div>
 </article></section>
 <section class="cards" id="audit"><article><h3>实验记录</h3><p>保存模型、MRI 来源、ROI、预处理和每层数值变化的校验信息。</p><div id="records">尚无本次实验记录。</div></article><article id="protocol"><h3>证据等级与科学边界</h3><p>本阶段观测为真实预训练网络的张量变化（L1）；不同层的变化不自动等于因果解释。MRI 模型专属解释须在 MRI 训练权重、任务目标及预处理匹配后另外验收。</p><p>默认采用 MNI152 脑模板。编辑是探索性的强度干预，不代表生物学有效病灶模拟。</p></article></section>
 <details class="advanced"><summary>高级设置与科研数据 <span>模型适配 · 张量导出 · 科学审计 ↓</span></summary><div class="advance-content"><div class="info-grid"><div><small>预训练源模型</small><code id="sourceModelHash">正在核验</code></div><div><small>插装后的模型</small><code id="instrumentedHash">—</code></div><div><small>MRI 原始数据 SHA-256</small><code id="mriHash">—</code></div><div><small>输入及解释边界</small><code>二维 MRI 切片 → 非 MRI 专用 ViT（OOD）</code></div></div><div class="buttons"><button id="saveAudit" class="secondary" disabled>下载实验 JSON</button><button id="saveLayers" class="secondary" disabled>下载多层 CSV</button><a href="./lab.html" class="secondary" target="_blank" rel="noopener">完整 ONNX 适配器 / 实验室</a></div><p>兼容的 3D MRI 训练模型可以通过原有 ONNX 适配器导入；BraTS 专用模型、四模态配准与标准化和端到端三维推理必须另行测试才能标为医学有效。</p></div></details>
