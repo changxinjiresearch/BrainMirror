@@ -48,6 +48,8 @@ jobs:
           exit 1
       - name: Chrome CPU/WASM, MRI and audit end-to-end test
         run: node scept-web/tests/browser.cjs
+      - name: Chinese SCEPT simplified UI, ROI real ViT and responsive acceptance
+        run: node scept-web/tests/chinese_studio.cjs
       - name: Responsive Chromebook layout across viewport widths and pretrained ViT
         run: node scept-web/tests/responsive_layout.cjs
       - name: Two externally pretrained architectures (ViT / CNN), verified SHA-256, Chrome CPU
