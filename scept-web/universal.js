@@ -15,10 +15,13 @@ const PRESETS={
  cnn:{id:'mri-cnn-experimental',url:'https://huggingface.co/Udit013/brain-tumor-efficientnetb3/resolve/main/efficientnetb3.onnx',sha256:'320b1ef648f3da5216f6ee0374349324b3cb00a76bebf7dbd1c3796e6155991c'}
 };
 let state={bytes:null,hash:null,inspect:null,source:null,session:null,loaded:null,audit:null};
+let scheduler=null;
 function note(id,msg,kind='pending'){const el=$(id);el.textContent=msg;el.dataset.state=kind}
 function tableCells(parent,values){const tr=document.createElement('tr');for(const v of values){const td=document.createElement('td');td.textContent=v;tr.append(td)}parent.append(tr)}
 function safeData(buf){if(buf.byteLength>160*1024*1024)throw Error('Model exceeds 160 MB local resource guard');return buf}
 async function inspectModel(){
+ if(scheduler?.snapshot().status==='running'){note('modelStatus','调度任务仍在执行，请先取消队列','error');return}
+ scheduler=null;updateU6Controls();
  $('inspect').disabled=true;$('load').disabled=true;$('run').disabled=true;$('export').disabled=true;
  try{
   if(state.session){await state.session.dispose();state.session=null}
@@ -60,6 +63,8 @@ async function inspectModel(){
  finally{$('inspect').disabled=false}
 }
 async function attach(){
+ if(scheduler?.snapshot().status==='running')return;
+ scheduler=null;updateU6Controls();
  if(!state.bytes||!state.inspect)return;
  $('load').disabled=true;$('run').disabled=true;
  try{
@@ -69,7 +74,7 @@ async function attach(){
   note('modelStatus','正在创建真正的 ONNX WASM 推理会话…');
   state.session=await SCEPT_CORE.openModel(registry,manifest,raw,{wasmPaths:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/'});
   state.loaded=manifest;state.audit=null;$('export').disabled=true;
-  $('run').disabled=false;
+  $('run').disabled=false;updateU6Controls();
   note('modelStatus','已接入真实模型：'+state.session.description.inputs.length+' 个输入，'+state.session.description.outputs.length+' 个实际输出（含 '+probes.length+' 个选定观测点）。','success');
  }catch(e){state.session=null;note('modelStatus','模型接入失败：'+e.message,'error')}
  finally{$('load').disabled=false}
@@ -196,6 +201,79 @@ $('interventionMode').onchange=()=>{
   '示例 ROI 仅适用于 [1,1,4,4] 工程 CNN。其他模型需按实际输入维度指定区域。匹配对照需明确检查原始数据的适当协变量。';
 };
 $('interventionMode').onchange();
+function u6StatusSnapshot(){return scheduler?.snapshot()||{status:'idle',total:0,tasks:[],pending:0,running:0,completed:0,failed:0,cancelled:0}}
+function updateU6Controls(){
+ const s=u6StatusSnapshot(),busy=s.status==='running',ready=!!state.session;
+ $('u6Create').disabled=!ready||busy;
+ $('u6Run').disabled=!ready||busy||!(s.pending>0||s.cancelled>0);
+ $('u6Cancel').disabled=!busy;
+ $('u6Retry').disabled=!ready||busy||!s.failed;
+ $('u6Json').disabled=!s.total;$('u6Csv').disabled=!s.total;
+ $('u6Facts').textContent=s.total?('总任务 '+s.total+' · 完成 '+s.completed+' · 失败 '+s.failed+
+  ' · 待运行 '+s.pending+' · 已取消 '+s.cancelled+' · 当前状态 '+s.status):'未建立实验队列';
+ const root=$('u6TaskRows');root.replaceChildren();
+ for(const t of s.tasks){
+  const tr=document.createElement('tr');
+  const result=t.result?.outputs?.[0],detail=t.error?(t.error.code+' '+t.error.message):
+   result?(result.tensor+': 平均 |Δ| '+result.mean_abs_delta.toPrecision(5)):'—';
+  for(const value of [t.id+' / '+t.variant,t.pluginId,String(t.seed),t.status,detail]){
+   const td=document.createElement('td');td.textContent=value;tr.append(td);
+  }root.append(tr);
+ }
+}
+function saveU6(content,name,type){
+ const url=URL.createObjectURL(new Blob([content],{type}));
+ const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+$('u6Mode').onchange=()=>{$('u6Parameter').disabled=$('u6Mode').value!=='sweep';
+ $('u6Intensities').disabled=$('u6Mode').value!=='sweep';$('u6Controls').disabled=$('u6Mode').value!=='batch'};
+$('u6Mode').onchange();
+$('u6Plugin').onchange=()=>{$('u6Config').value=JSON.stringify(U5_SAMPLES[$('u6Plugin').value]||{},null,2);
+ $('u6Parameter').value=$('u6Plugin').value==='u5.noise'?'sigma':
+   $('u6Plugin').value==='u5.internal-mask'?'value':'fill'};
+$('u6Plugin').onchange();
+$('u6Create').onclick=async()=>{
+ $('u6Create').disabled=true;
+ try{
+  if(!state.session)throw Error('模型尚未加载');
+  const {feeds}=buildInputs(),baseSeed=Number($('u6Seed').value);
+  const mode=$('u6Mode').value,config=JSON.parse($('u6Config').value||'{}');
+  const spec={mode,pluginId:$('u6Plugin').value,config,baseSeed};
+  if(mode==='sweep'){spec.parameter=$('u6Parameter').value;
+   spec.intensities=JSON.parse($('u6Intensities').value)}
+  if(mode==='batch')spec.controls=JSON.parse($('u6Controls').value);
+  // Reference tensor comes from the same explicit U5 source; never infer it.
+  const referenceFeeds=spec.pluginId==='u5.replace'||mode==='batch'&&spec.controls.some(x=>x.pluginId==='u5.replace')?
+   parseReferenceJson($('referenceJson').value):null;
+  scheduler=SCEPT_SCHEDULER.make({session:state.session,interventionEngine,
+   observationAdapter,dataAdapter,core:SCEPT_CORE,onProgress:updateU6Controls});
+  await scheduler.create(spec,{feeds,referenceFeeds,profileId:$('architectureProfile').value});
+  note('u6Status','已建立 '+scheduler.snapshot().total+' 项任务；模型和输入指纹已记录。','success');
+ }catch(e){scheduler=null;note('u6Status','建立失败：'+e.message,'error')}
+ finally{updateU6Controls()}
+};
+$('u6Run').onclick=async()=>{
+ if(!scheduler)return;
+ $('u6Run').disabled=true;
+ try{
+  if(scheduler.snapshot().cancelled)scheduler.resume();
+  note('u6Status','正在执行真实 ONNX 任务队列；将逐项记录结果、失败及种子…');
+  const s=await scheduler.run();
+  note('u6Status','批次结束：完成 '+s.completed+'/'+s.total+' · 失败 '+s.failed+
+   ' · 取消 '+s.cancelled+' · 待执行 '+s.pending,s.failed?'error':'success');
+ }catch(e){note('u6Status','调度失败：'+e.message,'error')}
+ finally{updateU6Controls()}
+};
+$('u6Cancel').onclick=()=>{if(scheduler){scheduler.cancel();note('u6Status','已请求取消，当前正在执行的模型推理结束后生效')}};
+$('u6Retry').onclick=()=>{
+ try{scheduler?.retryFailed();note('u6Status','失败任务已恢复待运行，重试会复用原始种子和模型输入','success')}
+ catch(e){note('u6Status','恢复失败：'+e.message,'error')}
+ updateU6Controls();
+};
+$('u6Json').onclick=()=>{if(scheduler)saveU6(JSON.stringify(scheduler.exportAudit(),null,2),'scept-u6-audit.json','application/json')};
+$('u6Csv').onclick=()=>{if(scheduler)saveU6(scheduler.exportCSV(),'scept-u6-results.csv','text/csv')};
+updateU6Controls();
 $('modelPreset').onchange=()=>{$('architectureProfile').value=$('modelPreset').value==='vit'?'vit-token-channel':$('modelPreset').value==='cnn'?'generic':'generic';$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
 $('modelFile').disabled=true;
 $('inspect').onclick=inspectModel;$('load').onclick=attach;$('run').onclick=run;
@@ -206,6 +284,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u5-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,interventionEngine,observePair:observationAdapter.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
 
 })();
