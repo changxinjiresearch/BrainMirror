@@ -283,11 +283,33 @@ function selectNode(id){
    '\n输入张量：'+(n.inputs.join('、')||'无')+'\n输出张量：'+(n.outputs.join('、')||'无')+
    '\n真实数据依赖：'+incoming.length+' 条输入、'+outgoing.length+' 条输出；'+
    '示例：'+[...incoming.slice(0,2),...outgoing.slice(0,2)].map(e=>'#'+e.from+' → #'+e.to+' ('+e.tensor+')').join('；');
+ const measured=observedFor(n);
+ if(measured){
+   $('networkNodeDetails').textContent+='\n\n此节点已开放真实输出：'+measured.probe+
+     '\n原始 A · 平均绝对激活：'+fmtValue(measured.beforeMean)+
+     '\n修改 B · 平均绝对激活：'+fmtValue(measured.afterMean)+
+     '\n真实平均 |B − A|：'+fmtValue(measured.deltaMean)+
+     '\n观测元素数：'+measured.size+'；颜色对应此张量，不代表未观测的相邻节点。';
+ }else{
+   $('networkNodeDetails').textContent+='\n该算子目前未开放可测张量，不能判断它的具体激活变化。';
+ }
  if(state.mode==='overview')$('networkEnter').disabled=false;
  if(typeof window.SCEPT_NETWORK3D_LAYER_SELECTED==='function')window.SCEPT_NETWORK3D_LAYER_SELECTED(state.layer);
  paint();updateUI();return true;
 }
 function updateUI(){
+ const labels={compare:'双视图 A/B',before:'原始输入 A',after:'修改后 B',delta:'真实差异 Δ'};
+ const ids={compare:'responseCompare',before:'responseBefore',after:'responseAfter',delta:'responseDelta'};
+ for(const [name,id] of Object.entries(ids)){const b=$(id);b.classList.toggle('active',name===state.visualMode);b.setAttribute('aria-pressed',String(name===state.visualMode))}
+ $('networkPairLabels').hidden=state.visualMode!=='compare';
+ const ds=state.deltaScale,ss=state.signalScale;
+ const detail=state.measuredCount?
+ '已观测 '+state.measuredCount+' 个真正的张量输出生产节点；A/B 共用色标 |激活| ≤ '+fmtValue(ss)+
+ '，Δ 色标 |B−A| ≤ '+fmtValue(ds)+'（首次实验后锁定）':'等待真实隐藏层数据。未开放观测点均呈中性颜色。';
+ $('responseScaleLabel').textContent=state.measuredCount?'固定色标：A/B '+fmtValue(ss)+' · Δ '+fmtValue(ds):'等待首次真实模型计算';
+ $('responseLegendDetail').textContent=detail+'；数值超出刻度时颜色饱和，不会静默重标定。';
+ $('responseCalibrate').disabled=!state.measuredCount;
+
  $('networkOverview').disabled=state.mode==='overview';
  $('networkEnter').disabled=!state.graph||state.mode==='layer'||!state.allLayerCounts[state.layer];
  $('networkDepth').textContent=state.mode==='layer'?(state.layeringKind==='transformer'?'第 '+state.layer+' 层':'顺序段 '+state.layer)+' · 算子详细视图':(state.layeringKind==='transformer'?'Transformer':'ONNX 网络')+' · 三维结构总览';
@@ -298,6 +320,11 @@ function updateUI(){
  if(state.mode==='layer'&&state.selected===null)$('networkNodeDetails').textContent='当前显示第 '+state.layer+' 层全部已解析算子。单击节点查看真实张量输入输出；连线仅代表 ONNX 定义的直接依赖。';
 }
 function bind(){
+ for(const [id,mode] of [['responseCompare','compare'],['responseDelta','delta'],['responseBefore','before'],['responseAfter','after']]){
+  $(id).onclick=()=>setVisualMode(mode);
+ }
+ $('responseCalibrate').onclick=calibrate;
+
  $('networkOverview').onclick=overview;
  $('networkEnter').onclick=()=>enterLayer(state.layer);
  $('networkZoomIn').onclick=()=>zoom(-1.3);
@@ -329,7 +356,7 @@ function bind(){
 }
 initialize();bind();paint();updateUI();
 window.SCEPT_NETWORK3D={
- setGraph,setObservations,highlightLayer:setLayer,enterLayer,overview,selectNode,
- getSnapshot:()=>({backend:state.backend,rendererError:state.rendererError||null,mode:state.mode,layer:state.layer,yaw:state.yaw,pitch:state.pitch,distance:state.distance,displayNodes:state.nodes.length,displayEdges:state.edges.length,totalNodes:state.graphNodes,totalEdges:state.graphEdges,edgesVerified:state.edges.every(e=>state.graph?.edges.some(real=>real.from===e.from&&real.to===e.to&&real.tensor===e.tensor)),observedProducers:state.probeNames.size,selected:state.selected,layoutSerial:state.layoutSerial,pickTarget:state.nodes.length?{id:state.nodes[Math.floor(state.nodes.length/2)].id,...screenPoint(state.nodes[Math.floor(state.nodes.length/2)].p)}:null})
+ setGraph,setObservations,highlightLayer:setLayer,enterLayer,overview,selectNode,setVisualMode,calibrate,
+ getSnapshot:()=>({backend:state.backend,rendererError:state.rendererError||null,visualMode:state.visualMode,deltaScale:state.deltaScale,signalScale:state.signalScale,measuredCount:state.measuredCount,observationVersion:state.observationVersion,measuredNodes:state.nodes.filter(n=>observedFor(n)).map(n=>({nodeId:n.id,layer:n.layer,meanA:observedFor(n).beforeMean,meanB:observedFor(n).afterMean,meanDelta:observedFor(n).deltaMean,deltaColor:nodeVisual(n,'delta').color,deltaSize:nodeVisual(n,'delta').size})),mode:state.mode,layer:state.layer,yaw:state.yaw,pitch:state.pitch,distance:state.distance,displayNodes:state.nodes.length,displayEdges:state.edges.length,totalNodes:state.graphNodes,totalEdges:state.graphEdges,edgesVerified:state.edges.every(e=>state.graph?.edges.some(real=>real.from===e.from&&real.to===e.to&&real.tensor===e.tensor)),observedProducers:state.probeNames.size,selected:state.selected,layoutSerial:state.layoutSerial,pickTarget:state.nodes.length?{id:state.nodes[Math.floor(state.nodes.length/2)].id,...screenPoint(state.nodes[Math.floor(state.nodes.length/2)].p)}:null})
 };
 })();
