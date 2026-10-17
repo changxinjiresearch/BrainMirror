@@ -416,7 +416,7 @@ def write_results(args, model_sha, asset_hashes, ids, imgs, labels):
                         "actual_runtime": "onnxruntime CPU"},
               "data": {"source": DATA_BASE, "source_hashes": asset_hashes,
                        "split": "official MNIST test IDX 10000 images", "selected_original_indices": ids,
-                       "selection": f"first {args.per_digit} examples per original digit",
+                       "selection": f"first {PILOT_PER_DIGIT if args.mode == 'pilot' else PRIMARY_PER_DIGIT} examples per original digit",
                        "n": len(ids), "n_correct": sum(r["correct"] for r in rows),
                        "accuracy": acc},
               "design": {"fixed_grid": [7, 7], "patch": [4, 4],
