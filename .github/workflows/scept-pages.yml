@@ -1,0 +1,51 @@
+name: SCEPT Universal Core V1 - free GitHub Pages publish
+on:
+  workflow_run:
+    workflows: ["SCEPT Browser Engine Acceptance"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: scept-universal-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout the tested same-repository main commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+          persist-credentials: false
+      - name: Verify essential browser artifacts
+        shell: bash
+        run: |
+          test -f scept-web/universal.html
+          test -f scept-web/core/scept_sdk.js
+          test -f scept-web/core/scept_audit.js
+          test -f scept-web/scept_m3_console.js
+          test -f scept-web/core/scept_performance.js
+          echo "Only versioned browser assets are published; no model datasets or raw MRI files."
+      - name: Configure GitHub Pages on existing public free repository
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload static SCEPT website artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: scept-web
+      - name: Publish tested static browser assets
+        id: deploy
+        uses: actions/deploy-pages@v4
