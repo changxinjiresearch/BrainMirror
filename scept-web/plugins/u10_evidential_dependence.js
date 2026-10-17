@@ -259,9 +259,11 @@
   for(const seed of seeds)for(const dose of strengths)
    if(!seen.has(seed+':'+dose))return no('Missing dose '+dose+' for nuisance seed '+seed);
   const get=(s,q)=>seen.get(s+':'+q),max=seeds.map(s=>get(s,1)),
+   controlled=max.map(m=>m.controlledSignedDelta),
    d=max.map(m=>m.targetSignedDelta),abs=max.map(m=>m.targetedEffect),
    scores=max.map(m=>m.score);
-  const medianTarget=median(abs),medianSpecificity=median(scores),
+  const medianControlled=median(max.map(m=>m.controlledMagnitude)),
+   medianTarget=median(abs),medianSpecificity=median(scores),
    positiveFraction=scores.filter(x=>x>=q.minSpecificity).length/scores.length,
    medianSigned=median(controlled),effectSpread=Math.max(...controlled.map(x=>Math.abs(x-medianSigned))),
    direction=q.expectedSign===null?sign(medianSigned):q.expectedSign,
