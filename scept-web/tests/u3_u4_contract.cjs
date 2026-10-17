@@ -5,6 +5,8 @@ const DATA=require('../core/scept_data_adapter.js');
 const OBS=require('../core/scept_observation.js');
 const registry=core.createRegistry(),adapter=DATA.make(core);
 registry.register('data',adapter);
+const observer=OBS.make();registry.register('observation',observer);
+assert.equal(registry.requireAdapter('observation','runtime-axis-v1'),observer);
 assert.equal(registry.requireAdapter('data','typed-tensor-v1'),adapter);
 const desc={inputs:[{name:'features',type:'float32',shape:[1,4]}],outputs:[]};
 const original={features:{type:'float32',dims:[1,4],data:new Float32Array([1,2,3,4])}};
@@ -20,7 +22,7 @@ assert.throws(()=>adapter.offset(feeds,desc,{inputName:'unknown',delta:1}),/Unkn
 const shape=[1,5,7],n=shape.reduce((a,b)=>a*b,1),a=new Float32Array(n),b=new Float32Array(n);
 b[7]=2;b[8]=1;
 const model={outputs:[{name:'real_hidden',type:'float32',shape}]};
-const observations=OBS.observePair({description:model,baseline:{real_hidden:{type:'float32',dims:shape,data:a}},
+const observations=observer.observePair({description:model,baseline:{real_hidden:{type:'float32',dims:shape,data:a}},
  edited:{real_hidden:{type:'float32',dims:shape,data:b}},probes:['real_hidden'],profileId:'vit-token-channel'});
 const o=observations[0];
 assert.equal(o.total,35);
