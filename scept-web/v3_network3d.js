@@ -11,7 +11,7 @@ let canvas=document.getElementById('networkCanvas');if(!canvas)return;
 const $=id=>document.getElementById(id);
 const state={graph:null,mode:'overview',layer:6,selected:null,nodes:[],edges:[],allLayerCounts:[],
  yaw:-.3,pitch:.16,distance:15,backend:null,gl:null,ctx:null,observed:new Map(),probeNames:new Map(),
- drag:null,down:null,lastTap:0,layoutSerial:0,graphNodes:0,graphEdges:0,layeringKind:'transformer'};
+ drag:null,down:null,lastTap:0,layoutSerial:0,graphNodes:0,graphEdges:0,layeringKind:'transformer',visualMode:'compare',deltaScale:null,signalScale:null,observedSource:null,observationVersion:0,measuredCount:0};
 const dec=(n,places=3)=>Number.isFinite(n)?n.toFixed(places):'—';
 const light={MatMul:[.37,.84,.76],Gemm:[.46,.88,.73],Conv:[.43,.78,.96],Add:[.44,.69,.91],LayerNormalization:[.75,.61,.97],Softmax:[.97,.78,.49],Reshape:[.43,.65,.70],Transpose:[.42,.65,.70],Gather:[.48,.74,.77]};
 const decodeLayer=(name)=>{
@@ -78,14 +78,42 @@ function listLayers(g){
  const counts=Array.from({length:12},()=>0);
  g.nodes.forEach((n,id)=>{const l=layerOf(n,id);if(l>=0&&l<12)counts[l]++});return counts;
 }
-function opColor(node){
- const c=light[node.op]||[.39,.61,.67];
- const active=state.probeNames.get(node.id),value=active!==undefined?state.observed.get(active):undefined;
- // A single exact tensor's producer node may be marked; do NOT map layer
- // averages to non-probed operators, which would fabricate response.
- if(value&&value.mean>1e-7)return [.93,.72,.31];
- if(active!==undefined)return [.67,.83,.61];
- return c;
+// Fixed shared per-metric scales are initialized on the first real run and
+// retained across re-runs. The explicit recalibration button changes scales.
+const clamp=x=>Math.max(0,Math.min(1,x));
+const strength=(value,scale)=>!Number.isFinite(value)||!scale?0:clamp(value/scale);
+const fmtValue=x=>Number.isFinite(x)?(Math.abs(x)>0&&Math.abs(x)<.0001?x.toExponential(3):x.toFixed(5)):'—';
+function observedFor(node){const layer=state.probeNames.get(node.id);return layer===undefined?null:state.observed.get(layer)||null}
+function metricValue(o,mode){
+ if(!o)return null;
+ return mode==='before'?o.beforeMean:mode==='after'?o.afterMean:o.deltaMean;
+}
+function nodeVisual(node,mode){
+ const observed=observedFor(node);
+ if(!observed)return {color:[.35,.48,.53],size:node.size,measured:false,metric:null};
+ const value=metricValue(observed,mode);
+ const scale=mode==='delta'?state.deltaScale:state.signalScale;
+ const t=strength(value,scale);
+ // Quantitative magnitude is represented by a continuous color and radius.
+ // B uses the exact same activation scale as A for meaningful comparison.
+ const color=mode==='delta'
+ ? [.31+.65*t,.65-.11*t,.62-.40*t]
+ : [.29+.69*t,.62+.23*t,.64-.19*t];
+ return{color,size:15+18*t,measured:true,metric:value,intensity:t,delta:observed.deltaMean,
+         before:observed.beforeMean,after:observed.afterMean,layer:observed.layer};
+}
+function calibrate(){
+ const observed=[...state.observed.values()];
+ if(!observed.length)return;
+ const maxDelta=Math.max(...observed.map(x=>x.deltaMean));
+ const maxSignal=Math.max(...observed.flatMap(x=>[x.beforeMean,x.afterMean]));
+ state.deltaScale=Math.max(1e-12,maxDelta);
+ state.signalScale=Math.max(1e-12,maxSignal);
+ updateUI();paint();
+}
+function setVisualMode(mode){
+ if(!['compare','before','after','delta'].includes(mode))return false;
+ state.visualMode=mode;updateUI();paint();return true;
 }
 function nodePosition(id,part,total,layer,focus){
  const ordinal=part+1;
@@ -134,12 +162,29 @@ function setGraph(g){
    const m=name.match(/\/vit\/encoder\/layer\.(\d+)\/attention\/attention\/value\/MatMul_output_0$/);
    if(m)state.probeNames.set(i,Number(m[1]));
   }));
+  state.observed.clear();state.observedSource=null;state.measuredCount=0;state.deltaScale=null;state.signalScale=null;
   state.allLayerCounts=listLayers(g);state.mode='overview';state.selected=null;state.yaw=-.3;state.pitch=.16;state.distance=15;makeView();
  }
 }
 function setObservations(results){
- state.observed.clear();
- for(const l of results||[]){if(l&&Number.isInteger(l.layer)&&Number.isFinite(l.summary?.mean))state.observed.set(l.layer,l.summary)}
+ // Preserve data-driven colors when the user only changes the selected layer.
+ if(state.observedSource===results)return;
+ state.observedSource=results;state.observed.clear();
+ for(const l of results||[]){
+  if(!l||!Number.isInteger(l.layer)||!Array.isArray(l.before)||!Array.isArray(l.after)||
+    l.before.length!==l.after.length||l.before.length===0)continue;
+  let a=0,b=0,d=0;
+  for(let i=0;i<l.before.length;i++){
+    if(!Number.isFinite(l.before[i])||!Number.isFinite(l.after[i]))throw Error('Invalid measured ONNX tensor values');
+    a+=Math.abs(l.before[i]);b+=Math.abs(l.after[i]);d+=Math.abs(l.after[i]-l.before[i]);
+  }
+  state.observed.set(l.layer,{layer:l.layer,probe:l.probe,
+   beforeMean:a/l.before.length,afterMean:b/l.before.length,deltaMean:d/l.before.length,
+   size:l.before.length});
+ }
+ state.measuredCount=state.observed.size;state.observationVersion++;
+ // Calibrate the initial display only once; do not silently rescale on re-run.
+ if(state.deltaScale===null&&state.measuredCount)calibrate();
  paint();updateUI();
 }
 function setLayer(layer){const n=Number(layer);if(!Number.isInteger(n)||n<0||n>11)return;
