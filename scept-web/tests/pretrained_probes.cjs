@@ -7,7 +7,7 @@ const name=fs.readFileSync('/tmp/scept-vit-probe-name.txt','utf8');
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
 const page=await browser.newPage({viewport:{width:1300,height:850}});
-await page.goto('http://127.0.0.1:8765',{waitUntil:'domcontentloaded'});
+await page.goto('http://127.0.0.1:8765/lab.html',{waitUntil:'domcontentloaded'});
 await page.locator('#modelFile').setInputFiles({name:'pretrained_vit_with_internal_probe.onnx',mimeType:'application/octet-stream',buffer:model});
 await page.locator('#loadBtn').click();
 await page.waitForFunction(()=>!document.querySelector('#runBtn').disabled || document.querySelector('#notify').textContent.length>0,null,{timeout:120000});
