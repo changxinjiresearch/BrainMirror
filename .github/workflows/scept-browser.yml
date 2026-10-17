@@ -56,6 +56,10 @@ jobs:
           exit 1
       - name: U2 generic ONNX real MLP/CNN model import plus matching true probes
         run: node scept-web/tests/u2_generic_adapter.cjs
+      - name: U2 deployed Universal Core acceptance with TWO unseen model architectures
+        env:
+          SCEPT_U2_URL: https://brainmirror-observatory-kv4d70v82-jayson-s-projects6.vercel.app/universal.html
+        run: node scept-web/tests/u2_generic_adapter.cjs
       - name: U2 real frozen pretrained ViT and CNN run using the SAME generic registry
         run: node scept-web/tests/u2_pretrained_generic.cjs
       - name: Check Token A/B/Δ visual density with real MRI (screenshot-based acceptance)
