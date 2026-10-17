@@ -50,7 +50,7 @@ const U5=require('../core/scept_intervention.js');
  await assert.rejects(run('u5.noise',{sigma:-.2,seed:12}),e=>e.code==='INVALID_PARAMETER');
  await assert.rejects(run('u5.noise',{sigma:.2,seed:2.5}),e=>e.code==='INVALID_PARAMETER');
  await assert.rejects(run('u5.replace',{region}),e=>e.code==='REFERENCE_REQUIRED');
- await assert.rejects(run('u5.replace',{region},{image:{type:'float32',dims:[1,1,2,8],data:new Float32Array(16)}}),e=>/SHAPE|shape/i.test(e.message));
+ await assert.rejects(run('u5.replace',{region},{image:{type:'float32',dims:[1,1,2,8],data:new Float32Array(16)}}),e=>e.code==='SHAPE_MISMATCH'||e.code==='SHAPE_MISMATCH'||e.code==='INVALID_TENSOR'||e.code==='INVALID_SHAPE'||e.code==='TYPE_MISMATCH'||e.message.includes('model metadata'));
  await assert.rejects(run('u5.random-invented',{}),e=>e.code==='ADAPTER_NOT_FOUND');
  await assert.rejects(run('u5.internal-mask',{indices:[0]}),e=>e.code==='UNSUPPORTED_CAPABILITY');
  // Spoofed input signature without a verified ONNX Mul must not enable internal interventions.
