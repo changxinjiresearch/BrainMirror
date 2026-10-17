@@ -10,7 +10,14 @@ const SOURCE='https://huggingface.co/onnx-community/vit-tiny-patch16-224-ONNX/re
 const SOURCE_HASH='32f1cf3b4868cc44757814cbf6237ae5a3658a45980bf0fe93914dca77b815e3';
 const PROBE_LAYERS=[2,4,6,8,10];
 const PROBE_NAME=i=>`/vit/encoder/layer.${i}/attention/attention/value/MatMul_output_0`;
-const st={session:null,graph:null,modelSha:null,sourceHash:SOURCE_HASH,probes:[],results:null,selected:6,history:[],loading:true,running:false,failed:null};
+const EXTRA_PROBES=[
+ {kind:'patch',label:'Patch Embedding / Conv',layer:-1,name:'/vit/embeddings/patch_embeddings/projection/Conv_output_0'},
+ {kind:'query',label:'Query · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/query/MatMul_output_0'},
+ {kind:'key',label:'Key · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/key/MatMul_output_0'},
+ {kind:'attention',label:'Attention Softmax · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/Softmax_output_0'},
+ {kind:'residual',label:'Residual Add · 第 6 层',layer:6,name:'/vit/encoder/layer.6/output/Add_output_0'}
+];
+const st={session:null,graph:null,modelSha:null,sourceHash:SOURCE_HASH,probes:[],extraProbes:[],results:null,selected:6,history:[],loading:true,running:false,failed:null};
 let mouse=null;
 try{st.history=JSON.parse(localStorage.getItem('scept-v3-audit-list')||'[]')}catch{}
 const fmt=n=>Number.isFinite(n)?Math.abs(n)>.000001?n.toFixed(5):n.toExponential(2):'—';
@@ -26,7 +33,8 @@ function fields(b,start,end,fn){let p=start;while(p<end){const begin=p,t=getVar(
 function observeRealLayers(input){
  const b=new Uint8Array(input);if(b.byteLength>120000000)throw Error('当前演示模型超出大小上限');
  let graph=null;fields(b,0,b.length,x=>{if(x.f===7)graph=x});if(!graph)throw Error('模型缺少计算图');
- const wanted=new Map(PROBE_LAYERS.map(i=>[PROBE_NAME(i),i])),found=new Map(),existing=new Set(),dec=new TextDecoder();
+ const wanted=new Map([...PROBE_LAYERS.map(i=>[PROBE_NAME(i),{name:PROBE_NAME(i),layer:i,kind:'value'}]),
+  ...EXTRA_PROBES.map(p=>[p.name,p])]),found=new Map(),existing=new Set(),dec=new TextDecoder();
  fields(b,graph.s,graph.e,x=>{
   if(x.f!==13&&x.f!==12)return;
   let name=null;fields(b,x.s,x.e,y=>{if(y.f===1)name=dec.decode(b.subarray(y.s,y.e))});
@@ -36,13 +44,13 @@ function observeRealLayers(input){
   }
  });
  let patched=b.subarray(graph.s,graph.e),exposed=[];
- for(const [name,layer]of wanted){
-  if(existing.has(name)){exposed.push({layer,name});continue}
+ for(const [name,descriptor]of wanted){
+  if(existing.has(name)){exposed.push(descriptor);continue}
   const raw=found.get(name);if(!raw)continue;
   patched=concat(patched,varint(98),varint(raw.length),raw);
-  exposed.push({layer,name});
+  exposed.push(descriptor);
  }
- if(exposed.length<3)throw Error('无法同时开放至少 3 个实际 Transformer 层，请检查模型版本');
+ if(exposed.filter(p=>p.kind==='value').length<3)throw Error('无法同时开放至少 3 个实际 Transformer 层，请检查模型版本');
  return{model:concat(b.subarray(0,graph.begin),varint(58),varint(patched.length),patched,b.subarray(graph.e)).buffer,exposed};
 }
 function status(msg,kind='pending'){
@@ -63,7 +71,8 @@ async function init(){
   $('sourceModelHash').textContent=SOURCE_HASH;
   status('开放多个真实隐藏层…');
   const patched=observeRealLayers(raw);
-  st.probes=patched.exposed;
+  st.probes=patched.exposed.filter(p=>p.kind==='value');
+  st.extraProbes=patched.exposed.filter(p=>p.kind!=='value');
   st.modelSha=await sha256(patched.model);
   $('instrumentedHash').textContent=st.modelSha;
   st.graph=window.SCEPT_INSPECT_ONNX(patched.model);
@@ -124,19 +133,43 @@ async function run(){
    const summary=metrics(baseline,edited);
    layers.push({layer:p.layer,probe:p.name,shape:Array.from(xa.dims),summary,before:baseline,after:edited});
   }
-  st.results={layers,inputPatchMap,at:new Date().toISOString(),model_sha256:st.modelSha,pretrained_source_sha256:SOURCE_HASH,raw_mri_sha256:await window.SCEPT_MRI.sourceHash(),mri:window.SCEPT_MRI.state,baseline_input_sha256:await sha256(before.buffer),intervened_input_sha256:await sha256(after.buffer),experiment_type:'TRUE_MRI_ATLAS_INPUT__PRETRAINED_NATURAL_IMAGE_VIT_OUT_OF_DOMAIN',evidence:'L1 genuine numeric activation changes, NOT a medically valid or causal model explanation',preprocessing:'single native voxel i-j slice z=center, nearest-neighbor 224x224, 2-98 percentile clipped to 0..1, three repeated grayscale channels; ViT natural-image preprocessor NOT matched'};
+  const extraObservations=[];
+  for(const p of st.extraProbes){
+   const x=a[p.name],y=b[p.name];
+   if(!x?.data||!y?.data)throw Error('额外真实观测张量未正确返回：'+p.name);
+   const beforeVals=Array.from(x.data,Number),afterVals=Array.from(y.data,Number);
+   extraObservations.push({kind:p.kind,label:p.label,layer:p.layer,probe:p.name,
+    shape:Array.from(x.dims),summary:metrics(beforeVals,afterVals),before:beforeVals,after:afterVals});
+  }
+  st.results={layers,extraObservations,inputPatchMap,at:new Date().toISOString(),model_sha256:st.modelSha,pretrained_source_sha256:SOURCE_HASH,raw_mri_sha256:await window.SCEPT_MRI.sourceHash(),mri:window.SCEPT_MRI.state,baseline_input_sha256:await sha256(before.buffer),intervened_input_sha256:await sha256(after.buffer),experiment_type:'TRUE_MRI_ATLAS_INPUT__PRETRAINED_NATURAL_IMAGE_VIT_OUT_OF_DOMAIN',evidence:'L1 genuine numeric activation changes, NOT a medically valid or causal model explanation',preprocessing:'single native voxel i-j slice z=center, nearest-neighbor 224x224, 2-98 percentile clipped to 0..1, three repeated grayscale channels; ViT natural-image preprocessor NOT matched'};
   st.history.unshift({at:st.results.at,mri:st.results.mri.name,layers:layers.length,changed:layers.find(x=>x.layer===st.selected)?.summary.changed??null});st.history=st.history.slice(0,20);
   try{localStorage.setItem('scept-v3-audit-list',JSON.stringify(st.history))}catch{}
   // Reject false token mappings if runtime dimensions do not match actual ONNX tensors.
   window.SCEPT_ACTIVITY3D.update(layers,st.results.mri.revision);
   window.SCEPT_PATCH?.refresh();
-  drawAll();listHistory();$('saveAudit').disabled=false;$('saveLayers').disabled=false;
+  drawAll();drawExtras();listHistory();$('saveAudit').disabled=false;$('saveLayers').disabled=false;
   $('runProgress').textContent='真实计算完成 · '+layers.length+' 个观测层可查看';
   $('networkState').textContent='已观测 '+layers.length+' 个层级';
   status('MRI → 真实多层观测完成','ready');
   $('interpretation').textContent='真实计算成功：选中的 MRI 三维 ROI 被修改，同一冻结 ViT 在 '+layers.length+' 个实际隐藏层记录了逐元素数值差异。由于该 ViT 未针对 MRI 训练，本结果只证明观测机制，不构成医学解释或病灶判断。';
  }catch(e){status('实验失败','error');visibleError('真实模型推理失败：'+e.message)}
  finally{st.running=false;readyIfPossible();$('runExperiment').textContent=st.results?'重新计算':'开始实验'}
+}
+function drawExtras(){
+ const root=$('extraProbeList');root.replaceChildren();
+ const extras=st.results?.extraObservations||[];
+ $('extraProbeStatus').textContent=extras.length+' 个新增实际张量已观测（形状和数据来自 ONNX 运行结果）';
+ if(!extras.length){root.textContent='此模型版本没有导出额外真实观测点。';return}
+ for(const e of extras){
+  const row=document.createElement('details');row.className='extra-probe';
+  const summary=document.createElement('summary');
+  summary.textContent=e.label+' · '+e.shape.join(' × ')+' · 平均 |Δ| '+fmt(e.summary.mean)+' · 变化 '+e.summary.changed.toLocaleString('zh-CN')+'/'+e.summary.total.toLocaleString('zh-CN');
+  row.append(summary);
+  const body=document.createElement('div');body.className='extra-probe-data';
+  body.textContent='真实输出：'+e.probe+'；最大 |Δ| '+fmt(e.summary.max)+'。以下是前 12 项真实数组值：'+
+   e.before.slice(0,12).map((v,i)=>'['+i+'] A='+fmt(v)+'，B='+fmt(e.after[i])).join('；');
+  row.append(body);root.append(row);
+ }
 }
 function drawAll(){
  const layers=st.results?.layers??[];
