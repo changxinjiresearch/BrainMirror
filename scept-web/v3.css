@@ -32,3 +32,23 @@
 .mode-explainer>*,.mode-explainer select,.mode-explainer .mode-label{min-width:0;max-width:100%;box-sizing:border-box}
 .mode-explainer select{width:100%;inline-size:100%}
 .mode-explainer small{overflow-wrap:anywhere;white-space:normal}
+
+
+/* Measured activation mapped to 3D, original / edited / delta shared camera. */
+.response-controls{padding:12px;display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;background:#09242e;border-bottom:1px solid #235059}
+.response-tabs{display:flex;flex-wrap:wrap;gap:5px}
+.response-tabs button,.response-scale button{border:1px solid #3c6470;background:#102b38;color:#a7c9cb;border-radius:7px;padding:7px 10px;font-size:11px}
+.response-tabs button.active,.response-tabs button[aria-pressed=true]{color:#071f27;background:#6adbc0;border-color:#6adbc0;font-weight:720}
+.response-tabs button:hover,.response-scale button:hover{border-color:#73dfc7}
+.response-scale{display:flex;gap:8px;align-items:center;font-size:10px;color:#91bbb9;max-width:100%;flex-wrap:wrap}
+.response-scale span{overflow-wrap:anywhere}
+.response-legend{border-top:1px solid #20434b;display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;padding:9px 13px;font-size:10px;line-height:1.6;color:#92b7b8}
+.response-legend .swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.response-legend .unobserved{background:#59727c}.response-legend .observed{background:#f7ac51}
+.response-legend #responseLegendDetail{flex:1 1 100%;color:#aad3c7}
+.network-frame #networkCanvas{height:410px}
+@media(max-width:650px){
+ .response-controls{padding:8px}
+ .response-tabs button{padding:7px 8px}
+ .network-frame #networkCanvas{height:315px}
+}
