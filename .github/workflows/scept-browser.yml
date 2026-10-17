@@ -46,6 +46,7 @@ jobs:
           node --check scept-web/scept_m3_console.js
           node --check scept-web/plugins/u9_method_evaluation_sdk_template.js
           node --check scept-web/tests/u9_m3_contract.cjs
+          node --check scept-web/tests/u9_security_check.cjs
           node --check scept-web/tests/u9_m3_browser.cjs
           node --check scept-web/plugins/m2_external_method_example.js
           node --check scept-web/tests/u7_xai_protocol.cjs
@@ -76,6 +77,8 @@ jobs:
         run: node scept-web/tests/u8_visual_contract.cjs
       - name: M3 trusted plugin SDK, content-hash evidence, real-engine replay and fail-closed performance contracts
         run: node scept-web/tests/u9_m3_contract.cjs
+      - name: M3 browser security / trustworthy plugin / zero-fee release static hardening
+        run: node scept-web/tests/u9_security_check.cjs
       - name: Install CPU model testing tools
         run: python -m pip install onnx onnxruntime pytest numpy
       - name: Generate and validate two NEW ONNX model architectures for U2
