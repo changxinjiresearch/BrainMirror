@@ -137,6 +137,11 @@
    if(targetHash.toLowerCase()!==config.targetMask.indicesSha256.toLowerCase()||
       controlHash.toLowerCase()!==config.controlMask.indicesSha256.toLowerCase())
     fail('MASK_HASH_MISMATCH','External ROI/matched control mask checksum mismatch');
+   // U5 guarantees a completely unchanged A feed for trusted plugin safety.
+   // Apply an IDENTICAL nuisance realization only to the B/C intervention arms.
+   // At dose=0, B==C numerically, so their controlled difference is exactly null.
+   // This measures robustness of a B-vs-C contrast under shared nuisance, NOT
+   // baseline model robustness across independent altered A inputs.
    const A=copy(baseline),B=copy(baseline),C=copy(baseline),r=rng(seed);
    for(const key of Object.keys(A)){
     const a=A[key],b=B[key],c=C[key];
@@ -144,17 +149,17 @@
      if(!['float32','float64'].includes(a.type))continue;
      const x=Number(a.data[i])+sigma*gaussian(r);
      if(!Number.isFinite(x))fail('NONFINITE_INPUT','Nuisance perturbation overflow');
-     a.data[i]=x;b.data[i]=x;c.data[i]=x;
-     if(!Number.isFinite(a.data[i]))fail('NONFINITE_INPUT','Typed nuisance overflow');
+     b.data[i]=x;c.data[i]=x;
+     if(!Number.isFinite(b.data[i]))fail('NONFINITE_INPUT','Typed nuisance overflow');
     }
    }
-   const tA=A[name],tB=B[name],tC=C[name],ts=stats(tA,target),cs=stats(tA,control);
+   const tA=A[name],tB=B[name],tC=C[name],ts=stats(tB,target),cs=stats(tC,control);
    const meanDiff=Math.abs(ts.mean-cs.mean),stdDiff=Math.abs(ts.std-cs.std);
    if(meanDiff>tolMean||stdDiff>tolStd)
     fail('CONTROL_UNMATCHED','Pre-intervention target/control numeric mean or std outside predeclared tolerance');
    for(const [idxs,buf]of [[target,tB.data],[control,tC.data]]){
     for(const i of idxs){
-     const original=Number(tA.data[i]),next=original+strength*(fill-original);
+     const original=Number(buf[i]),next=original+strength*(fill-original);
      if(!Number.isFinite(next))fail('NONFINITE_INPUT','Target/control occlusion overflow');
      buf[i]=next;if(!Number.isFinite(buf[i]))fail('NONFINITE_INPUT','Typed input conversion overflow');
     }
@@ -168,7 +173,7 @@
     coordinateSpace:'model-input-flat-indices',meanDiff,stdDiff,meanTolerance:tolMean,stdTolerance:tolStd,
     matching:'equal element counts; disjoint ROI; pre-intervention numeric mean/std checks; no anatomical matching proof',
     anatomy:'NOT_VERIFIED',segmentation:'NOT_VERIFIED',clinical:'NOT_ESTABLISHED',
-    nuisance:'seeded Gaussian applied identically to A/B/C per task; distinct seeds form replicates'}};
+    nuisance:'seeded Gaussian applied identically to B/C only (A unchanged); distinct seeds form correlated controlled-contrast replicates'}};
   });
  }
  function method({target,observations,matchedControlObservations,intervention,config={}}){
@@ -194,6 +199,7 @@
   return{schema:SCHEMA,method:'SCEPT-Evidential-Dependence-v1',
    outputType:'paired-controlled-target-dependence',
    score:fixed(margin),targetedEffect:t,matchedControlEffect:c,
+   controlledSignedDelta:controlled,controlledMagnitude:Math.abs(controlled),
    targetSignedDelta:dt/scale,controlSignedDelta:dc/scale,
    nuisanceSeed:intervention.nuisanceSeed,nuisanceSigma:intervention.nuisanceSigma,
    strength:intervention.strength,controlMatching:{targetCount:intervention.targetCount,
@@ -201,7 +207,7 @@
     meanTolerance:intervention.meanTolerance,stdTolerance:intervention.stdTolerance},
    maskHashes:{target:intervention.targetMaskSha256,control:intervention.controlMaskSha256},
    layerResponses:layers,
-   semantics:'(abs(target output B-A)-abs(matched control C-A)) / predeclared outputScale',
+   semantics:'specificity margin = (|B-A|-|C-A|)/outputScale; controlled contrast = (B-C)/outputScale; nuisance applied equally to B/C but NOT A',
    limits:['Numerical evidence dependence requires preregistered controls and cohort gates',
     'Controlled tensor intervention is not proof of causal lesion dependence or clinical interpretability']};
  }
@@ -256,25 +262,25 @@
    scores=max.map(m=>m.score);
   const medianTarget=median(abs),medianSpecificity=median(scores),
    positiveFraction=scores.filter(x=>x>=q.minSpecificity).length/scores.length,
-   medianSigned=median(d),effectSpread=Math.max(...d.map(x=>Math.abs(x-medianSigned))),
+   medianSigned=median(controlled),effectSpread=Math.max(...controlled.map(x=>Math.abs(x-medianSigned))),
    direction=q.expectedSign===null?sign(medianSigned):q.expectedSign,
-   signAgreement=d.filter(x=>sign(x)===direction).length/d.length;
+   signAgreement=controlled.filter(x=>sign(x)===direction).length/d.length;
   const doseProblems=[],nullCells=[],maxControl=[];
   for(const seed of seeds){
    const baseline=get(seed,0);
-   nullCells.push(baseline.targetedEffect,baseline.matchedControlEffect);
+   nullCells.push(baseline.controlledMagnitude);
    maxControl.push(get(seed,1).matchedControlEffect);
    for(let k=1;k<strengths.length;k++){
-    const prev=get(seed,strengths[k-1]).targetedEffect,
-     cur=get(seed,strengths[k]).targetedEffect;
+    const prev=get(seed,strengths[k-1]).controlledMagnitude,
+     cur=get(seed,strengths[k]).controlledMagnitude;
     if(cur+q.doseTolerance<prev)doseProblems.push({seed,from:strengths[k-1],to:strengths[k],decrease:prev-cur});
    }
   }
   const gates=[
    {name:'paired-control-specificity',value:medianSpecificity,threshold:q.minSpecificity,
     verdict:verdict(medianSpecificity>=q.minSpecificity&&medianTarget>0)},
-   {name:'target-perturbation-effect',value:medianTarget,threshold:q.minTargetEffect,
-    verdict:verdict(medianTarget>=q.minTargetEffect&&medianTarget>0)},
+   {name:'controlled-intervention-effect',value:medianControlled,threshold:q.minTargetEffect,
+    verdict:verdict(medianControlled>=q.minTargetEffect&&medianControlled>0)},
    {name:'replicate-specificity',value:positiveFraction,threshold:q.minPositiveFraction,
     verdict:verdict(positiveFraction>=q.minPositiveFraction)},
    {name:'nuisance-effect-stability',value:effectSpread,threshold:q.maxSpread,
@@ -288,13 +294,14 @@
   ];
   return{...base,verdict:gates.every(g=>g.verdict==='criterion_met')?'criterion_met':'criterion_not_met',
    nTasks:tasks.length,nReplicates:seeds.length,strengths:strengths.slice(),seeds:seeds.slice(),
-   gates,metrics:{medianTarget,medianSpecificity,positiveFraction,effectSpread,
+   gates,metrics:{medianTarget,medianControlled,medianSpecificity,positiveFraction,effectSpread,
     medianSigned,signAgreement,doseViolations:doseProblems.length,
     maxZeroDose:Math.max(...nullCells),medianControlAtFullDose:median(maxControl),
     outputScale:q.outputScale},
    doseProblems: doseProblems.slice(0,15),
    notes:['Stability is response consistency under seeded nuisance input shifts, not proof of causal evidence',
     'Matched control checks only pre-intervention numeric ROI count/mean/std, not anatomy/semantics',
+    'A is unchanged; stability tests B-C under shared nuisance, not independent baseline robustness',
     'Correlated dose repeats within a seed are not independent patient replicates',
     'Thresholds are user-preregistered engineering gates, not calibrated statistical confidence or p-values']};
  }
