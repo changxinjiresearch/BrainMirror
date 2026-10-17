@@ -173,7 +173,19 @@ function sampleSlice(edited=true,axis=2){
  }
  return out;
 }
+function makeCnnInput(edited=true){
+ if(!s.dimensions)throw Error('MRI 尚未加载');
+ const d=s.dimensions,depth=s.center[2],lo=s.limits[0],hi=s.limits[1];
+ const out=new Float32Array(256*256*3);
+ for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+  const vx=Math.min(d[0]-1,Math.round((x/255)*(d[0]-1)));
+  const vy=Math.min(d[1]-1,Math.round((y/255)*(d[1]-1)));
+  const intensity=Math.floor(255*sample(voxelValue(vx,vy,depth,edited),lo,hi));
+  const idx=(y*256+x)*3;out[idx]=out[idx+1]=out[idx+2]=intensity;
+ }
+ return out;
+}
 async function checksumVolume(){return s.baseline?crypto.subtle.digest('SHA-256',s.baseline.buffer).then(buf=>Array.from(new Uint8Array(buf)).map(v=>v.toString(16).padStart(2,'0')).join('')):null}
-window.SCEPT_MRI={loadDefault,get state(){return{loaded:!!s.baseline,dimensions:s.dimensions,spacing:s.spacing,affine:s.affine,orient:s.orient,source:s.source,name:s.name,center:[...s.center],radius:s.radius,amount:s.amount,revision:s.revision}},makeSlice:sampleSlice,sourceHash:checksumVolume,decodeFile,applyEdit:computeEdit};
+window.SCEPT_MRI={loadDefault,get state(){return{loaded:!!s.baseline,dimensions:s.dimensions,spacing:s.spacing,affine:s.affine,orient:s.orient,source:s.source,name:s.name,center:[...s.center],radius:s.radius,amount:s.amount,revision:s.revision}},makeSlice:sampleSlice,makeCnnInput,sourceHash:checksumVolume,decodeFile,applyEdit:computeEdit};
 loadDefault();
 })();
