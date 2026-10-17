@@ -21,7 +21,7 @@
   const edited={};for(const [key,t]of Object.entries(prepared))edited[key]={type:t.type,dims:t.dims.slice(),data:new t.data.constructor(t.data)};
   const t=edited[name];if(!['float32','float64'].includes(t.type))fail('Numeric offset requires floating point input');
   const elementCount=Math.max(1,Math.floor(t.data.length*fraction));
-  for(let i=0;i<elementCount;i++){const next=t.data[i]+delta;if(!Number.isFinite(next))fail('Nonfinite edit');t.data[i]=next}
+  for(let i=0;i<elementCount;i++){const next=t.data[i]+delta;if(!Number.isFinite(next))fail('Nonfinite edit');t.data[i]=next;if(!Number.isFinite(t.data[i]))fail('Floating point overflow after conversion')}
   return {edited,intervention:{kind:'engineering-numeric-offset',inputName:name,delta,elementCount,semantics:'Not a medically valid MRI perturbation'}};
  }
  function make(core){if(typeof core?.validateTensor!=='function')fail('SCEPT_CORE required');
