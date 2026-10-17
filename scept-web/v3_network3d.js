@@ -41,7 +41,7 @@ function initialize(){
     vColor=aColor;
    }`;
   const frag=`#version 300 es
-   precision mediump float; in vec3 vColor; uniform float uPoint;
+   precision highp float; in vec3 vColor; uniform float uPoint;
    out vec4 outColor;
    void main(){
     if(uPoint>0.5 && distance(gl_PointCoord,vec2(.5))>.48)discard;
