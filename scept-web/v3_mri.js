@@ -85,10 +85,11 @@ function renderPlane(plane){
 function updateCloud(){
  const d=s.dimensions,arr=[],step=Math.max(2,Math.ceil(Math.cbrt(s.baseline.length/13000)));
  const lo=s.limits[0],hi=s.limits[1],cut=lo+(hi-lo)*.55;
- for(let z=0;z<d[2];z+=step)for(let y=0;y<d[1];y+=step)for(let x=0;x<d[0];x+=step++){
-  const intensity=s.edited[index(x,y,z)];if(intensity>cut){
-   const coords=[(x/d[0]-.5)*2,(y/d[1]-.5)*2,(z/d[2]-.5)*2];
-   arr.push({p:coords,intensity:sample(intensity,lo,hi),inRoi:voxelIsRoi(x,y,z)});
+ for(let zz=0;zz<d[2];zz=zz+step)for(let yy=0;yy<d[1];yy=yy+step)for(let xx=0;xx<d[0];xx=xx+step){
+  const intensity=s.edited[index(xx,yy,zz)];
+  if(intensity>cut){
+   const coords=[(xx/d[0]-.5)*2,(yy/d[1]-.5)*2,(zz/d[2]-.5)*2];
+   arr.push({p:coords,intensity:sample(intensity,lo,hi),inRoi:voxelIsRoi(xx,yy,zz)});
   }
  }
  s.cloud=arr.slice(0,16000);
