@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · U6 自动实验调度</title>
+<title>SCEPT Universal Core · U7 XAI 证据评价</title>
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">U6 / 自动实验编排</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">U7 / 新实验即插即用 M2</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
 <section class="workspace">
 <article class="panel"><h2>01 / 导入冻结模型</h2>
 <label for="modelPreset">模型来源</label>
@@ -103,14 +103,35 @@
 </div>
 <p class="muted">任务队列只在当前页面会话执行；关闭网页后不会后台继续运行。导出记录仅包含元数据、输入哈希和计算结果，不会包含原始 MRI 张量。要继续相同实验，需重新加载原模型、输入及实验配置。</p>
 </article></section>
+<section class="workspace">
+<article class="panel"><h2>04 / U7 XAI 实验插件与证据评价</h2>
+<p class="muted">一个声明式 JSON 插件可以指定模型指纹、真实数值目标、干预与调度、观测、XAI 方法和评价准则。导入新的 JSON 插件不需要修改 SCEPT 主程序。</p>
+<label for="u7ManifestFile">导入新的实验插件 JSON（本地，不上传）</label>
+<input id="u7ManifestFile" type="file" accept=".json,application/json">
+<label for="u7Manifest">实验插件描述（必须与已加载模型 SHA-256 匹配）</label>
+<textarea id="u7Manifest" rows="12" spellcheck="false" placeholder='{"schema":"scept.u7.experiment.v1","id":"...", "version":"1.0.0", "model":{"sha256":"..."},"target":{...},"intervention":{...},"observation":{...},"method":{...},"evaluations":[...]}'></textarea>
+<p class="muted">可用目标：u7.target.tensor-element / tensor-mean；方法：u7.method.target-contrast / activation-response；评价：u7.eval.directional-shift / control-specificity / dose-monotonicity。外部可信脚本还可通过 U1 注册新的目标、方法、评价适配器。医学验证不能由插件声明自动获得。</p>
+<div class="buttons">
+<button class="primary" id="u7Register">注册插件</button>
+<button id="u7Prepare" disabled>验证并调度</button>
+<button id="u7Run" disabled>执行 XAI 实验</button>
+<button id="u7Cancel" disabled>请求取消</button>
+<button id="u7Retry" disabled>重试失败任务</button>
+</div>
+<p id="u7Status" class="status" role="status" aria-live="polite">先加载真实模型，再提供一个与模型匹配的实验插件。</p>
+<div id="u7Facts" class="facts">—</div>
+<div class="scroll"><table><thead><tr><th>任务</th><th>状态</th><th>目标变化 B−A</th><th>检验结果</th></tr></thead><tbody id="u7TaskRows"></tbody></table></div>
+<div class="buttons"><button id="u7Export" disabled>导出 U7 证据与检验 JSON</button></div>
+<p class="muted">输出为真实 ONNX 数值响应和预先声明的检验条件。criterion_met 仅表示数值条件达到，不能表述为“证实了病灶因果依赖”。对于病灶移除，必须提供经过外部准备的掩膜索引及精确校验指纹；系统不自行制造病灶标签。</p>
+</article></section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
-<p><strong>已实现（U0–U6）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
-<p><strong>仍未完成（U7 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>已实现（U0–U7）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>仍未完成（U8 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
 <p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
 </div></section>
 </main>
-<footer>SCEPT Universal Core · U6 自动实验调度预览 · 无 GPU 训练 · 浏览器本地执行</footer>
+<footer>SCEPT Universal Core · U7 XAI Plugin M2 · 无 GPU 训练 · 浏览器本地执行</footer>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./core/scept_core.js"></script>
@@ -120,4 +141,5 @@
 <script src="./core/scept_observation.js"></script>
 <script src="./core/scept_intervention.js"></script>
 <script src="./core/scept_scheduler.js"></script>
+<script src="./core/scept_xai.js"></script>
 <script src="./universal.js"></script></body></html>

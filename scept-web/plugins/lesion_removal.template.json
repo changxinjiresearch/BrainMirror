@@ -1,0 +1,26 @@
+{
+  "schema":"scept.u7.experiment.v1",
+  "id":"lesion-removal-hypothesis-external-mask",
+  "version":"1.0.0",
+  "model":{"sha256":"REPLACE_WITH_64_CHAR_REAL_MODEL_SHA256","requiredCapabilities":["inference"]},
+  "target":{"adapterId":"u7.target.tensor-element","tensor":"REPLACE_WITH_ACTUAL_MODEL_OUTPUT","index":0},
+  "intervention":{
+    "pluginId":"u7.masked-occlusion","mode":"ab","baseSeed":240216,
+    "config":{"fill":0,"mask":{
+      "inputName":"REPLACE_WITH_MODEL_INPUT",
+      "shape":[1,1,4,4],
+      "indices":[0,1],
+      "indicesSha256":"REPLACE_WITH_SHA256_OF_UINT32ARRAY_SORTED_MASK_INDICES",
+      "coordinateSpace":"model-input-flat-indices",
+      "sourceId":"REPLACE_WITH_VERIFIABLE_SEGMENTATION_MASK_PROVENANCE"
+    }}
+  },
+  "observation":{"profileId":"generic","tensors":["REPLACE_WITH_REAL_ONNX_OBSERVABLE_NAME"]},
+  "method":{"adapterId":"u7.method.target-contrast"},
+  "evaluations":[
+    {"adapterId":"u7.eval.directional-shift","params":{"direction":"decrease","minimum":0}},
+    {"adapterId":"u7.eval.control-specificity","params":{"minMargin":0}}
+  ],
+  "requirements":{"lesionMask":true},
+  "scientificBoundary":"TEMPLATE ONLY. Replace dummy mask indexes with a genuine verified lesion segmentation mapped to actual model input coordinates. U7 checksum verifies numeric index integrity, not anatomical validity. Clinical and causal evidence remain unestablished."
+}
