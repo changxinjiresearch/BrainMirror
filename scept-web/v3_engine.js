@@ -79,6 +79,7 @@ async function init(){
  }catch(e){st.loading=false;st.failed=e.message;status('模型初始化失败','error');visibleError('MRI 工作台仍可查看，但模型无法运行：'+e.message)}
 }
 function readyIfPossible(){
+ if($('modelMode').value==='mri_cnn')return window.SCEPT_MRI_CNN?.readyIfPossible()||false;
  const mri=window.SCEPT_MRI?.state;
  const yes=!!st.session&&!!mri?.loaded;
  $('runExperiment').disabled=!yes;
@@ -100,6 +101,7 @@ function metrics(before,after){
  return{mean:sum/before.length,max,changed,up,down,total:before.length,groups:groups.map(g=>g.len?g.sum/g.len:0)};
 }
 async function run(){
+ if($('modelMode').value==='mri_cnn')return window.SCEPT_MRI_CNN?.run();
  if(st.running)return;
  if(!readyIfPossible())return;
  st.running=true;$('runExperiment').disabled=true;$('runExperiment').textContent='计算中…';
@@ -193,9 +195,22 @@ function listHistory(){
  for(const r of st.history.slice(0,8)){const el=document.createElement('div');el.className='record';const a=document.createElement('span'),b=document.createElement('span');a.textContent=new Date(r.at).toLocaleString('zh-CN')+' · '+r.mri;b.textContent=r.layers+' 层观测';el.append(a,b);root.append(el)}
 }
 function save(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
-$('saveAudit').onclick=()=>{if(st.results)save(JSON.stringify(st.results,null,2),'scept-v3-mri-multilayer.json','application/json')};
-$('saveLayers').onclick=()=>{if(!st.results)return;const rows=['layer,tensor_name,total,changed,mean_abs_delta,max_abs_delta,up,down'];for(const l of st.results.layers){const s=l.summary;rows.push([l.layer,l.probe,s.total,s.changed,s.mean,s.max,s.up,s.down].join(','))}save(rows.join('\n'),'scept-v3-layer-summary.csv','text/csv')};
+$('saveAudit').onclick=()=>{if($('modelMode').value==='mri_cnn')return window.SCEPT_MRI_CNN?.exportAudit();if(st.results)save(JSON.stringify(st.results,null,2),'scept-v3-mri-multilayer.json','application/json')};
+$('saveLayers').onclick=()=>{if($('modelMode').value==='mri_cnn')return window.SCEPT_MRI_CNN?.exportCsv();if(!st.results)return;const rows=['layer,tensor_name,total,changed,mean_abs_delta,max_abs_delta,up,down'];for(const l of st.results.layers){const s=l.summary;rows.push([l.layer,l.probe,s.total,s.changed,s.mean,s.max,s.up,s.down].join(','))}save(rows.join('\n'),'scept-v3-layer-summary.csv','text/csv')};
 $('runExperiment').onclick=run;
+$('modelMode').onchange=()=>{
+ if($('modelMode').value==='mri_cnn'){window.SCEPT_MRI_CNN?.activate();return}
+ $('modelInfo').textContent='视觉 ViT 并非 MRI 专业模型；只用于证明多层可观察性，不构成医学解释。';
+ $('warning').textContent='MRI 来自公开 MNI152 脑模板。ViT 训练于普通图像，MRI 输入是跨域技术验证，不能视为医学诊断或 MRI 专用解释。';
+ $('sourceModelHash').textContent=SOURCE_HASH;
+ $('instrumentedHash').textContent=st.modelSha||'—';
+ const selector=$('layerSelect');selector.replaceChildren();
+ for(const p of st.probes){const o=document.createElement('option');o.value=String(p.layer);o.textContent='第 '+p.layer+' 层';selector.add(o)}
+ st.selected=st.probes.some(x=>x.layer===6)?6:st.probes[0]?.layer||6;selector.value=String(st.selected);
+ $('networkState').textContent='ViT 多层观测';
+ drawAll();readyIfPossible();status(st.results?'ViT 观测记录已恢复':'ViT 冻结模型就绪','ready');
+};
+
 $('reloadTemplate').onclick=async()=>{await SCEPT_MRI.loadDefault();readyIfPossible()};
 window.SCEPT_V3={getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
 listHistory();drawNetwork();drawResponse();init();
