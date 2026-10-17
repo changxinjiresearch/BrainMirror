@@ -15,7 +15,7 @@ permissions:
 jobs:
   numeric-and-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,6 +56,8 @@ jobs:
           exit 1
       - name: U2 generic ONNX real MLP/CNN model import plus matching true probes
         run: node scept-web/tests/u2_generic_adapter.cjs
+      - name: U2 real frozen pretrained ViT and CNN run using the SAME generic registry
+        run: node scept-web/tests/u2_pretrained_generic.cjs
       - name: Check Token A/B/Δ visual density with real MRI (screenshot-based acceptance)
         run: node scept-web/tests/v31_token_visual_clarity.cjs
       - name: Verify actual deployed A/B visual fix using Chromium and pretrained model
