@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCEPT Universal Core · 模型接入实验台 U0–U2</title>
+<link rel="stylesheet" href="./universal.css"></head>
+<body>
+<header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
+<main>
+<section class="hero"><span class="pill">U0–U2 工程验证</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="workspace">
+<article class="panel"><h2>01 / 导入冻结模型</h2>
+<label for="modelPreset">模型来源</label>
+<select id="modelPreset">
+<option value="vit">公开预训练 Tiny ViT（普通图片模型，MRI 不适用）</option>
+<option value="cnn">公开 MRI 图像 EfficientNetB3（仅工程研究，不可诊断）</option>
+<option value="local">上传本地 ONNX 模型</option>
+</select>
+<label for="modelFile" class="file-label">本地模型（选择“上传本地”时需要）<input id="modelFile" type="file" accept=".onnx,application/octet-stream"></label>
+<label for="probes">可选观测点：填写模型实际存在的中间张量名称，每行一个（最多 16 个）</label>
+<textarea id="probes" rows="3" placeholder="先点击检查模型，浏览公开的实际张量，再选择要导出的观察点"></textarea>
+<div class="buttons"><button id="inspect" class="primary">检查模型结构</button><button id="load" disabled>接入并验证模型</button></div>
+<p id="modelStatus" class="status" role="status" aria-live="polite">等待读取模型。除加载预训练样例外，不会自动下载其他模型。</p>
+<div class="facts" id="modelFacts">—</div>
+<div class="scroll"><table><thead><tr><th>实际输入</th><th>类型</th><th>形状</th></tr></thead><tbody id="inputs"></tbody></table></div>
+<details><summary>查看可选的真实中间张量</summary><p>仅列出模型元数据明确声明的中间张量。未声明的不自动假定可观察。</p><div id="probesAvailable">请先检查模型。</div></details>
+</article>
+<article class="panel"><h2>02 / 真实推理与数值对比</h2>
+<p class="muted">可以导入与模型输入签名匹配的张量 JSON；若不提供，则使用确定性合成数值输入进行工程烟雾测试。合成输入不具备医学含义。</p>
+<label for="inputJson">自定义输入张量 JSON（可选）</label>
+<textarea id="inputJson" rows="5" placeholder='{"input_name":{"type":"float32","dims":[1,4],"data":[0.1,0.2,0.3,0.4]}}'></textarea>
+<label for="perturb">演示扰动：给首个输入张量前 1% 元素增加固定值 <output id="perturbLabel">+0.10</output></label>
+<input id="perturb" type="range" min="-0.5" max="0.5" step=".05" value=".10">
+<button class="primary" id="run" disabled>运行两次真实推理（A/B）</button>
+<p id="runStatus" class="status" role="status" aria-live="polite">请先接入模型。</p>
+<div id="results" class="results">暂无真实计算结果。</div>
+<div class="buttons"><button id="export" disabled>导出可核查实验 JSON</button><a href="./v3.html">进入成熟 MRI 三维观测器 ↗</a></div>
+</article>
+</section>
+<section class="explain"><h2>科学与架构边界</h2>
+<div class="bullets">
+<p><strong>已实现（U0–U2）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>尚未完成（U3 之后）：</strong>通用医学数据预处理、任务解释目标、任意隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
+</div></section>
+</main>
+<footer>SCEPT Universal Core · U0–U2 开发预览 · 无 GPU 训练 · 浏览器本地执行</footer>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script src="./onnx_inspector.js"></script>
+<script src="./core/scept_core.js"></script>
+<script src="./core/onnx_probes.js"></script>
+<script src="./core/onnx_adapter.js"></script>
+<script src="./universal.js"></script></body></html>
