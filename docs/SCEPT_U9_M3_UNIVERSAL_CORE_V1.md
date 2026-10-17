@@ -31,7 +31,7 @@ M3 requires the complete U0–U8 regression suite to remain green, genuine Chrom
 - scept-web/universal.html CSP disallows inline JS/general eval, frames/objects, and restricts remote scripts to a pinned-version ONNX Runtime Web CDN. WASM is permitted explicitly.
 - An external version-pinned CDN remains a supply-chain and network dependency: M3 does not claim offline-only or fully self-hosted dependencies.
 - scept-web/tests/u9_security_check.cjs enforces static safety and no-unknown-fee publish gates.
-- .github/workflows/scept-pages.yml publishes the existing PUBLIC repository's scept-web static pages using GitHub Pages only **after successful main-branch SCEPT Browser Engine Acceptance**. No new paid GPU, hosting account, backend or inference API is created. GitHub Pages enablement and permissions may still need owner action; provider quotas still apply. Current Vercel connector access to the old project is forbidden and must not be used to claim a deployed URL.
+- .github/workflows/scept-pages.yml publishes the existing PUBLIC repository's scept-web static pages using GitHub Pages only **after successful main-branch SCEPT Browser Engine Acceptance**. No new paid GPU, hosting account, backend or inference API is created. GitHub Pages must first be enabled by a repository owner at GitHub repository Settings -> Pages -> Build and deployment -> Source: GitHub Actions. The default GitHub Actions token **cannot automatically enable Pages** using actions/configure-pages. This first-time settings action does not add a paid account or fee. The release workflow cannot bypass main-branch CI. Provider quotas still apply. Current Vercel connector access to the old project is forbidden and must not be used to claim a deployed URL.
 - Explicit expected Pages path, only if the Pages deployment finishes READY: https://changxinjiresearch.github.io/BrainMirror/universal.html . Do not claim it exists or works merely from configuration.
 
 ### Tests and source
@@ -55,4 +55,4 @@ A researcher can write a trusted explanation/evaluator adapter in an independent
 
 ## Release verdict
 
-**M3 Engineering Complete** requires exact final GitHub PR head green on all new and old CI, merged main SHA verified, and the above deliverables present. **M3 Public Deployment Complete** additionally requires an actual successful Pages deployment plus URL live check. If not available, explicitly state the deployment gap. Neither engineering criterion is evidence of scientific or medical validity.
+**M3 Engineering Complete** requires exact final GitHub PR head green on all new and old CI, merged main SHA verified, and the above deliverables present. **M3 Public Deployment Complete** additionally requires an actual successful Pages deployment plus URL live check. If not available, explicitly state the deployment gap and the single owner Settings -> Pages activation step. Neither engineering criterion is evidence of scientific or medical validity.
