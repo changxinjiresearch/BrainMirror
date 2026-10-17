@@ -46,9 +46,21 @@
   </div>
 </div>
 <div class="network-depth" id="networkDepth">真实 ONNX · 三维网络结构总览</div>
-<div class="network-canvas-shell"><div id="networkPairLabels" class="network-pair-labels"><span>A · 修改前的真实激活</span><span>B · 修改后的真实激活</span></div><canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas></div>
+<div id="operator3dShell" class="network-canvas-shell"><div id="networkPairLabels" class="network-pair-labels"><span>A · 修改前的真实激活</span><span>B · 修改后的真实激活</span></div><canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas></div>
+<div id="token3dShell" class="token3d-shell" hidden>
+ <div class="token-toolbar">
+   <button id="tokenOverview" type="button">全部 5 层</button>
+   <button id="tokenEnter" type="button">进入当前层</button>
+   <button id="tokenZoomIn" type="button">放大＋</button>
+   <button id="tokenZoomOut" type="button">缩小－</button>
+   <button id="tokenReset" type="button">重置视角</button>
+   <span id="tokenDepth">5 层 · 985 个真实 Token</span>
+ </div>
+ <canvas id="token3dCanvas" width="960" height="460" tabindex="0" aria-label="可旋转的 Token 真实激活三维观测场景。单击 Token 查看 192 个实际特征通道"></canvas>
+ <div id="token3dNote" class="token3d-note">真实 Token，不是 ONNX 算子。没有测量到注意力权重时，不绘制 Token 间连接。</div>
+</div>
 <div class="response-legend" id="responseLegend" aria-live="polite">
-  <span><i class="swatch unobserved"></i> 未观测节点：仅显示算子结构</span>
+  <span><i class="swatch unobserved"></i> 算子视图灰色表示未观测；Token 视图所有活动值均来自真实张量</span>
   <span><i class="swatch observed"></i> 已采集张量的真实生产节点</span>
   <span id="responseLegendDetail">颜色/大小仅由该节点实际观测张量的数据决定；无数据不着色。</span>
 </div>
