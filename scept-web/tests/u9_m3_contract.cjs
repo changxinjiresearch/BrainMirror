@@ -5,11 +5,14 @@ const OBS=require('../core/scept_observation.js'),U5=require('../core/scept_inte
 const U6=require('../core/scept_scheduler.js'),U7=require('../core/scept_xai.js');
 const SDK=require('../core/scept_sdk.js'),AUD=require('../core/scept_audit.js');
 const PERF=require('../core/scept_performance.js'),EXT=require('../plugins/u9_method_evaluation_sdk_template.js');
+const INTERVENTION_EXTENSION=require('../plugins/u9_intervention_sdk_template.js');
 (async()=>{
  const registry=CORE.createRegistry(),data=DATA.make(CORE),observations=OBS.make();
  const interventions=U5.make(registry,CORE,data);interventions.registerBuiltins();U7.registerBuiltins(registry,CORE);
  const ext=EXT.install({sdk:SDK,core:CORE,registry});
  assert.equal(ext.length,2);assert.equal(ext[0].schema,'scept.u9.plugin.v1');
+ const extension=INTERVENTION_EXTENSION.install({sdk:SDK,core:CORE,registry});
+ assert.equal(extension.kind,'intervention');
  assert.equal(registry.requireAdapter('explanation','research.example-numeric-response').kind,'explanation');
  assert.throws(()=>EXT.install({sdk:SDK,core:CORE,registry}),e=>e.code==='DUPLICATE_PLUGIN');
  assert.throws(()=>SDK.validateAdapter({id:'research.insecure',kind:'explanation',capabilities:['method.explain']},CORE),
@@ -77,6 +80,16 @@ const PERF=require('../core/scept_performance.js'),EXT=require('../plugins/u9_me
   definition:manifest});
  assert(!JSON.stringify(privacyAudit).includes('"indices":[1,2,3]'));
  assert(!JSON.stringify(privacyAudit).includes('PRIVATE'));
+ const sdkPlan={mode:'ab',pluginId:'research.input-scale-probe',baseSeed:18,
+  config:{inputName:'x',indices:[0,1],factor:0}};
+ const sdkQueue=U6.make({session,interventionEngine:interventions,
+  observationAdapter:observations,dataAdapter:data,core:CORE});
+ await sdkQueue.create(sdkPlan,{feeds});await sdkQueue.run();
+ const sdkResult=sdkQueue.exportAudit();
+ assert.equal(sdkResult.completed,1);
+ assert.equal(sdkResult.tasks[0].result.intervention.plugin,'research.input-scale-probe');
+ assert(sdkResult.tasks[0].result.outputs[0].mean_abs_delta>0);
+ assert.deepEqual([...feeds.x.data],[1,2,3,4],'SDK intervention cannot alter original input');
  const plan={mode:'ab',pluginId:'u5.occlusion',baseSeed:33,
   config:{region:{bounds:[[0,1],[0,2]]},fill:0}};
  const queue=()=>U6.make({session,interventionEngine:interventions,
