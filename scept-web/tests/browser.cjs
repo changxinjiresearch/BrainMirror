@@ -24,7 +24,7 @@ function syntheticMRI(){
   page.on('pageerror',e=>errors.push(e.message));
   page.on('requestfailed',r=>errors.push('REQUEST '+r.url()+' '+r.failure()?.errorText));
   page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
-  await page.goto(base,{waitUntil:'domcontentloaded'});
+  await page.goto(base+'/lab.html',{waitUntil:'domcontentloaded'});
   await page.locator('#demoLinear').click();
   await page.waitForFunction(()=>!document.querySelector('#runBtn').disabled || document.querySelector('#notify').textContent.length>0,null,{timeout:60000});
   if(await page.locator('#runBtn').isDisabled())throw Error('Baseline model load failed: '+await page.locator('#notify').innerText()+' | '+JSON.stringify(errors));
@@ -54,7 +54,7 @@ function syntheticMRI(){
   assert.equal(errors.length,0,'page exceptions: '+JSON.stringify(errors));
   await page.screenshot({path:'/tmp/scept-browser-qa.png',fullPage:true});
   const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true});
-  await mobile.goto(base,{waitUntil:'domcontentloaded'});
+  await mobile.goto(base+'/lab.html',{waitUntil:'domcontentloaded'});
   assert.equal(await mobile.locator('.brand').count(),1);
   console.log('PASS: real ONNX baseline/perturbation, masked internal ablation, NIfTI load/edit, JSON export, mobile layout, no uncaught JS errors');
  }finally{await browser.close()}
