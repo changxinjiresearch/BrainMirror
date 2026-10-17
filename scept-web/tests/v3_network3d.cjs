@@ -9,6 +9,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   await page.goto(process.env.SCEPT_V3_URL||'http://127.0.0.1:8765/v3.html',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.SCEPT_NETWORK3D?.getSnapshot().displayNodes>40||document.querySelector('#readyLabel')?.dataset.state==='error',null,{timeout:120000});
   let v=await page.evaluate(()=>SCEPT_NETWORK3D.getSnapshot());
+  console.log('3D render backend:',v.backend,'WebGL note:',v.rendererError||'none');
   assert(v.displayNodes>40&&v.totalNodes>v.displayNodes,'3D graph not populated from actual ONNX');
   assert(v.totalEdges>v.displayEdges&&v.displayEdges>0,'Genuine tensor dependency edges missing');
   assert(v.edgesVerified,'Non-model edges detected in 3D network');
