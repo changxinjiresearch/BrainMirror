@@ -50,6 +50,9 @@ jobs:
         run: node scept-web/tests/browser.cjs
       - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
         run: node scept-web/tests/v3_brain_mri.cjs
+      - name: Probe MRI-trained EfficientNet B3 model browser feasibility (non-blocking research)
+        continue-on-error: true
+        run: node scept-web/tests/mri_trained_model_check.cjs
       - name: Chinese SCEPT simplified UI, ROI real ViT and responsive acceptance
         run: node scept-web/tests/chinese_studio.cjs
       - name: Verify deployed Chinese SCEPT studio on real Vercel preview
