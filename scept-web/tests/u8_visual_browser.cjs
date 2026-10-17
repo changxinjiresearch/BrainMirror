@@ -102,10 +102,15 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
    ready:SCEPT_UNIVERSAL.getSnapshot().ready,
    hasAudit:SCEPT_UNIVERSAL.getSnapshot().hasExperiment,
    scene:SCEPT_UNIVERSAL.getU8Snapshot().hasScene,
-   source:SCEPT_UNIVERSAL.getU8Snapshot().source
+   source:SCEPT_UNIVERSAL.getU8Snapshot().source,
+   visualError:SCEPT_UNIVERSAL.getU8Snapshot().lastError,
+   visualStatus:document.querySelector('#u8Status').textContent,
+   audit:SCEPT_UNIVERSAL.getAudit()?.outputs.map(o=>({name:o.tensor,profile:o.profile,shape:o.shape,
+    axes:o.axes,meanA:o.mean_abs_A,meanB:o.mean_abs_B}))
   })));
   await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU8Snapshot().hasScene||
-   document.querySelector('#runStatus').dataset.state==='error',null,{timeout:25000});
+   !!SCEPT_UNIVERSAL.getU8Snapshot().lastError||
+   document.querySelector('#runStatus').dataset.state==='error',null,{timeout:10000});
   view=await snap();assert(view.hasScene,await page.locator('#runStatus').innerText());
   assert.equal(view.source,'u5');
   assert.equal(view.modelInput.layout,'NCDHW');
