@@ -29,7 +29,16 @@ const js=()=>({
    assert(after.htmlWidth<=width+2,'horizontal overflow after ONNX metadata at '+width+': '+JSON.stringify(after));
    assert(after.bodyWidth<=width+2,'body overflow after ONNX metadata at '+width+': '+JSON.stringify(after));
    for(const c of after.cards)assert(c.right<=width+2,'model card cut off at '+width+': '+JSON.stringify(c));
-   if(width===1366)await page.screenshot({path:'/tmp/scept-layout-1366.png',fullPage:true});
+   if(width===1536){
+    await page.locator('#transformerDemo').click();
+    await page.waitForFunction(()=>{const s=document.querySelector('#transformerStatus')?.textContent||'';return s.startsWith('PASS ·')||s.startsWith('Cannot complete')},null,{timeout:180000});
+    const status=await page.locator('#transformerStatus').innerText();
+    assert(status.startsWith('PASS ·'),'real ViT failed in layout test: '+status);
+    const afterViT=await page.evaluate(js);
+    assert(afterViT.htmlWidth<=width+2,'real ViT forced horizontal page overflow: '+JSON.stringify(afterViT));
+    for(const card of afterViT.cards)assert(card.right<=width+2,'real ViT metadata panel beyond right edge: '+JSON.stringify(card));
+    await page.screenshot({path:'/tmp/scept-layout-1536-pretrained-vit.png',fullPage:true});
+   } else if(width===1366)await page.screenshot({path:'/tmp/scept-layout-1366.png',fullPage:true});
    console.log('PASS layout '+width+'px: no horizontal scroll, model cards contained in viewport');
    await page.close();
   }
