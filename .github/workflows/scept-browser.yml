@@ -50,6 +50,8 @@ jobs:
         run: node scept-web/tests/browser.cjs
       - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
         run: node scept-web/tests/v3_brain_mri.cjs
+      - name: Verify true MRI-trained EfficientNetB3 paired NIfTI ROI response in browser
+        run: node scept-web/tests/v3_mri_cnn.cjs
       - name: Probe MRI-trained EfficientNet B3 model browser feasibility (non-blocking research)
         continue-on-error: true
         run: node scept-web/tests/mri_trained_model_check.cjs
