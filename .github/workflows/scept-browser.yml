@@ -54,6 +54,9 @@ jobs:
         run: node scept-web/tests/v3_activation_compare.cjs
       - name: Verify SCEPT v3.1 actual Token/channel fine-grained 3D and input Patch end to end
         run: node scept-web/tests/v31_token_mri.cjs
+      - name: Discover additional exposed true ViT Q K and representation observation probes
+        continue-on-error: true
+        run: node scept-web/tests/v31_probe_discovery.cjs
       - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
         run: node scept-web/tests/v3_brain_mri.cjs
       - name: Verify true MRI-trained EfficientNetB3 paired NIfTI ROI response in browser
