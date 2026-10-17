@@ -33,15 +33,32 @@
    return {graph:updated,model:promoted.model,inputs:updated.inputs.map(x=>meta(x,updated.inputMetadata)),
     outputs:updated.outputs.map(x=>meta(x,updated.outputMetadata)),exposed:promoted.exposed,requested};
   }
+  function verifiedMasks(graph){
+   const masks=[];
+   for(const [at,node] of graph.nodes.entries()){
+    if(node.op!=='Mul'||!['SCEPT_ActivationMask','SCEPT_Internal_Mask'].includes(node.name))continue;
+    if(node.inputs.length!==2||node.outputs.length!==1)continue;
+    const input=node.inputs.find(n=>n==='scept_mask'||n.startsWith('__scept_mask__'));
+    const source=node.inputs.find(n=>n!==input);
+    const target=node.outputs[0],info=graph.inputMetadata[input];
+    const upstream=graph.nodes.slice(0,at).some(n=>n.outputs.includes(source));
+    const downstream=graph.nodes.slice(at+1).some(n=>n.inputs.includes(target));
+    if(!input||!info||info.type!=='float32'||!upstream||!downstream||
+       !info.shape.length||!info.shape.every(d=>Number.isSafeInteger(d)&&d>0))continue;
+    masks.push({input,target,source,node:node.name,shape:info.shape.slice()});
+   }
+   return masks;
+  }
   return Object.freeze({
    kind:'model',id:'onnx-wasm',version:'1.0.0-u2',
-   capabilities:['inference','graph.read','observations.output','observations.intermediate'],
+   capabilities:['inference','graph.read','observations.output','observations.intermediate','hidden.intervention'],
    async inspect(modelBytes,context={}){
-    const p=plan(modelBytes,context);
+    const p=plan(modelBytes,context),internalMasks=verifiedMasks(p.graph);
     return{format:'onnx',runtime:'onnxruntime-web-wasm',inputs:p.inputs,outputs:p.outputs,
      graph:{nodes:p.graph.totalNodes,edges:p.graph.edges.length,operators:p.graph.nodes,dependencies:p.graph.edges},
-     observableNames:p.exposed.slice(),annotatedIntermediateNames:Object.keys(p.graph.intermediateMetadata||{}),
-     capabilities:p.exposed.length?this.capabilities.slice():this.capabilities.filter(x=>x!=='observations.intermediate')};
+     observableNames:p.exposed.slice(),annotatedIntermediateNames:Object.keys(p.graph.intermediateMetadata||{}),internalMasks,
+     capabilities:this.capabilities.filter(x=>(x!=='observations.intermediate'||p.exposed.length>0)&&
+      (x!=='hidden.intervention'||internalMasks.length>0))};
    },
    async load(modelBytes,context={}){
     const p=plan(modelBytes,context);
