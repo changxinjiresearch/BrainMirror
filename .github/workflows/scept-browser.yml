@@ -48,6 +48,8 @@ jobs:
           exit 1
       - name: Chrome CPU/WASM, MRI and audit end-to-end test
         run: node scept-web/tests/browser.cjs
+      - name: Verify genuine 3D ONNX topology navigation, orbit, zoom and per-layer dependency drilldown
+        run: node scept-web/tests/v3_network3d.cjs
       - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
         run: node scept-web/tests/v3_brain_mri.cjs
       - name: Verify true MRI-trained EfficientNetB3 paired NIfTI ROI response in browser
