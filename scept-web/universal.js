@@ -85,16 +85,22 @@ function buildInputs(){
   }
   return{feeds:all,source:'user-provided-typed-JSON'};
  }
+ const overrides=$('shapeJson').value.trim()?JSON.parse($('shapeJson').value):{};
+ if(!overrides||Array.isArray(overrides)||typeof overrides!=='object')throw Error('动态维度 JSON 必须是输入名称到尺寸数组的映射');
+ if(Object.keys(overrides).some(name=>!input.find(x=>x.name===name)))throw Error('动态维度包含模型中不存在的输入');
  const feeds={};
  for(const meta of input){
-  if(!meta.shape.every(d=>Number.isInteger(d)&&d>0))throw Error('模型包含动态输入维度 '+meta.name+'；请在 JSON 中明确提供实际尺寸和数据');
-  const n=meta.shape.reduce((a,b)=>a*b,1);
+  const dims=overrides[meta.name]||meta.shape;
+  if(!Array.isArray(dims)||dims.length!==meta.shape.length||
+    !dims.every((d,i)=>Number.isSafeInteger(d)&&d>0&&(typeof meta.shape[i]!=='number'||d===meta.shape[i])))
+    throw Error('请为 '+meta.name+' 提供合法的具体维度，并保持模型中的固定维度不变');
+  const n=dims.reduce((a,b)=>a*b,1);
   if(!Number.isSafeInteger(n)||n>1e6)throw Error('工程合成输入超过 1,000,000 项；请使用模型要求的数据');
   const klass={float32:Float32Array,float64:Float64Array,int32:Int32Array,int64:BigInt64Array,uint8:Uint8Array,bool:Uint8Array}[meta.type];
   if(!klass)throw Error('尚不支持输入类型 '+meta.type);
   const arr=new klass(n);
   if(['float32','float64'].includes(meta.type))for(let i=0;i<n;i++)arr[i]=(i%37)/37;
-  feeds[meta.name]={type:meta.type,dims:meta.shape.slice(),data:arr};
+  feeds[meta.name]={type:meta.type,dims:dims.slice(),data:arr};
  }
  return{feeds,source:'deterministic-synthetic-nonmedical'};
 }
