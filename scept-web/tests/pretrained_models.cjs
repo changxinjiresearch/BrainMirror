@@ -40,7 +40,7 @@ async function testModel(page,model){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
  const page=await browser.newPage({viewport:{width:1366,height:900}});
- await page.goto('http://127.0.0.1:8765',{waitUntil:'domcontentloaded'});
+ await page.goto('http://127.0.0.1:8765/lab.html',{waitUntil:'domcontentloaded'});
  for(const model of sources)await testModel(page,model);
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
