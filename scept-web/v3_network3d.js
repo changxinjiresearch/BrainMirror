@@ -81,7 +81,9 @@ function listLayers(g){
 // Fixed shared per-metric scales are initialized on the first real run and
 // retained across re-runs. The explicit recalibration button changes scales.
 const clamp=x=>Math.max(0,Math.min(1,x));
-// Smooth scale keeps large changes visually distinguishable without\n// silently re-normalizing between experiments: t=(value/scale)/(1+value/scale).\nconst strength=(value,scale)=>!Number.isFinite(value)||!scale?0:Math.max(0,value)/(Math.max(0,value)+scale);
+// Smooth scale keeps large changes visually distinguishable without
+// silently re-normalizing between experiments: t=(value/scale)/(1+value/scale).
+const strength=(value,scale)=>!Number.isFinite(value)||!scale?0:Math.max(0,value)/(Math.max(0,value)+scale);
 const fmtValue=x=>Number.isFinite(x)?(Math.abs(x)>0&&Math.abs(x)<.0001?x.toExponential(3):x.toFixed(5)):'—';
 function observedFor(node){const layer=state.probeNames.get(node.id);return layer===undefined?null:state.observed.get(layer)||null}
 function metricValue(o,mode){
