@@ -27,6 +27,7 @@
 <p class="muted">可以导入与模型输入签名匹配的张量 JSON；若不提供，则使用确定性合成数值输入进行工程烟雾测试。合成输入不具备医学含义。</p>
 <label for="inputJson">自定义输入张量 JSON（可选）</label>
 <textarea id="inputJson" rows="5" placeholder='{"input_name":{"type":"float32","dims":[1,4],"data":[0.1,0.2,0.3,0.4]}}'></textarea>
+<label for="shapeJson">动态输入尺寸（可选；仅用于生成显式声明的合成测试输入）</label><textarea id="shapeJson" rows="2" placeholder='{"input_name":[1,256,256,3]}'></textarea>
 <label for="perturb">演示扰动：给首个输入张量前 1% 元素增加固定值 <output id="perturbLabel">+0.10</output></label>
 <input id="perturb" type="range" min="-0.5" max="0.5" step=".05" value=".10">
 <button class="primary" id="run" disabled>运行两次真实推理（A/B）</button>
