@@ -8,6 +8,7 @@ const dataAdapter=SCEPT_DATA_ADAPTER.make(SCEPT_CORE);
 registry.register('data',dataAdapter);
 const interventionEngine=SCEPT_INTERVENTION.make(registry,SCEPT_CORE,dataAdapter);
 interventionEngine.registerBuiltins();
+SCEPT_XAI.registerBuiltins(registry,SCEPT_CORE);
 const observationAdapter=SCEPT_OBSERVATION.make();
 registry.register('observation',observationAdapter);
 const PRESETS={
@@ -15,11 +16,13 @@ const PRESETS={
  cnn:{id:'mri-cnn-experimental',url:'https://huggingface.co/Udit013/brain-tumor-efficientnetb3/resolve/main/efficientnetb3.onnx',sha256:'320b1ef648f3da5216f6ee0374349324b3cb00a76bebf7dbd1c3796e6155991c'}
 };
 let state={bytes:null,hash:null,inspect:null,source:null,session:null,loaded:null,audit:null};
-let scheduler=null;
+let scheduler=null,u7Engine=null,u7Active=null;
 function note(id,msg,kind='pending'){const el=$(id);el.textContent=msg;el.dataset.state=kind}
 function tableCells(parent,values){const tr=document.createElement('tr');for(const v of values){const td=document.createElement('td');td.textContent=v;tr.append(td)}parent.append(tr)}
 function safeData(buf){if(buf.byteLength>160*1024*1024)throw Error('Model exceeds 160 MB local resource guard');return buf}
 async function inspectModel(){
+ if(u7Engine?.snapshot().status==='running'){note('modelStatus','U7 XAI 队列仍在运行，禁止切换模型','error');return}
+ u7Engine=null;u7Active=null;updateU7Controls();
  if(scheduler?.snapshot().status==='running'){note('modelStatus','调度任务仍在执行，请先取消队列','error');return}
  scheduler=null;updateU6Controls();
  $('inspect').disabled=true;$('load').disabled=true;$('run').disabled=true;$('export').disabled=true;
@@ -63,6 +66,8 @@ async function inspectModel(){
  finally{$('inspect').disabled=false}
 }
 async function attach(){
+ if(u7Engine?.snapshot().status==='running')return;
+ u7Engine=null;u7Active=null;updateU7Controls();
  if(scheduler?.snapshot().status==='running')return;
  scheduler=null;updateU6Controls();
  if(!state.bytes||!state.inspect)return;
@@ -74,7 +79,7 @@ async function attach(){
   note('modelStatus','正在创建真正的 ONNX WASM 推理会话…');
   state.session=await SCEPT_CORE.openModel(registry,manifest,raw,{wasmPaths:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/'});
   state.loaded=manifest;state.audit=null;$('export').disabled=true;
-  $('run').disabled=false;updateU6Controls();
+  $('run').disabled=false;updateU6Controls();updateU7Controls();
   note('modelStatus','已接入真实模型：'+state.session.description.inputs.length+' 个输入，'+state.session.description.outputs.length+' 个实际输出（含 '+probes.length+' 个选定观测点）。','success');
  }catch(e){state.session=null;note('modelStatus','模型接入失败：'+e.message,'error')}
  finally{$('load').disabled=false}
@@ -274,6 +279,84 @@ $('u6Retry').onclick=()=>{
 $('u6Json').onclick=()=>{if(scheduler)saveU6(JSON.stringify(scheduler.exportAudit(),null,2),'scept-u6-audit.json','application/json')};
 $('u6Csv').onclick=()=>{if(scheduler)saveU6(scheduler.exportCSV(),'scept-u6-results.csv','text/csv')};
 updateU6Controls();
+// U7 plugin manifests are data, not eval or dynamically executed user JavaScript.
+function u7Snapshot(){return u7Engine?.snapshot()||{status:'idle',total:0,tasks:[],completed:0,failed:0,cancelled:0,pending:0}}
+function updateU7Controls(){
+ const s=u7Snapshot(),busy=s.status==='running',ready=!!state.session;
+ $('u7Register').disabled=!ready||busy;
+ $('u7Prepare').disabled=!ready||busy||!u7Active;
+ $('u7Run').disabled=!ready||busy||!(s.pending>0||s.cancelled>0);
+ $('u7Cancel').disabled=!busy;
+ $('u7Retry').disabled=!ready||busy||!(s.failed>0);
+ $('u7Export').disabled=!s.total;
+ $('u7Facts').textContent=s.total?
+  '实验 '+(u7Active||'—')+' · 总任务 '+s.total+' · 完成 '+s.completed+' · 失败 '+s.failed+
+  ' · 待运行 '+s.pending+' · 取消 '+s.cancelled+' · 状态 '+s.status:
+  '尚未创建 XAI 任务（只保留当前浏览器会话中的任务状态）';
+ const root=$('u7TaskRows');root.replaceChildren();
+ for(const task of s.tasks){
+  const evidence=task.result?.analysis,td=document.createElement('tr');
+  const tests=evidence?.tests?.map(x=>x.test+':'+x.verdict).join('；')||
+   (task.error?task.error.code+':'+task.error.message:'—');
+  for(const text of [task.id+' · '+task.variant,task.status,
+   evidence?.target?.delta===undefined?'—':String(evidence.target.delta),tests]){
+   const cell=document.createElement('td');cell.textContent=text;td.append(cell);
+  }root.append(td);
+ }
+}
+$('u7ManifestFile').onchange=async()=>{
+ try{const file=$('u7ManifestFile').files?.[0];if(!file)return;
+  if(file.size>300000)throw Error('实验插件 JSON 不得超过 300 KB');
+  const value=await file.text();JSON.parse(value);$('u7Manifest').value=value;
+  note('u7Status','已读取本地实验 JSON。请验证模型指纹并注册插件。','success');
+ }catch(e){note('u7Status','插件文件读取失败：'+e.message,'error')}
+};
+$('u7Register').onclick=()=>{
+ try{
+  if(!state.session)throw Error('请先加载真实 ONNX 模型');
+  const m=JSON.parse($('u7Manifest').value);
+  // Registry accepts trusted JS adapters; JSON can only reference registered methods.
+  u7Engine=SCEPT_XAI.make({registry,session:state.session,interventionEngine,observationAdapter,
+   dataAdapter,core:SCEPT_CORE,schedulerFactory:SCEPT_SCHEDULER,onProgress:updateU7Controls});
+  u7Engine.registerExperiment(m);u7Active=m.id;
+  note('u7Status','实验插件 '+m.id+' 已注册。现在可以校验模型、目标、观测、算法、评价和数据前置条件。','success');
+ }catch(e){u7Active=null;u7Engine=null;note('u7Status','注册失败：'+e.message,'error')}
+ updateU7Controls();
+};
+$('u7Prepare').onclick=async()=>{
+ try{
+  if(!u7Engine||!u7Active)throw Error('未注册实验');
+  const {feeds}=buildInputs();
+  const m=JSON.parse($('u7Manifest').value);
+  if(m.id!==u7Active)throw Error('实验描述已变动，请重新注册');
+  const usesReplacement=m.intervention.pluginId==='u5.replace'||
+   (m.intervention.controls||[]).some(v=>v.pluginId==='u5.replace');
+  const referenceFeeds=usesReplacement?parseReferenceJson($('referenceJson').value):null;
+  const s=await u7Engine.prepare(u7Active,{feeds,referenceFeeds});
+  note('u7Status','已生成 '+s.total+' 个 XAI 任务。所有目标与观测张量已经通过模型输出签名检查。','success');
+ }catch(e){note('u7Status','无法调度：'+e.message,'error')}
+ updateU7Controls();
+};
+$('u7Run').onclick=async()=>{
+ if(!u7Engine)return;
+ $('u7Run').disabled=true;
+ try{
+  if(u7Engine.snapshot().cancelled)u7Engine.resume();
+  note('u7Status','正在执行真正的 ONNX 推理和 U7 证据评价…');
+  const report=await u7Engine.run();
+  note('u7Status','执行结束：完成 '+report.execution.completed+'/'+report.execution.total+
+   ' · 失败 '+report.execution.failed+' · 汇总检验 '+report.suiteTests.length,
+   report.execution.failed?'error':'success');
+ }catch(e){note('u7Status','XAI 实验失败：'+e.message,'error')}
+ updateU7Controls();
+};
+$('u7Cancel').onclick=()=>{try{u7Engine.cancel();note('u7Status','取消请求已提交，正在执行的 ONNX 调用无法立即打断。')}catch(e){note('u7Status',e.message,'error')}updateU7Controls()};
+$('u7Retry').onclick=()=>{try{u7Engine.retryFailed();note('u7Status','失败任务重新排队，仍使用原模型和随机种子。','success')}catch(e){note('u7Status',e.message,'error')}updateU7Controls()};
+$('u7Export').onclick=()=>{
+ try{saveU6(JSON.stringify(u7Engine.exportEvidence(),null,2),'scept-u7-evidence.json','application/json')}
+ catch(e){note('u7Status','导出失败：'+e.message,'error')}
+};
+updateU7Controls();
 $('modelPreset').onchange=()=>{$('architectureProfile').value=$('modelPreset').value==='vit'?'vit-token-channel':$('modelPreset').value==='cnn'?'generic':'generic';$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
 $('modelFile').disabled=true;
 $('inspect').onclick=inspectModel;$('load').onclick=attach;$('run').onclick=run;
@@ -284,6 +367,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u5-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
 
 })();
