@@ -43,7 +43,7 @@ For pairwise normalized improvement, **positive means SCEPT is better**; negativ
 - Numeric patch pairing mean coverage 99.84%; all 100 fixed cases had at least 80% matched patches. Numeric intensity matching is NOT anatomical matching, label relevance, causal exchangeability or matched biology.
 - SCEPT with no nuisance has almost identical mean deletion/insertion AUC to standard SCEPT. On this dataset nuisance repetitions did not produce a clear fidelity improvement.
 - The separate U10 unit study rejects stable-but-zero-effect or missing genuine control evidence. These are engineering falsification checks, not trained-medical-model causal experiments.
-- The independent nuisance-conditioned P/Q matching audit is a separate release gate: a P/Q pair chosen on original image intensities might fail tolerance after adding shared noise. Until this check passes, do not claim every patch had the exact strict U10 matching prerequisites.
+- **Independent U10 post-nuisance matching audit: PASS.** Across 100 authentic images, checked all **14,676** (target ROI, control ROI, nuisance seed) combinations and **4,892** eligible ROI contrast records: **zero matching-tolerance violations, zero null-dose violations**, without any threshold change. [Actual per-seed matching audit](../results/u11/registered-v0.1/u10_matching_parity.json). This is *numeric* intensity/std matching, never anatomical or biological causal matching.
 
 ## Independent rerun and immutable original outputs
 
@@ -67,6 +67,6 @@ No MNIST raw digit pixels, model binary, or private patient inputs were committe
 
 **NOT established:** SCEPT superiority to Grad-CAM, actual original RISE or Integrated Gradients (none run yet); causal/biological explanation of brain lesions; clinically valid perturbations; calibrated statistical certainty beyond current outcome; robustness across independent model/data families; anatomical spatial alignment; human explanatory ground truth or patient-level medical fairness.
 
-**Unmet M4 requirements:** second independently pretrained model and task/data family, true supported gradient baselines, exact U10 post-nuisance numeric match audit, model-parameter randomization tests, grounded feature causal controls, independent holdout/generalization evidence and reviewable uncertainty estimates. The grade of M4 is **NOT PASSED** until substantive additional evidence, not just CI, satisfies these gaps.
+**Unmet M4 requirements:** second independently pretrained model and task/data family, true supported gradient baselines, anatomy-/semantics-aware matching beyond the verified numeric U10 parity audit, model-parameter randomization tests, grounded feature causal controls, independent holdout/generalization evidence and reviewable uncertainty estimates. The grade of M4 is **NOT PASSED** until substantive additional evidence, not just CI, satisfies these gaps.
 
 **Do not** retune U10 v1 thresholds using these results. If improving SCEPT, register new version, baseline strategy and untouched holdout first. Publishing a useful negative research finding is preferable to claiming unmeasured superiority.
