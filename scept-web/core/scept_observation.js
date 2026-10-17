@@ -60,5 +60,6 @@
   return description.outputs.map(m=>observeTensor(m.name,baseline[m.name],edited[m.name],m,profileId,
     probes.includes(m.name)?'selected_real_intermediate':'actual_graph_output',maxAxisUnits));
  }
- return Object.freeze({VERSION:'1.0.0-u4',profiles,selectProfile,observeTensor,observePair});
+ function make(){return Object.freeze({id:'runtime-axis-v1',kind:'observation',capabilities:['observations.output','observations.intermediate'],observePair})}
+ return Object.freeze({VERSION:'1.0.0-u4',profiles,selectProfile,observeTensor,observePair,make});
 });
