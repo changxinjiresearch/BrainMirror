@@ -104,11 +104,17 @@
   const description=await adapter.inspect(modelBytes,{manifest:m,options});
   if(!Array.isArray(description.inputs)||!Array.isArray(description.outputs))
    fail('INVALID_ADAPTER','Model inspect must return input and output metadata');
+  // A model may support fewer observations than its adapter can provide.
+  // Only capabilities verified for THIS graph may be advertised.
+  const available=description.capabilities||adapter.capabilities;
+  if(!Array.isArray(available)||new Set(available).size!==available.length||
+    available.some(cap=>!adapter.capabilities.includes(cap)))
+    fail('INVALID_CAPABILITIES','Model-specific capabilities must be a subset of its adapter declaration');
   const inspected={
    ...description,
    inputs:description.inputs.map(normalizeInput),
    outputs:description.outputs.map(normalizeInput),
-   capabilities:adapter.capabilities.slice()
+   capabilities:available.slice()
   };
   const session=await adapter.load(modelBytes,{manifest:m,description:inspected,options});
   if(!session||typeof session.run!=='function'||typeof session.dispose!=='function')
