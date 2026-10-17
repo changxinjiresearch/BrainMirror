@@ -254,9 +254,12 @@
       'Mask anatomy and co-registration are not validated by U7']});
    }};
    const spec={mode:manifest.intervention.mode||'ab',pluginId:manifest.intervention.pluginId,
-    config:manifest.intervention.config||{},parameter:manifest.intervention.parameter,
-    intensities:manifest.intervention.intensities,controls:manifest.intervention.controls,
-    baseSeed:manifest.intervention.baseSeed??240216};
+    config:manifest.intervention.config||{},baseSeed:manifest.intervention.baseSeed??240216};
+   if(spec.mode==='sweep'){
+    spec.parameter=manifest.intervention.parameter;
+    spec.intensities=manifest.intervention.intensities;
+   }
+   if(spec.mode==='batch')spec.controls=manifest.intervention.controls;
    const fresh=schedulerFactory.make({session,interventionEngine,observationAdapter,dataAdapter,core,
     analysisAdapter,onProgress:()=>{if(onProgress)onProgress(snapshot())}});
    const prepared=await fresh.create(spec,{feeds,referenceFeeds,profileId:manifest.observation.profileId||'generic'});
