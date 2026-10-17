@@ -12,8 +12,10 @@ assert(html.includes("script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-ev
 assert(!html.includes("'unsafe-eval'"),'No general eval permission');
 assert(!html.includes("script-src 'unsafe-inline'"),'No inline JS permitted');
 assert.match(html,/onnxruntime-web@1\.20\.1\/dist\/ort\.min\.js/);
-for(const match of html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)){
- assert(/\\bsrc\\s*=/.test(match[1]),'Every JS element must be external');
+const tags=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+assert(tags.length>=10,'The universal workbench must load expected modules');
+for(const match of tags){
+ assert(/\bsrc\s*=/.test(match[1]),'Every JS element must be external');
  assert(!match[2].trim(),'External script tags must not include inline code');
 }
 for(const [name,code]of [['sdk',sdk],['audit',audit],['browser',consoleCode]]){
