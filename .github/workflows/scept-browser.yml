@@ -34,6 +34,9 @@ jobs:
           node --check scept-web/core/scept_data_adapter.js
           node --check scept-web/core/scept_observation.js
           node --check scept-web/core/scept_intervention.js
+          node --check scept-web/core/scept_scheduler.js
+          node --check scept-web/tests/u6_scheduler.cjs
+          node --check scept-web/tests/u6_browser.cjs
           node --check scept-web/tests/u5_interventions.cjs
           node --check scept-web/tests/u5_browser.cjs
           node --check scept-web/tests/u3_u4_contract.cjs
@@ -50,6 +53,8 @@ jobs:
         run: node scept-web/tests/u3_u4_contract.cjs
       - name: U5 deterministic noise, occlusion, replacement, paired matched controls and fail-closed mask contracts
         run: node scept-web/tests/u5_interventions.cjs
+      - name: U6 task queue, intensity sweeps, deterministic random seeds, failed retry and cancellation
+        run: node scept-web/tests/u6_scheduler.cjs
       - name: Install CPU model testing tools
         run: python -m pip install onnx onnxruntime pytest numpy
       - name: Generate and validate two NEW ONNX model architectures for U2
@@ -71,6 +76,8 @@ jobs:
         run: node scept-web/tests/u4_m1_cross_architecture.cjs
       - name: U5 real Chromium A/B/C four input intervention plugins plus true instrumented hidden-layer mask
         run: node scept-web/tests/u5_browser.cjs
+      - name: U6 real Chrome ONNX scheduler A/B intensity scan, seeded replay and A/B/C batch failures
+        run: node scept-web/tests/u6_browser.cjs
       - name: U2 generic ONNX real MLP/CNN model import plus matching true probes
         run: node scept-web/tests/u2_generic_adapter.cjs
       - name: U2 deployed Universal Core acceptance with TWO unseen model architectures
