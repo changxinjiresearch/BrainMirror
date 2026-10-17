@@ -1,0 +1,300 @@
+{
+  "schema": "scept.u11.research.benchmark.v0.1",
+  "protocol": "docs/SCEPT_U11_PREREGISTRATION_V0_1.md",
+  "model": {
+    "source": "https://huggingface.co/onnxmodelzoo/mnist-12/resolve/1cd752f4a3d818fa215aa621c78b8a10a4a1a3a5/mnist-12.onnx",
+    "sha256": "5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd",
+    "input": "Input3",
+    "output": "Plus214_Output_0",
+    "actual_runtime": "onnxruntime CPU"
+  },
+  "data": {
+    "source": "https://storage.googleapis.com/cvdf-datasets/mnist/",
+    "source_hashes": {
+      "mnist-12.onnx": "5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd",
+      "t10k-images-idx3-ubyte.gz": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
+      "t10k-labels-idx1-ubyte.gz": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6"
+    },
+    "split": "official MNIST test IDX 10000 images",
+    "selected_original_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      66,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      75,
+      76,
+      77,
+      78,
+      81,
+      82,
+      84,
+      87,
+      88,
+      90,
+      91,
+      92,
+      98,
+      101,
+      102,
+      106,
+      110,
+      119,
+      120,
+      126,
+      127,
+      128,
+      134,
+      146,
+      177,
+      179,
+      181,
+      184
+    ],
+    "selection": "first 10 examples per original digit",
+    "n": 100,
+    "n_correct": 98,
+    "accuracy": 0.98
+  },
+  "design": {
+    "fixed_grid": [
+      7,
+      7
+    ],
+    "patch": [
+      4,
+      4
+    ],
+    "numeric_match_mean_tolerance": 0.2,
+    "numeric_match_sd_tolerance": 0.2,
+    "dose": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "seeds": [
+      109,
+      211,
+      307
+    ],
+    "noise_sigma": 0.001,
+    "rise_samples": 256,
+    "statistical_replicates": [
+      2000,
+      2000
+    ],
+    "stats_seed": 240216
+  },
+  "quality": {
+    "average_coverage": 0.9983673469387756,
+    "n_coverage_80pct": 100,
+    "n_not_evaluable": 2,
+    "all_zero_dose_verified": true,
+    "dose_violations": 755,
+    "quality_gate": "PASS"
+  },
+  "statistics": {
+    "methods": {
+      "scept": {
+        "deletion_auc": 0.3366267321872668,
+        "insertion_auc": 0.7554905750662713
+      },
+      "occlusion": {
+        "deletion_auc": 0.1437593456257399,
+        "insertion_auc": 0.9321035778619721
+      },
+      "rise": {
+        "deletion_auc": 0.16448163534075394,
+        "insertion_auc": 0.9238915196717784
+      },
+      "random": {
+        "deletion_auc": 0.5785502193459743,
+        "insertion_auc": 0.5340391226094757
+      },
+      "scept_no_nuisance": {
+        "deletion_auc": 0.33737092283488834,
+        "insertion_auc": 0.7558420685830499
+      }
+    },
+    "comparisons": [
+      {
+        "baseline": "occlusion",
+        "outcome": "deletion_auc",
+        "higher_is_better": true,
+        "signed_improvement_mean": -0.19286738656152688,
+        "bootstrap_95ci": [
+          -0.2489330404637258,
+          -0.13268865721473028
+        ],
+        "permutation_p_raw": 0.0004997501249375312,
+        "n_images": 98,
+        "holm_adjusted_p": 0.0029985007496251873,
+        "statistical_signal": false
+      },
+      {
+        "baseline": "occlusion",
+        "outcome": "insertion_auc",
+        "higher_is_better": true,
+        "signed_improvement_mean": -0.17661300279570066,
+        "bootstrap_95ci": [
+          -0.2196711475789775,
+          -0.1339175141883617
+        ],
+        "permutation_p_raw": 0.0004997501249375312,
+        "n_images": 98,
+        "holm_adjusted_p": 0.0029985007496251873,
+        "statistical_signal": false
+      },
+      {
+        "baseline": "rise",
+        "outcome": "deletion_auc",
+        "higher_is_better": true,
+        "signed_improvement_mean": -0.17214509684651289,
+        "bootstrap_95ci": [
+          -0.21912709261782315,
+          -0.12611213109061117
+        ],
+        "permutation_p_raw": 0.0004997501249375312,
+        "n_images": 98,
+        "holm_adjusted_p": 0.0029985007496251873,
+        "statistical_signal": false
+      },
+      {
+        "baseline": "rise",
+        "outcome": "insertion_auc",
+        "higher_is_better": true,
+        "signed_improvement_mean": -0.16840094460550706,
+        "bootstrap_95ci": [
+          -0.21642062722123329,
+          -0.12188641053211198
+        ],
+        "permutation_p_raw": 0.0004997501249375312,
+        "n_images": 98,
+        "holm_adjusted_p": 0.0029985007496251873,
+        "statistical_signal": false
+      },
+      {
+        "baseline": "random",
+        "outcome": "deletion_auc",
+        "higher_is_better": true,
+        "signed_improvement_mean": 0.24192348715870757,
+        "bootstrap_95ci": [
+          0.1860698531179926,
+          0.30089711601547164
+        ],
+        "permutation_p_raw": 0.0004997501249375312,
+        "n_images": 98,
+        "holm_adjusted_p": 0.0029985007496251873,
+        "statistical_signal": true
+      },
+      {
+        "baseline": "random",
+        "outcome": "insertion_auc",
+        "higher_is_better": true,
+        "signed_improvement_mean": 0.22145145245679562,
+        "bootstrap_95ci": [
+          0.1594170466884945,
+          0.2791169825100399
+        ],
+        "permutation_p_raw": 0.0004997501249375312,
+        "n_images": 98,
+        "holm_adjusted_p": 0.0029985007496251873,
+        "statistical_signal": true
+      }
+    ],
+    "n_primary": 98,
+    "gate": "COMPUTED"
+  },
+  "software": {
+    "python": "3.11.17 (main, Oct  1 2026, 14:32:31) [GCC 13.3.0]",
+    "onnxruntime": "1.23.2",
+    "numpy": "2.2.6",
+    "system": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
+  },
+  "runtime": {
+    "actual_onnx_forward_calls": 158020,
+    "wall_seconds": 13.858183776999994
+  },
+  "claims": {
+    "engineering": "measured, not simulated",
+    "clinical": "NOT_ESTABLISHED",
+    "causal": "NOT_ESTABLISHED",
+    "outperforms_all_xai": "NOT_ESTABLISHED",
+    "cross_model_generalization": "NOT_PERFORMED"
+  },
+  "limitations": [
+    "single model/data family",
+    "CNN handwritten digit task",
+    "fixed zero-fill insertion/deletion OOD evaluator",
+    "patchwise SCEPT v1 extension not a validated saliency map",
+    "no Grad-CAM or Integrated Gradients baseline",
+    "no actual anatomical lesion annotation"
+  ]
+}
