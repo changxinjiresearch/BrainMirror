@@ -18,3 +18,5 @@
 .u8-input-controls input[type=text]{width:100%;border-radius:8px;background:#081e29;color:#d6f1e7;border:1px solid #3a6470;padding:10px 12px;font-size:12px}
 @media(max-width:1120px){.u8-head{display:block}.u8-source-controls{max-width:100%;min-width:0;margin:14px 0}.u8-views{grid-template-columns:1fr}.u8-volume{grid-column:auto}}
 @media(max-width:560px){.u8-source-controls,.u8-input-controls{grid-template-columns:1fr}.u8-chart canvas{height:260px}}
+
+.u9-verdict{background:#081d28;color:#9ccbbf;border:1px solid #365962;border-radius:8px;padding:12px;white-space:pre-wrap;overflow:auto;max-height:350px;font:11px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}
