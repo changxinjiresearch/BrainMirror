@@ -51,10 +51,12 @@ jobs:
     needs: real-mnist-pilot
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -83,6 +85,46 @@ jobs:
           assert len(r['statistics']['comparisons'])==6 if r['statistics']['n_primary']>0 else True
           print('PASSED main real scientific provenance/schema; quality:',r['quality']['quality_gate'])
           PY
+      - name: Independent full second run with exact same frozen model/data and protocol
+        run: |
+          python scripts/u11_real_mnist_benchmark.py             --mode main --out results/u11/independent-replay             --cache /tmp/scept-u11-original-sources > /tmp/scept-u11-replay.log
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import hashlib
+          a=Path('results/u11/main/cases.json').read_bytes()
+          b=Path('results/u11/independent-replay/cases.json').read_bytes()
+          assert a==b, 'REPLAY_DIVERGENCE: independent second 100-case actual ONNX execution differs'
+          x=json.loads(Path('results/u11/main/summary.json').read_text())
+          y=json.loads(Path('results/u11/independent-replay/summary.json').read_text())
+          for k in ('model','data','design','quality','statistics','claims'):
+              assert x[k]==y[k],f'REPLAY_DIVERGENCE: {k}'
+          Path('results/u11/main/replay_integrity.json').write_text(json.dumps({
+              'schema':'scept.u11.independent-replay.v1',
+              'actual_second_onnx_execution':True,
+              'case_json_sha256':hashlib.sha256(a).hexdigest(),
+              'case_records_equal':True,
+              'statistics_equal':True,
+              'n_cases':x['data']['n'],
+              'source_hashes':x['data']['source_hashes'],
+              'scientific_effect_replicated_across_new_data':'NOT_TESTED'},indent=2)+'\n')
+          print('PASS U11 exact independent 100-case rerun, authentic ONNX and original MNIST')
+          PY
+      - name: Persist versioned scientific results as permanent GitHub repository files
+        if: github.ref == 'refs/heads/phase/scept-u11-registered-real-data-benchmark'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results/u11/registered-v0.1
+          cp results/u11/main/summary.json              results/u11/main/cases.json              results/u11/main/cases.csv              results/u11/main/replay_integrity.json              results/u11/registered-v0.1/
+          (cd results/u11/registered-v0.1 && sha256sum *.json *.csv > FILE_HASHES.sha256)
+          git config user.name "scept-research-bot"
+          git config user.email "scept-research-bot@users.noreply.github.com"
+          git add results/u11/registered-v0.1/
+          if ! git diff --cached --quiet; then
+            git commit -m "results(u11): preserve preregistered 100 real MNIST test case results and independent replay"
+            git push origin HEAD:phase/scept-u11-registered-real-data-benchmark
+          fi
       - name: Archive 100-case aggregate, case diagnostics, mask matching and actual numerical results
         if: always()
         uses: actions/upload-artifact@v4
