@@ -192,7 +192,7 @@ function listHistory(){
  const root=$('records');root.replaceChildren();if(!st.history.length){root.textContent='尚无本次实验记录。';return}
  for(const r of st.history.slice(0,8)){const el=document.createElement('div');el.className='record';const a=document.createElement('span'),b=document.createElement('span');a.textContent=new Date(r.at).toLocaleString('zh-CN')+' · '+r.mri;b.textContent=r.layers+' 层观测';el.append(a,b);root.append(el)}
 }
-function save(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function save(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
 $('saveAudit').onclick=()=>{if(st.results)save(JSON.stringify(st.results,null,2),'scept-v3-mri-multilayer.json','application/json')};
 $('saveLayers').onclick=()=>{if(!st.results)return;const rows=['layer,tensor_name,total,changed,mean_abs_delta,max_abs_delta,up,down'];for(const l of st.results.layers){const s=l.summary;rows.push([l.layer,l.probe,s.total,s.changed,s.mean,s.max,s.up,s.down].join(','))}save(rows.join('\n'),'scept-v3-layer-summary.csv','text/csv')};
 $('runExperiment').onclick=run;
