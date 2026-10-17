@@ -193,6 +193,6 @@
    metadata:{source:v.source,layout:v.layout,shape:v.shape,sampled:v.sampled,
     anatomicalStatus:'UNVERIFIED',resampled:v.resampled}};
  }
- return Object.freeze({VERSION,SCHEMA,validateObservation,createScene,fromAudit,fromQueue,fromEvidence,
+ return Object.freeze({VERSION,SCHEMA,validateObservation,tensorView,graphView,createScene,fromAudit,fromQueue,fromEvidence,
   captureInput,plane});
 });
