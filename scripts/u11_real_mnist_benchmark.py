@@ -21,7 +21,10 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
-import onnxruntime as ort
+try:
+    import onnxruntime as ort
+except ImportError:
+    ort = None  # pure-numeric CI sanity tests; REAL model run explicitly requires ORT
 
 MODEL_SHA = "5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd"
 MODEL_URL = ("https://huggingface.co/onnxmodelzoo/mnist-12/resolve/"
@@ -174,6 +177,8 @@ def occlude(source, idx, dose=1):
 
 class Model:
     def __init__(self, file):
+        if ort is None:
+            raise RuntimeError('REAL_ONNX_RUNTIME_REQUIRED: install pinned onnxruntime')
         opt = ort.SessionOptions()
         opt.inter_op_num_threads = 1
         opt.intra_op_num_threads = 1
