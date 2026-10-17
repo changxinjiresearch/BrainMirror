@@ -12,8 +12,8 @@ const PROBE_LAYERS=[2,4,6,8,10];
 const PROBE_NAME=i=>`/vit/encoder/layer.${i}/attention/attention/value/MatMul_output_0`;
 const EXTRA_PROBES=[
  {kind:'patch',label:'Patch Embedding / Conv',layer:-1,name:'/vit/embeddings/patch_embeddings/projection/Conv_output_0'},
- {kind:'query',label:'Query · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/query/MatMul_output_0'},
- {kind:'key',label:'Key · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/key/MatMul_output_0'},
+ {kind:'query',label:'Query 线性乘积（未加偏置） · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/query/MatMul_output_0'},
+ {kind:'key',label:'Key 线性乘积（未加偏置） · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/key/MatMul_output_0'},
  {kind:'attention',label:'Attention Softmax · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/Softmax_output_0'},
  {kind:'residual',label:'Residual Add · 第 6 层',layer:6,name:'/vit/encoder/layer.6/output/Add_output_0'}
 ];
