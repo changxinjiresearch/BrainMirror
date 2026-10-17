@@ -6,6 +6,8 @@ const adapter=SCEPT_ONNX_ADAPTER.make({wasmPaths:'https://cdn.jsdelivr.net/npm/o
 registry.register('model',adapter);
 const dataAdapter=SCEPT_DATA_ADAPTER.make(SCEPT_CORE);
 registry.register('data',dataAdapter);
+const interventionEngine=SCEPT_INTERVENTION.make(registry,SCEPT_CORE,dataAdapter);
+interventionEngine.registerBuiltins();
 const observationAdapter=SCEPT_OBSERVATION.make();
 registry.register('observation',observationAdapter);
 const PRESETS={
@@ -72,6 +74,19 @@ async function attach(){
  }catch(e){state.session=null;note('modelStatus','模型接入失败：'+e.message,'error')}
  finally{$('load').disabled=false}
 }
+function parseReferenceJson(raw){
+ const meta=state.session.description.inputs,json=JSON.parse(raw);
+ if(!json||Array.isArray(json)||typeof json!=='object')throw Error('参考输入必须是张量名称到类型/维度/数据的映射');
+ const feeds={};
+ for(const m of meta){
+  const v=json[m.name];
+  if(!v||!Array.isArray(v.data)||v.data.length>1e6)throw Error('参考输入缺少 '+m.name+'，或元素超过上限');
+  const C={float32:Float32Array,float64:Float64Array,int32:Int32Array,int64:BigInt64Array,uint8:Uint8Array,bool:Uint8Array}[v.type||m.type];
+  if(!C)throw Error('不支持的参考输入类型 '+m.name);
+  feeds[m.name]={type:v.type||m.type,dims:v.dims,data:(v.type||m.type)==='int64'?new C(v.data.map(BigInt)):new C(v.data)};
+ }
+ return dataAdapter.prepare(state.session.description,feeds);
+}
 function buildInputs(){
  const input=state.session.description.inputs;
  const user=$('inputJson').value.trim();
@@ -110,16 +125,29 @@ function buildInputs(){
 }
 async function run(){
  if(!state.session)return;
- $('run').disabled=true;
+ $('run').disabled=true;state.audit=null;$('export').disabled=true;
  try{
   note('runStatus','准备真实 ONNX 输入，运行冻结模型前向计算 A…');
   const {feeds,source}=buildInputs();
   const prepared=dataAdapter.prepare(state.session.description,feeds);
+  const mode=$('interventionMode').value;
   const amount=Number($('perturb').value);
-  const {edited,intervention}=dataAdapter.offset(prepared,state.session.description,{delta:amount});
-  const a=await state.session.run(prepared);
-  note('runStatus','正在使用相同核心接口运行第二次真实冻结模型推理 B…');
+  let experiment;
+  if(mode==='legacy-offset'){
+   const old=dataAdapter.offset(prepared,state.session.description,{delta:amount});
+   experiment={baseline:prepared,edited:old.edited,control:null,intervention:{
+    plugin:'legacy-offset',kind:'engineering-numeric-offset',...old.intervention}};
+  }else{
+   const config=JSON.parse($('interventionJson').value||'{}');
+   const referenceFeeds=mode==='u5.replace'?parseReferenceJson($('referenceJson').value):null;
+   experiment=await interventionEngine.execute({
+    pluginId:mode,description:state.session.description,feeds:prepared,config,referenceFeeds});
+  }
+  const {baseline,edited,control,intervention}=experiment;
+  const a=await state.session.run(baseline);
+  note('runStatus','使用相同冻结模型运行实际干预 B'+(control?' 及匹配对照 C':'')+'…');
   const b=await state.session.run(edited);
+  const c=control?await state.session.run(control):null;
   // U4: one architecture-independent observation API for ViT/CNN/local ONNX.
   // Runtime tensor dimensions, not a baked-in [1,197,192], govern every metric.
   const profileId=$('architectureProfile').value;
@@ -127,11 +155,13 @@ async function run(){
    description:state.session.description,baseline:a,edited:b,
    probes:state.loaded.probes||[],profileId,maxAxisUnits:4096
   });
-  const n=intervention.elementCount;
-  state.audit={schema:'scept.core.u4.cross_architecture.v1',at:new Date().toISOString(),modelId:state.loaded.modelId,
+  const controls=c?observationAdapter.observePair({
+   description:state.session.description,baseline:a,edited:c,probes:state.loaded.probes||[],profileId,maxAxisUnits:4096
+  }):null;
+  state.audit={schema:mode==='legacy-offset'?'scept.core.u4.cross_architecture.v1':'scept.core.u5.intervention.v1',at:new Date().toISOString(),modelId:state.loaded.modelId,
    originalModelSHA256:state.session.sha256,adapter:state.loaded.adapterId,dataAdapter:dataAdapter.id,observationAdapter:observationAdapter.id,architectureProfile:profileId,inputs:state.session.description.inputs,
    inputSource:source,intervention,
-   outputs:observations,limits:['No diagnosis','No validated explanation','No training','Only explicitly declared outputs']};
+   outputs:observations,matchedControlOutputs:controls,limits:['No diagnosis','No validated explanation','No training','Only explicitly declared outputs']};
   const container=$('results');container.replaceChildren();
   for(const row of observations){
    const box=document.createElement('div');box.className='result';
@@ -140,11 +170,32 @@ async function run(){
    const raw=document.createElement('code');raw.textContent='前 4 项：'+row.first12.slice(0,4).map(x=>x.A.toPrecision(4)+'→'+x.B.toPrecision(4)).join('，');
    box.append(title,details,raw);container.append(box);
   }
+  if(controls){const box=document.createElement('div');box.className='result';
+   box.textContent='匹配对照 C：'+controls.map(x=>x.tensor+' 平均 |C−A|='+x.mean_abs_delta.toPrecision(5)).join('；');
+   container.append(box)}
   $('export').disabled=false;
   note('runStatus','两次真正的冻结模型推理已完成。所有显示的数值来自 ONNX Runtime。','success');
  }catch(e){note('runStatus','实际推理失败：'+e.message,'error');$('export').disabled=true}
  finally{$('run').disabled=false}
 }
+const U5_SAMPLES={
+ 'legacy-offset':{},'u5.noise':{sigma:0.1,seed:42},
+ 'u5.occlusion':{region:{bounds:[[0,1],[0,1],[0,1],[0,2]]},fill:0},
+ 'u5.replace':{region:{bounds:[[0,1],[0,1],[0,1],[0,2]]}},
+ 'u5.matched-control':{region:{bounds:[[0,1],[0,1],[0,1],[0,2]]},
+   controlRegion:{bounds:[[0,1],[0,1],[1,2],[0,2]]},meanTolerance:1,fill:0},
+ 'u5.internal-mask':{maskInput:'scept_mask',indices:[0],value:0}
+};
+$('interventionMode').onchange=()=>{
+ const mode=$('interventionMode').value;
+ $('interventionJson').value=JSON.stringify(U5_SAMPLES[mode]||{},null,2);
+ $('referenceJson').disabled=mode!=='u5.replace';
+ $('perturb').disabled=mode!=='legacy-offset';
+ $('interventionStatus').textContent=mode==='u5.internal-mask'?
+  '要求 ONNX 图内存在已验证的 Mul 遮罩输入，并且连接至下游算子；不兼容时强制报错。':
+  '示例 ROI 仅适用于 [1,1,4,4] 工程 CNN。其他模型需按实际输入维度指定区域。匹配对照需明确检查原始数据的适当协变量。';
+};
+$('interventionMode').onchange();
 $('modelPreset').onchange=()=>{$('architectureProfile').value=$('modelPreset').value==='vit'?'vit-token-channel':$('modelPreset').value==='cnn'?'generic':'generic';$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
 $('modelFile').disabled=true;
 $('inspect').onclick=inspectModel;$('load').onclick=attach;$('run').onclick=run;
@@ -152,9 +203,9 @@ $('perturb').oninput=()=>{$('perturbLabel').textContent=(Number($('perturb').val
 $('export').onclick=()=>{
  if(!state.audit)return;
  const url=URL.createObjectURL(new Blob([JSON.stringify(state.audit,null,2)],{type:'application/json'}));
- const link=document.createElement('a');link.href=url;link.download='scept-u2-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+ const link=document.createElement('a');link.href=url;link.download='scept-u5-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,observePair:observationAdapter.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,interventionEngine,observePair:observationAdapter.observePair};
 
 })();
