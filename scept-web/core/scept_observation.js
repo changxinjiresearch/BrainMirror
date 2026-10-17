@@ -11,6 +11,10 @@
    2:[['batch',0],['feature',1]],4:[['batch',0],['channel',1],['height',2],['width',3]]}},
   'cnn-nhwc':{architecture:'convolutional',layouts:{
    2:[['batch',0],['feature',1]],4:[['batch',0],['height',1],['width',2],['channel',3]]}},
+  'cnn-volume-ncdhw':{architecture:'convolutional-volume',layouts:{
+   5:[['batch',0],['channel',1],['depth',2],['height',3],['width',4]]}},
+  'cnn-volume-ndhwc':{architecture:'convolutional-volume',layouts:{
+   5:[['batch',0],['depth',1],['height',2],['width',3],['channel',4]]}},
   'legacy-vit-197x192':{architecture:'legacy-vit-only',layouts:{
    3:[['batch',0],['token',1],['channel',2]]},exact:[1,197,192]}
  });
