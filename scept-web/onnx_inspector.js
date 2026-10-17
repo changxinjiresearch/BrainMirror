@@ -64,19 +64,19 @@ function inspect(arrayBuffer){
  let graph=null;
  entries(0,bytes.length,(f,w,v)=>{if(f===7&&w===2)graph=v;});
  if(!graph)throw Error('No ONNX graph found');
- const nodes=[],initializers=[],inputs=[],outputs=[],inputMetadata={},outputMetadata={};
+ const nodes=[],initializers=[],inputs=[],outputs=[],inputMetadata={},outputMetadata={},intermediateMetadata={};
  entries(...graph,(f,w,v)=>{
   if(w!==2)return;
   if(f===1){if(nodes.length<10000)nodes.push(decodeNode(v));}
   if(f===5){let name='';entries(...v,(sf,sw,sv)=>{if(sf===8&&sw===2)name=str(sv);});initializers.push(name);}
-  if(f===11||f===12){const meta=valueInfo(v);(f===11?inputs:outputs).push(meta.name);(f===11?inputMetadata:outputMetadata)[meta.name]=meta;}
+  if(f===11||f===12||f===13){const meta=valueInfo(v);if(f===13){if(Object.keys(intermediateMetadata).length<20000&&meta.name)intermediateMetadata[meta.name]=meta;}else{(f===11?inputs:outputs).push(meta.name);(f===11?inputMetadata:outputMetadata)[meta.name]=meta;}}
  });
  const producer=new Map(),edges=[];
  nodes.forEach((n,i)=>n.outputs.forEach(o=>producer.set(o,i)));
  nodes.forEach((n,i)=>n.inputs.forEach(inp=>{
   const p=producer.get(inp);if(p!==undefined&&p!==i)edges.push({from:p,to:i,tensor:inp});
  }));
- return {nodes,edges,initializers,inputs,outputs,inputMetadata,outputMetadata,totalNodes:nodes.length,exceedsNodeLimit:nodes.length===10000};
+ return {nodes,edges,initializers,inputs,outputs,inputMetadata,outputMetadata,intermediateMetadata,totalNodes:nodes.length,exceedsNodeLimit:nodes.length===10000};
 }
 window.SCEPT_INSPECT_ONNX=inspect;
 })();
