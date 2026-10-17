@@ -216,8 +216,11 @@
   if(!result||result.schema!==SCHEMA||intervention?.schema!==INTR)
    fail('INVALID_METHOD','U10 method and matched intervention required');
   const minimum=bounded(config.minSpecificity??0,'minSpecificity',0,1e5);
+  if(result.strength===0)return{schema:'scept.u10.test.v1',test:'paired-specificity',
+   verdict:'not_evaluable',reason:'Zero-dose is an explicit null calibration cell, not an explanation',
+   strength:0,scientificStatus:'NUMERIC_CONTROL_CALIBRATION_ONLY'};
   return{schema:'scept.u10.test.v1',test:'paired-specificity',
-   verdict:verdict(result.score>=minimum&&result.targetedEffect>0),
+   verdict:verdict(result.score>=minimum&&result.targetedEffect>0&&result.controlledMagnitude>0),
    observed:result.score,threshold:minimum,controlEffect:result.matchedControlEffect,
    strength:result.strength,scientificStatus:'NUMERIC_PREDECLARED_CONTROL_ONLY'};
  }
