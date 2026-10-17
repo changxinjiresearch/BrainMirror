@@ -1,0 +1,93 @@
+name: SCEPT U11 Scientific Validation - Real Pretrained MNIST
+on:
+  push:
+    branches:
+      - "phase/scept-u11-**"
+      - main
+    paths:
+      - "scripts/u11_real_mnist_benchmark.py"
+      - "tests/test_u11_registered_real_benchmark.py"
+      - "docs/SCEPT_U11_PREREGISTRATION_V0_1.md"
+      - ".github/workflows/scept-u11-science.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: scept-u11-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-mnist-pilot:
+    name: Preregistered authentic ONNX/MNIST 20-case source and arithmetic acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: CPU-only pinned scientific Python/ONNX Runtime
+        run: python -m pip install numpy==2.2.6 onnxruntime==1.23.2
+      - name: Pre-data unit falsification, failures and statistical boundary checks
+        run: python -m unittest discover -s tests -p 'test_u11_registered_real_benchmark.py' -v
+      - name: Real pretrained model + original MNIST test IDX pilot (2 per digit, 20 true images)
+        run: |
+          python scripts/u11_real_mnist_benchmark.py \
+            --mode pilot --out results/u11/pilot \
+            --cache /tmp/scept-u11-original-sources
+      - name: Archive original numeric results and provenance - NOT raw test images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-u11-pilot-real-mnist
+          path: results/u11/pilot/
+          if-no-files-found: warn
+          retention-days: 90
+
+  full-registered-study:
+    name: Frozen 100-case original MNIST test, negative controls and paired corrected statistics
+    needs: real-mnist-pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: CPU-only pinned packages
+        run: python -m pip install numpy==2.2.6 onnxruntime==1.23.2
+      - name: Execute fully preregistered authentic MNIST-12 100-case scientific run
+        run: |
+          python scripts/u11_real_mnist_benchmark.py \
+            --mode main --out results/u11/main \
+            --cache /tmp/scept-u11-original-sources
+      - name: Validate results schema, registered original cohort and no untruthful claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/u11/main/summary.json').read_text())
+          assert r['data']['n']==100
+          assert len(r['data']['selected_original_indices'])==100
+          assert r['model']['sha256']=='5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd'
+          assert r['claims']['clinical']=='NOT_ESTABLISHED'
+          assert r['claims']['outperforms_all_xai']=='NOT_ESTABLISHED'
+          assert r['statistics']['n_primary']==r['data']['n_correct']-sum(
+              1 for x in json.loads(Path('results/u11/main/cases.json').read_text())
+              if x['correct'] and not x['usable_primary'])
+          assert r['quality']['all_zero_dose_verified']
+          assert len(r['statistics']['comparisons'])==6 if r['statistics']['n_primary']>0 else True
+          print('PASSED main real scientific provenance/schema; quality:',r['quality']['quality_gate'])
+          PY
+      - name: Archive 100-case aggregate, case diagnostics, mask matching and actual numerical results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-u11-main-real-mnist-frozen-v01
+          path: results/u11/main/
+          if-no-files-found: warn
+          retention-days: 90
