@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · U3–U4 多模型观测</title>
+<title>SCEPT Universal Core · U5 通用干预引擎</title>
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">U3–U4 / M1 工程验收</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">U5 / 通用干预插件</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
 <section class="workspace">
 <article class="panel"><h2>01 / 导入冻结模型</h2>
 <label for="modelPreset">模型来源</label>
@@ -37,6 +37,22 @@
 <label for="inputJson">自定义输入张量 JSON（可选）</label>
 <textarea id="inputJson" rows="5" placeholder='{"input_name":{"type":"float32","dims":[1,4],"data":[0.1,0.2,0.3,0.4]}}'></textarea>
 <label for="shapeJson">动态输入尺寸（可选；仅用于生成显式声明的合成测试输入）</label><textarea id="shapeJson" rows="2" placeholder='{"input_name":[1,256,256,3]}'></textarea>
+<h3>U5 / 通用干预引擎</h3>
+<p class="muted">每种干预通过独立插件实现；区域采用实际张量轴的半开区间 [start,end)。区域替换需要独立参考输入，匹配对照必须同时满足区域大小、不重叠和原始均值容差约束。</p>
+<label for="interventionMode">选择干预插件</label>
+<select id="interventionMode">
+<option value="legacy-offset">U4 兼容：数值偏移（前 1% 输入）</option>
+<option value="u5.noise">U5 高斯噪声 / 可复现随机种子</option>
+<option value="u5.occlusion">U5 遮挡 / 指定张量 ROI</option>
+<option value="u5.replace">U5 区域替换 / 参考张量</option>
+<option value="u5.matched-control">U5 匹配对照 / 原区域与对照区域 A/B/C</option>
+<option value="u5.internal-mask">U5 内部隐藏状态遮罩 / 仅兼容已注入 ONNX</option>
+</select>
+<label for="interventionJson">干预参数 JSON（必须严格符合真实张量形状）</label>
+<textarea id="interventionJson" rows="4" spellcheck="false" placeholder='{"sigma":0.1,"seed":42}'></textarea>
+<label for="referenceJson">参考输入张量 JSON（仅区域替换使用，格式与输入 JSON 完全相同）</label>
+<textarea id="referenceJson" rows="3" spellcheck="false" placeholder='{"image_data":{"type":"float32","dims":[1,1,4,4],"data":[...]}}'></textarea>
+<p id="interventionStatus" class="muted" role="status">默认继续使用 U4 数值偏移。内部遮罩需先通过 ONNX 离线工具注入真正的 Mul 计算节点；不可仅填写某个隐藏层名字。</p>
 <label for="perturb">演示扰动：给首个输入张量前 1% 元素增加固定值 <output id="perturbLabel">+0.10</output></label>
 <input id="perturb" type="range" min="-0.5" max="0.5" step=".05" value=".10">
 <button class="primary" id="run" disabled>运行两次真实推理（A/B）</button>
@@ -47,12 +63,12 @@
 </section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
-<p><strong>已实现（U0–U4）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
-<p><strong>仍未完成（U5 之后）：</strong>通用医学数据预处理、任务解释目标、任意隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>已实现（U0–U5）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>仍未完成（U6 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
 <p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
 </div></section>
 </main>
-<footer>SCEPT Universal Core · U3–U4 M1 开发预览 · 无 GPU 训练 · 浏览器本地执行</footer>
+<footer>SCEPT Universal Core · U5 插件式干预预览 · 无 GPU 训练 · 浏览器本地执行</footer>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./core/scept_core.js"></script>
@@ -60,4 +76,5 @@
 <script src="./core/onnx_adapter.js"></script>
 <script src="./core/scept_data_adapter.js"></script>
 <script src="./core/scept_observation.js"></script>
+<script src="./core/scept_intervention.js"></script>
 <script src="./universal.js"></script></body></html>
