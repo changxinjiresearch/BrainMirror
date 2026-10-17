@@ -23,8 +23,24 @@
   <button id="networkZoomOut" type="button" aria-label="缩小三维网络">－</button>
   <button id="networkReset" type="button">重置视角</button>
 </div>
+<div class="response-controls" aria-label="内部激活三维对比模式">
+  <div class="response-tabs" role="group" aria-label="选择激活显示方式">
+    <button id="responseCompare" type="button" class="active" aria-pressed="true">A/B 并排对比</button>
+    <button id="responseDelta" type="button" aria-pressed="false">差异 Δ</button>
+    <button id="responseBefore" type="button" aria-pressed="false">原始 A</button>
+    <button id="responseAfter" type="button" aria-pressed="false">修改后 B</button>
+  </div>
+  <div class="response-scale"><span id="responseScaleLabel">真实观测点：等待首次计算</span>
+    <button type="button" id="responseCalibrate" title="锁定本次实际观测范围，供后续重新计算在同一刻度下比较">设定对比色标</button>
+  </div>
+</div>
 <div class="network-depth" id="networkDepth">真实 ONNX · 三维网络结构总览</div>
 <canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas>
+<div class="response-legend" id="responseLegend" aria-live="polite">
+  <span><i class="swatch unobserved"></i> 未观测节点：仅显示算子结构</span>
+  <span><i class="swatch observed"></i> 已采集张量的真实生产节点</span>
+  <span id="responseLegendDetail">颜色/大小仅由该节点实际观测张量的数据决定；无数据不着色。</span>
+</div>
 <div class="network-footer"><span>拖动旋转 · 滚轮缩放 · 单击选中 · 双击进入层 · Esc 返回</span><span id="networkState">等待计算</span></div>
 <div id="networkStats" class="network-stats" role="status">正在读取 ONNX 实际算子和连接</div>
 <div id="networkNodeDetails" class="network-node-details" aria-live="polite">单击一个真实算子节点，查看其输入、输出和数据依赖关系。</div>
