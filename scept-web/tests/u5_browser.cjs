@@ -25,8 +25,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.locator('#inputJson').fill(JSON.stringify({image_data:image}));
   const region={bounds:[[0,1],[0,1],[0,1],[0,2]]},
     controlRegion={bounds:[[0,1],[0,1],[1,2],[0,2]]};
-  async function run(plugin,config,expectedControl=false){
+  async function run(plugin,config,expectedControl=false,reference=null){
    await page.locator('#interventionMode').selectOption(plugin);
+   if(reference)await page.locator('#referenceJson').fill(JSON.stringify(reference));
    await page.locator('#interventionJson').fill(JSON.stringify(config));
    await page.locator('#run').click();
    await page.waitForFunction(id=>SCEPT_UNIVERSAL.getAudit()?.intervention?.plugin===id||
@@ -45,8 +46,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   const noiseReplay=await run('u5.noise',{sigma:.2,seed:123,region});
   assert.deepEqual(noise.outputs[0].first12,noiseReplay.outputs[0].first12,'seeded actual ONNX output must replay');
   await run('u5.occlusion',{region,fill:0});
-  await page.locator('#referenceJson').fill(JSON.stringify({image_data:{...image,data:image.data.map(x=>x+100)}}));
-  await run('u5.replace',{region});
+  await run('u5.replace',{region},false,{image_data:{...image,data:image.data.map(x=>x+100)}});
   const matched=await run('u5.matched-control',{region,controlRegion,fill:0,meanTolerance:4},true);
   assert(matched.matchedControlOutputs.some(x=>x.changed>0),'genuine C forward pass missing');
   assert.equal(matched.intervention.primaryCount,matched.intervention.controlCount);
