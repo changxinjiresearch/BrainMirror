@@ -36,6 +36,17 @@ For pairwise normalized improvement, **positive means SCEPT is better**; negativ
 
 **There are four significantly unfavorable results vs existing XAI baselines and two favorable results vs random.** Permutation Monte Carlo p values have finite resolution (minimum raw about 0.0005); samples are from one data source.
 
+## Research figures reproduced from the original frozen result tables
+
+These charts are generated directly from the 100-case original numeric records and stored permanently in GitHub. They show **unfavorable SCEPT comparisons**, not a promotional illustration:
+
+- [Actual deletion AUC chart](../results/u11/registered-v0.1/figures/deletion_auc.png)
+- [Actual insertion AUC chart](../results/u11/registered-v0.1/figures/insertion_auc.png)
+- [Paired SCEPT-minus-baseline effects and 95% bootstrap confidence intervals](../results/u11/registered-v0.1/figures/paired_fidelity_forest.png)
+- [Per-original-image graded-sensitivity violation distribution](../results/u11/registered-v0.1/figures/dose_violations_by_image.png)
+
+Editable vector equivalents (SVG) plus SHA-256 of each PNG/SVG are alongside the result tables and registered file-hash manifest. Plot source: [scripts/u11_make_research_figures.py](../scripts/u11_make_research_figures.py).
+
 ## Falsification, coverage and ablations
 
 - The required zero-dose B=C controlled null passes on all recorded eligible ROI pairs, as expected by numerical construction.
