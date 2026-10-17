@@ -184,7 +184,8 @@
    fail('OBSERVATIONS_REQUIRED','A/B and A/C real ONNX observations required');
   const scale=bounded(config.outputScale,'outputScale',1e-12,1e12),
     dt=finite(target.delta,'target.delta'),dc=finite(target.controlDelta,'target.controlDelta');
-  const t=Math.abs(dt)/scale,c=Math.abs(dc)/scale,margin=t-c;
+  const t=Math.abs(dt)/scale,c=Math.abs(dc)/scale,margin=t-c,
+    controlled=(dt-dc)/scale;
   const layers=[];
   for(let i=0;i<observations.length;i++){
    const x=observations[i],y=matchedControlObservations[i];
