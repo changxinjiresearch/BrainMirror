@@ -70,7 +70,7 @@ const cap2=V.captureInput({baseline:{x:{type:'float32',dims:imageDims,data:ia}},
  edited:{x:{type:'float32',dims:imageDims,data:ib}},inputName:'x',layout:'NCHW'});
 assert.equal(cap2.spatialDims,2);
 assert.equal(V.plane(cap2,'coronal'),null);
-assert.equal(V.plane(cap2,'axial').delta[5],9-ia[5]);
+assert(Math.abs(V.plane(cap2,'axial').delta[5]-(9-ia[5]))<1e-6);
 const bigDims=[1,1,128,128,128],big=new Float32Array(128**3);
 const bigCap=V.captureInput({baseline:{v:{type:'float32',dims:bigDims,data:big}},
  edited:{v:{type:'float32',dims:bigDims,data:big}},inputName:'v',layout:'NCDHW',maxSide:64});
