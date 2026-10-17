@@ -6,6 +6,8 @@ const adapter=SCEPT_ONNX_ADAPTER.make({wasmPaths:'https://cdn.jsdelivr.net/npm/o
 registry.register('model',adapter);
 const dataAdapter=SCEPT_DATA_ADAPTER.make(SCEPT_CORE);
 registry.register('data',dataAdapter);
+const observationAdapter=SCEPT_OBSERVATION.make();
+registry.register('observation',observationAdapter);
 const PRESETS={
  vit:{id:'pretrained-vit-tiny',url:'https://huggingface.co/onnx-community/vit-tiny-patch16-224-ONNX/resolve/ebffd7b9c0c53b51bada44116abd8f01aed41be6/onnx/model.onnx',sha256:'32f1cf3b4868cc44757814cbf6237ae5a3658a45980bf0fe93914dca77b815e3'},
  cnn:{id:'mri-cnn-experimental',url:'https://huggingface.co/Udit013/brain-tumor-efficientnetb3/resolve/main/efficientnetb3.onnx',sha256:'320b1ef648f3da5216f6ee0374349324b3cb00a76bebf7dbd1c3796e6155991c'}
@@ -121,13 +123,13 @@ async function run(){
   // U4: one architecture-independent observation API for ViT/CNN/local ONNX.
   // Runtime tensor dimensions, not a baked-in [1,197,192], govern every metric.
   const profileId=$('architectureProfile').value;
-  const observations=SCEPT_OBSERVATION.observePair({
+  const observations=observationAdapter.observePair({
    description:state.session.description,baseline:a,edited:b,
    probes:state.loaded.probes||[],profileId,maxAxisUnits:4096
   });
   const n=intervention.elementCount;
   state.audit={schema:'scept.core.u4.cross_architecture.v1',at:new Date().toISOString(),modelId:state.loaded.modelId,
-   originalModelSHA256:state.session.sha256,adapter:state.loaded.adapterId,dataAdapter:dataAdapter.id,architectureProfile:profileId,inputs:state.session.description.inputs,
+   originalModelSHA256:state.session.sha256,adapter:state.loaded.adapterId,dataAdapter:dataAdapter.id,observationAdapter:observationAdapter.id,architectureProfile:profileId,inputs:state.session.description.inputs,
    inputSource:source,intervention,
    outputs:observations,limits:['No diagnosis','No validated explanation','No training','Only explicitly declared outputs']};
   const container=$('results');container.replaceChildren();
@@ -153,6 +155,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u2-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,observePair:SCEPT_OBSERVATION.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,observePair:observationAdapter.observePair};
 
 })();
