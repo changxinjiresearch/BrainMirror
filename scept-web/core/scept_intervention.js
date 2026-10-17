@@ -116,7 +116,7 @@
      const changed=changes(edited[name],t,main.indices,()=>fill);
      const controlChanged=changes(controlFeeds[name],t,control.indices,()=>fill);
      return{baseline,edited,control:controlFeeds,metadata:{kind:'matched-control-occlusion',inputName:name,fill,
-      primaryRegion:main.bounds,controlRegion:control.bounds,primaryCount:main.count,controlCount:control.count,
+      primaryRegion:main.bounds,controlRegion:control.bounds,primaryCount:main.count,controlCount:control.count,selected:main.count,
       meanTolerance:tolerance,baselineMeanPrimary:meanOriginal,baselineMeanControl:meanControl,
       baselineMeanDifference:difference,changed,controlChanged,
       matching:'equal element count, non-overlapping regions and pre-intervention mean within tolerance only'}};
