@@ -81,7 +81,7 @@ function listLayers(g){
 // Fixed shared per-metric scales are initialized on the first real run and
 // retained across re-runs. The explicit recalibration button changes scales.
 const clamp=x=>Math.max(0,Math.min(1,x));
-const strength=(value,scale)=>!Number.isFinite(value)||!scale?0:clamp(value/scale);
+// Smooth scale keeps large changes visually distinguishable without\n// silently re-normalizing between experiments: t=(value/scale)/(1+value/scale).\nconst strength=(value,scale)=>!Number.isFinite(value)||!scale?0:Math.max(0,value)/(Math.max(0,value)+scale);
 const fmtValue=x=>Number.isFinite(x)?(Math.abs(x)>0&&Math.abs(x)<.0001?x.toExponential(3):x.toFixed(5)):'—';
 function observedFor(node){const layer=state.probeNames.get(node.id);return layer===undefined?null:state.observed.get(layer)||null}
 function metricValue(o,mode){
@@ -307,10 +307,10 @@ function updateUI(){
  $('networkPairLabels').hidden=state.visualMode!=='compare';
  const ds=state.deltaScale,ss=state.signalScale;
  const detail=state.measuredCount?
- '已观测 '+state.measuredCount+' 个真正的张量输出生产节点；A/B 共用色标 |激活| ≤ '+fmtValue(ss)+
- '，Δ 色标 |B−A| ≤ '+fmtValue(ds)+'（首次实验后锁定）':'等待真实隐藏层数据。未开放观测点均呈中性颜色。';
- $('responseScaleLabel').textContent=state.measuredCount?'固定色标：A/B '+fmtValue(ss)+' · Δ '+fmtValue(ds):'等待首次真实模型计算';
- $('responseLegendDetail').textContent=detail+'；数值超出刻度时颜色饱和，不会静默重标定。';
+ '已观测 '+state.measuredCount+' 个真正的张量输出生产节点；A/B 共用参考刻度 '+fmtValue(ss)+
+ '，Δ 参考刻度 '+fmtValue(ds)+'（首次实验后锁定，平滑色映射）':'等待真实隐藏层数据。未开放观测点均呈中性颜色。';
+ $('responseScaleLabel').textContent=state.measuredCount?'固定参考刻度：A/B '+fmtValue(ss)+' · Δ '+fmtValue(ds):'等待首次真实模型计算';
+ $('responseLegendDetail').textContent=detail+'；映射函数 t=数值/(数值+刻度)，不会饱和成同一种颜色或静默重新标定。';
  $('responseCalibrate').disabled=!state.measuredCount;
 
  $('networkOverview').disabled=state.mode==='overview';
