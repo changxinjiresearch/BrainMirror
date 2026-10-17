@@ -16,7 +16,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   assert(v.observedProducers>=3,'Real hidden tensor producer operators were not found');
   assert.equal(v.mode,'overview','Must start at genuine 3D architecture overview');
   assert(['webgl2','perspective-fallback'].includes(v.backend),'No working 3D camera renderer: '+v.backend);
-  const c=page.locator('#networkCanvas'),r=await c.boundingBox();
+  const c=page.locator('#networkCanvas');await c.scrollIntoViewIfNeeded();const r=await c.boundingBox();
   await page.mouse.move(r.x+r.width*.5,r.y+r.height*.5);
   await page.mouse.down();await page.mouse.move(r.x+r.width*.7,r.y+r.height*.72,{steps:8});await page.mouse.up();
   let after=await page.evaluate(()=>SCEPT_NETWORK3D.getSnapshot());
