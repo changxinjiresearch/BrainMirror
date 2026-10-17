@@ -46,6 +46,15 @@ jobs:
           python -m http.server 8765 -d scept-web >/tmp/scept-http.log 2>&1 &
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && exit 0; sleep 1; done
           exit 1
+      - name: Check Token A/B/Δ visual density with real MRI (screenshot-based acceptance)
+        run: node scept-web/tests/v31_token_visual_clarity.cjs
+      - name: Retain Token visual acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-token-visual-clarity
+          path: /tmp/scept-v31-*.png
+          if-no-files-found: ignore
       - name: Verify SCEPT v3.1 actual Token/channel fine-grained 3D and input Patch end to end
         run: node scept-web/tests/v31_token_mri.cjs
       - name: Verify additional real Query Key Patch Attention and Residual tensor probes
