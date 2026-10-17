@@ -101,3 +101,15 @@
  .token-toolbar span{width:100%}
  .token-header span{font-size:10px}
 }
+
+
+.extra-observations{margin:13px 0;border:1px solid #2b545b;border-radius:9px;background:#0b2730;min-width:0}
+.extra-observations>summary{list-style:none;padding:13px;cursor:pointer;color:#b8e6d9;font-size:12px;font-weight:650;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.extra-observations>summary::-webkit-details-marker{display:none}
+.extra-observations>summary span{font-size:10px;color:#8db7bb;font-weight:400}
+.extra-observations[open]>summary{border-bottom:1px solid #2b545b}
+#extraProbeList{padding:9px 12px;font-size:11px;color:#a6c9c5}
+.extra-probe{border:1px solid #315963;border-radius:7px;padding:10px;margin:7px 0;background:#071f2a}
+.extra-probe>summary{cursor:pointer;color:#b5e0ce;line-height:1.7;overflow-wrap:anywhere}
+.extra-probe-data{font:11px/1.8 ui-monospace,monospace;overflow-wrap:anywhere;padding:10px;color:#8ec2c2}
+.extra-observations>p{padding:0 13px 12px;margin:0;font-size:11px;line-height:1.6;color:#89adb5}
