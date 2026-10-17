@@ -12,10 +12,21 @@
  <div class="scan"><header>近似矢状位 · 体素 j–k</header><canvas width="256" height="256" id="viewSagittal"></canvas><input id="sliceI" type="range" min="0" max="1"></div>
  <div class="scan"><header>三维体素点云 · 拖动旋转</header><canvas width="256" height="256" id="view3d"></canvas><small>点云不是已验证的解剖脑表面</small></div>
 </div>
+<section class="patch-workbench" aria-label="MRI 实际模型输入和 Patch 映射">
+ <div class="patch-heading"><b>实际送入模型的二维切片 · Patch 联动</b><span id="patchStatus">等待真实输入</span></div>
+ <div class="patch-content">
+  <div class="patch-preview"><canvas id="patchInputCanvas" width="224" height="224" title="点击图像块，可观察相应 Token。显示真实模型输入及改动范围" tabindex="0" aria-label="224×224 实际 ViT 输入与 14×14 Patch 网格"></canvas></div>
+  <div class="patch-side"><div id="patchCounts">待运行</div><p>绿色边框表示模型实际收到变化的 Patch，不是 MRI 屏幕上的任意标记。点选一个 Patch，可在右侧定位对应 Token。</p><div id="patchSelection">尚未选中 Patch</div><button type="button" id="patchClear" class="secondary">取消 Patch 选择</button></div>
+ </div>
+</section>
 <div class="roi-editor"><div class="field"><div class="fieldhead"><label for="mriRadius">球形 ROI 半径</label><output id="mriRadiusValue">10 体素</output></div><input type="range" id="mriRadius" min="2" max="30" value="10"></div><div class="field"><div class="fieldhead"><label for="mriAmount">强度变化</label><output id="mriAmountValue">+0.15</output></div><input type="range" id="mriAmount" min="-0.75" max="0.75" step=".05" value=".15"></div></div>
 <div id="roiCoords" class="small">ROI 中心：</div><div class="buttons"><label class="secondary upload">导入自己的 NIfTI <input hidden id="mriFile" type="file" accept=".nii,.nii.gz"></label><button class="secondary" id="mriUndo">撤销强度修改</button><button class="secondary" id="reloadTemplate">恢复公开脑模板</button></div><p class="small" id="mriInfo">等待加载 MRI 数据</p>
 </article>
 <article class="panel"><div class="panel-title"><span>02 / INTERNAL RESPONSE</span><h2>真实神经网络响应</h2><p>同一个冻结模型运行两次。颜色表示真实观测张量的变化幅度；灰色表示该计算位置尚未开放观测点。</p></div><div class="network-frame">
+<div class="network-view-tabs" role="group" aria-label="选择实际模型结构或内部 Token 响应">
+<button type="button" id="viewOperators" class="active" aria-pressed="true">真实算子结构</button>
+<button type="button" id="viewTokens" aria-pressed="false">Token 三维响应 · 985</button>
+</div>
 <div class="network-toolbar" role="toolbar" aria-label="三维计算网络操作">
   <button id="networkOverview" type="button">结构总览</button>
   <button id="networkEnter" type="button" disabled>进入选中层</button>
@@ -44,6 +55,13 @@
 <div class="network-footer"><span>拖动旋转 · 滚轮缩放 · 单击选中 · 双击进入层 · Esc 返回</span><span id="networkState">等待计算</span></div>
 <div id="networkStats" class="network-stats" role="status">正在读取 ONNX 实际算子和连接</div>
 <div id="networkNodeDetails" class="network-node-details" aria-live="polite">单击一个真实算子节点，查看其输入、输出和数据依赖关系。</div>
+<div id="tokenDetails" class="token-details" hidden>
+ <div class="token-header"><strong id="tokenTitle">Token 通道详细数据</strong><span id="tokenStats">—</span></div>
+ <canvas id="tokenChannelCanvas" width="960" height="250" aria-label="真实 192 通道原始激活与逐通道差异"></canvas>
+ <label class="token-slider">检查通道 <input id="tokenChannelSelect" type="range" min="0" max="191" value="0"><output id="tokenChannelValue">0</output></label>
+ <div id="tokenChannelInfo">请选择一个实际 Token。</div>
+ <div class="token-note">CLS Token 无空间坐标。Token/通道是真实张量坐标，不是额外编造的 ONNX 算子或注意力连线。</div>
+</div>
 </div>
 <div class="metric-row"><div><small>已观测中间层</small><strong id="metricLayers">—</strong></div><div><small>发生变化的数值</small><strong id="metricChanged">—</strong></div><div><small>当前层平均 |Δ|</small><strong id="metricMean">—</strong></div></div>
 <div class="layer-heading"><h3>多层内部激活差异</h3><label>查看层 <select id="layerSelect"><option>等待模型加载</option></select></label></div><div id="layerTable" class="layer-table"><div class="empty">运行实验后显示多个真实 Transformer 隐藏层的响应。</div></div>
@@ -55,4 +73,4 @@
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./v3_mri.js"></script>
-<script src="./v3_network3d.js"></script><script src="./v3_engine.js"></script><script src="./v3_mri_cnn.js"></script></body></html>
+<script src="./scept_tensor_adapter.js"></script><script src="./scept_patch_mapper.js"></script><script src="./v3_network3d.js"></script><script src="./scept_activity3d.js"></script><script src="./v3_engine.js"></script><script src="./v3_mri_cnn.js"></script></body></html>
