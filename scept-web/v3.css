@@ -10,3 +10,17 @@
 .mode-explainer small{line-height:1.65;color:#92b7b7}
 .layer-row{overflow-wrap:anywhere}
 @media(max-width:850px){.mode-explainer{width:100%}}
+
+/* Genuine 3D operator navigator — network layout positions are non-anatomical */
+.network-frame{overflow:hidden}
+.network-toolbar{display:flex;gap:7px;flex-wrap:wrap;padding:11px 12px 8px;background:#0b252f}
+.network-toolbar button{padding:8px 11px;border:1px solid #38636b;border-radius:7px;background:#14323d;color:#bceadd;font-size:11px}
+.network-toolbar button:enabled:hover{border-color:#70d9be;background:#1d4550}
+.network-toolbar button:disabled{opacity:.38;cursor:not-allowed}
+.network-depth{padding:6px 13px 3px;color:#88e0ca;font-size:11px;font-weight:650}
+.network-frame #networkCanvas{display:block;width:100%;height:360px;max-height:none;aspect-ratio:auto;cursor:grab;touch-action:none;background:#061923;outline:none}
+.network-frame #networkCanvas:active{cursor:grabbing}
+.network-frame #networkCanvas:focus-visible{outline:2px solid #76cfbf;outline-offset:-3px}
+.network-stats{padding:10px 13px;background:#102d38;border-top:1px solid #2b555a;color:#8cb8ba;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.network-node-details{white-space:pre-wrap;overflow-wrap:anywhere;background:#091f29;color:#b4d6d5;border-top:1px solid #25454f;padding:11px 13px;font-size:11px;line-height:1.7;max-height:170px;overflow:auto}
+@media(max-width:650px){.network-frame #networkCanvas{height:280px}.network-toolbar button{padding:7px 8px}.network-stats,.network-node-details{font-size:10px}}
