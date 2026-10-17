@@ -83,7 +83,7 @@ function readyIfPossible(){
  const yes=!!st.session&&!!mri?.loaded;
  $('runExperiment').disabled=!yes;
  $('runExperiment').textContent=yes?'开始实验':st.failed?'模型加载失败':'等待 MRI / 模型';
- if(yes)status('模型和 MRI 已就绪','ready');
+ if(yes && !st.results && !st.running)status('模型和 MRI 已就绪','ready');
  return yes;
 }
 function metrics(before,after){
@@ -197,7 +197,7 @@ $('saveAudit').onclick=()=>{if(st.results)save(JSON.stringify(st.results,null,2)
 $('saveLayers').onclick=()=>{if(!st.results)return;const rows=['layer,tensor_name,total,changed,mean_abs_delta,max_abs_delta,up,down'];for(const l of st.results.layers){const s=l.summary;rows.push([l.layer,l.probe,s.total,s.changed,s.mean,s.max,s.up,s.down].join(','))}save(rows.join('\n'),'scept-v3-layer-summary.csv','text/csv')};
 $('runExperiment').onclick=run;
 $('reloadTemplate').onclick=async()=>{await SCEPT_MRI.loadDefault();readyIfPossible()};
-window.SCEPT_V3={getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),run};
+window.SCEPT_V3={getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),run};
 listHistory();drawNetwork();drawResponse();init();
 let attempts=0;
 const check=setInterval(()=>{readyIfPossible();if(++attempts>240||readyIfPossible()){clearInterval(check)}},500);
