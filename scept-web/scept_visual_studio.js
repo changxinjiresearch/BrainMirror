@@ -14,7 +14,7 @@
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  function notice(s,type='pending'){$('u8Status').textContent=s;$('u8Status').dataset.state=type}
  function clear(){state.scene=null;state.feed=null;state.captures.clear();state.selection=null;
-  state.audit=null;state.u6=null;state.u7=null;state.selectionTask=null;
+  state.audit=null;state.u6=null;state.u7=null;state.selectionTask=null;state.lastError=null;
   $('u8Task').replaceChildren();$('u8Tensor').replaceChildren();
   $('u8Task').disabled=true;$('u8Tensor').disabled=true;
   state.graphBase=null;
@@ -100,9 +100,10 @@
    ' · 算子图 '+(scene.graph.originalCount||0)+' 个算子 / 显示 '+(scene.graph.renderedNodes||0):
    state.session?'已验证计算图；暂无该来源下成功的实际 A/B 结果。':'—';
   const hasScene=!!scene;
-  notice(hasScene?'实际实验数据已同步，灰色算子表示尚无对应测量。':
+  notice(state.lastError?'真实数据可视化校验失败：'+state.lastError:
+   hasScene?'实际实验数据已同步，灰色算子表示尚无对应测量。':
    t?.status==='failed'?'该任务执行失败；不显示伪造的张量变化。':
-   '等待来自 U5/U6/U7 的真实 ONNX 实验输出。',hasScene?'success':'pending');
+   '等待来自 U5/U6/U7 的真实 ONNX 实验输出。',state.lastError?'error':hasScene?'success':'pending');
   paint();
  }
  function drawable(canvas){
