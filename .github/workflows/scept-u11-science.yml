@@ -85,6 +85,9 @@ jobs:
           assert len(r['statistics']['comparisons'])==6 if r['statistics']['n_primary']>0 else True
           print('PASSED main real scientific provenance/schema; quality:',r['quality']['quality_gate'])
           PY
+      - name: Independently check every real U10 B/C matched control after exact seeded nuisance
+        run: |
+          python scripts/u11_protocol_audit.py             --cases results/u11/main/cases.json             --assets /tmp/scept-u11-original-sources             --out results/u11/main/u10_matching_parity.json
       - name: Independent full second run with exact same frozen model/data and protocol
         run: |
           python scripts/u11_real_mnist_benchmark.py             --mode main --out results/u11/independent-replay             --cache /tmp/scept-u11-original-sources > /tmp/scept-u11-replay.log
@@ -116,7 +119,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p results/u11/registered-v0.1
-          cp results/u11/main/summary.json              results/u11/main/cases.json              results/u11/main/cases.csv              results/u11/main/replay_integrity.json              results/u11/registered-v0.1/
+          cp results/u11/main/summary.json              results/u11/main/cases.json              results/u11/main/cases.csv              results/u11/main/replay_integrity.json              results/u11/main/u10_matching_parity.json              results/u11/registered-v0.1/
           (cd results/u11/registered-v0.1 && sha256sum *.json *.csv > FILE_HASHES.sha256)
           git config user.name "scept-research-bot"
           git config user.email "scept-research-bot@users.noreply.github.com"
