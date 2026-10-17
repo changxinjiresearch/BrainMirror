@@ -31,6 +31,10 @@ MODEL_URL = ("https://huggingface.co/onnxmodelzoo/mnist-12/resolve/"
              "1cd752f4a3d818fa215aa621c78b8a10a4a1a3a5/mnist-12.onnx")
 DATA_BASE = "https://storage.googleapis.com/cvdf-datasets/mnist/"
 FILES = ("t10k-images-idx3-ubyte.gz", "t10k-labels-idx1-ubyte.gz")
+DATA_SHA = {
+    "t10k-images-idx3-ubyte.gz": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
+    "t10k-labels-idx1-ubyte.gz": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6",
+}
 PRE_REGISTERED_SEEDS = (109, 211, 307)
 PRE_REGISTERED_DOSES = (0.0, 0.5, 1.0)
 PATCH_SIZE = 4
@@ -488,7 +492,7 @@ def main():
     args = parser.parse_args()
     hashes = {"mnist-12.onnx": download(MODEL_URL,args.cache/"mnist-12.onnx",MODEL_SHA)}
     for name in FILES:
-        hashes[name] = download(DATA_BASE+name,args.cache/name)
+        hashes[name] = download(DATA_BASE+name,args.cache/name,DATA_SHA[name])
     imgs = read_idx(args.cache/FILES[0], 2051)
     labels = read_idx(args.cache/FILES[1], 2049)
     count = PILOT_PER_DIGIT if args.mode=="pilot" else PRIMARY_PER_DIGIT
