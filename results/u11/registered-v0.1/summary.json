@@ -163,24 +163,24 @@
   "statistics": {
     "methods": {
       "scept": {
-        "deletion_auc": 0.3366264364015071,
-        "insertion_auc": 0.7554902808399104
+        "deletion_auc": 0.3366267321872668,
+        "insertion_auc": 0.7554905750662713
       },
       "occlusion": {
-        "deletion_auc": 0.14376719668096483,
-        "insertion_auc": 0.9321035801284269
+        "deletion_auc": 0.1437593456257399,
+        "insertion_auc": 0.9321035778619721
       },
       "rise": {
-        "deletion_auc": 0.16448163276377345,
-        "insertion_auc": 0.9238915180892345
+        "deletion_auc": 0.16448163534075394,
+        "insertion_auc": 0.9238915196717784
       },
       "random": {
-        "deletion_auc": 0.5785502133097197,
-        "insertion_auc": 0.5340391156011153
+        "deletion_auc": 0.5785502193459743,
+        "insertion_auc": 0.5340391226094757
       },
       "scept_no_nuisance": {
-        "deletion_auc": 0.3373577568947254,
-        "insertion_auc": 0.7558420765907916
+        "deletion_auc": 0.33737092283488834,
+        "insertion_auc": 0.7558420685830499
       }
     },
     "comparisons": [
@@ -188,10 +188,10 @@
         "baseline": "occlusion",
         "outcome": "deletion_auc",
         "higher_is_better": true,
-        "signed_improvement_mean": -0.19285923972054222,
+        "signed_improvement_mean": -0.19286738656152688,
         "bootstrap_95ci": [
-          -0.24891671173335259,
-          -0.13267297912308776
+          -0.2489330404637258,
+          -0.13268865721473028
         ],
         "permutation_p_raw": 0.0004997501249375312,
         "n_images": 98,
@@ -202,10 +202,10 @@
         "baseline": "occlusion",
         "outcome": "insertion_auc",
         "higher_is_better": true,
-        "signed_improvement_mean": -0.17661329928851646,
+        "signed_improvement_mean": -0.17661300279570066,
         "bootstrap_95ci": [
-          -0.21967147624478878,
-          -0.13391751783485867
+          -0.2196711475789775,
+          -0.1339175141883617
         ],
         "permutation_p_raw": 0.0004997501249375312,
         "n_images": 98,
@@ -216,10 +216,10 @@
         "baseline": "rise",
         "outcome": "deletion_auc",
         "higher_is_better": true,
-        "signed_improvement_mean": -0.17214480363773366,
+        "signed_improvement_mean": -0.17214509684651289,
         "bootstrap_95ci": [
-          -0.21912676579891605,
-          -0.1261117950587561
+          -0.21912709261782315,
+          -0.12611213109061117
         ],
         "permutation_p_raw": 0.0004997501249375312,
         "n_images": 98,
@@ -230,10 +230,10 @@
         "baseline": "rise",
         "outcome": "insertion_auc",
         "higher_is_better": true,
-        "signed_improvement_mean": -0.16840123724932393,
+        "signed_improvement_mean": -0.16840094460550706,
         "bootstrap_95ci": [
-          -0.2164205902223535,
-          -0.12188663365823564
+          -0.21642062722123329,
+          -0.12188641053211198
         ],
         "permutation_p_raw": 0.0004997501249375312,
         "n_images": 98,
@@ -244,10 +244,10 @@
         "baseline": "random",
         "outcome": "deletion_auc",
         "higher_is_better": true,
-        "signed_improvement_mean": 0.2419237769082126,
+        "signed_improvement_mean": 0.24192348715870757,
         "bootstrap_95ci": [
-          0.18606981833812802,
-          0.3008977385643592
+          0.1860698531179926,
+          0.30089711601547164
         ],
         "permutation_p_raw": 0.0004997501249375312,
         "n_images": 98,
@@ -258,10 +258,10 @@
         "baseline": "random",
         "outcome": "insertion_auc",
         "higher_is_better": true,
-        "signed_improvement_mean": 0.22145116523879504,
+        "signed_improvement_mean": 0.22145145245679562,
         "bootstrap_95ci": [
-          0.15941707124278795,
-          0.2791166390175769
+          0.1594170466884945,
+          0.2791169825100399
         ],
         "permutation_p_raw": 0.0004997501249375312,
         "n_images": 98,
@@ -280,7 +280,7 @@
   },
   "runtime": {
     "actual_onnx_forward_calls": 158020,
-    "wall_seconds": 8.977057548000005
+    "wall_seconds": 13.672440031999997
   },
   "claims": {
     "engineering": "measured, not simulated",
