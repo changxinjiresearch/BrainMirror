@@ -47,7 +47,7 @@
   registry.register(adapter.kind,adapter);
   return descriptor;
  }
- function compatibility({registry,core,xai,session,manifest}){
+ function compatibility({registry,core,xai,observationModule=null,session,manifest}){
   if(!registry?.requireAdapter||!session?.description||!hash(session.sha256))fail('INVALID_SESSION','Verified model session required');
   const results=[],missing=[];
   try{xai.validateManifest(manifest,registry);results.push({gate:'manifest',status:'pass'})}
@@ -65,9 +65,10 @@
   const checked=[m.target?.tensor,...(m.observation?.tensors||[])];
   for(const name of checked)if(!outputs.has(name))
    missing.push({gate:'runtime-output:'+name,code:'OUTPUT_UNAVAILABLE'});
-  if(m.observation?.profileId){
-   try{const obs=core&&xai; if(!obs)fail('INVALID_CONTRACT','Missing core')}
-   catch(e){missing.push({gate:'observation-profile',code:e.code||'INVALID_CONTRACT'})}
+  if(m.observation?.profileId&&observationModule){
+   try{observationModule.selectProfile(m.observation.profileId)}
+   catch(e){missing.push({gate:'observation-profile',code:e.code||'PROFILE_UNSUPPORTED',
+    reason:e.message})}
   }
   // Compatible status is a preflight gate. It does NOT validate clinical data
   // semantics, morphology, third-party JS security, or complete ONNX execution.
