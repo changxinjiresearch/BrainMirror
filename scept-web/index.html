@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07141c"><title>SCEPT · 神经网络可视化实验台</title>
+<link rel="stylesheet" href="./studio.css"></head>
+<body>
+<div class="layout">
+<aside class="side">
+ <div class="brand"><span class="brand-icon">◇</span><div><b>SCEPT<span class="brand-accent">.</span></b><small>NEURAL OBSERVATORY</small></div></div>
+ <div class="nav-label">科研工作台</div>
+ <nav aria-label="页面导航">
+  <a class="nav current" href="#experiment"><span>◉</span> 可视化实验</a>
+  <a class="nav" href="./universal.html"><span>⬡</span> 通用模型接入</a><a class="nav" href="#records"><span>▦</span> 实验记录</a>
+  <a class="nav" href="#methods"><span>◎</span> 使用说明</a>
+ </nav>
+ <div class="side-note"><span class="live-pip"></span> 浏览器本地计算<br><small>无需训练 · 无需云端 GPU</small></div>
+ <div class="side-bottom">SCEPT · 中文交互版<br>真实计算，而非模拟动画</div>
+</aside>
+<main id="experiment">
+ <header class="heading">
+  <div><div class="eyebrow">BRAINMIRROR / SCEPT OBSERVATORY</div><h1>看见 AI 模型的内部变化<span>.</span></h1>
+   <p>左侧改变输入，右侧观察已经训练好的 Transformer 如何响应。</p></div>
+  <div class="header-state" id="modelState" role="status" aria-live="polite"><span class="state-dot"></span><span id="modelStateText">正在准备预训练模型…</span></div>
+ </header>
+ <section class="intro">
+  <div class="intro-copy"><strong>当前实验：预训练视觉 Transformer</strong><span>自动加载公开模型 · 本机推理 · 无需上传模型文件</span></div>
+  <div class="intro-action"><button id="startBtn" class="action" disabled>正在准备模型…</button><span class="action-help" id="progressText">正在验证模型权重并准备内部观测点</span></div>
+ </section>
+ <div class="notice" id="notice" role="status" aria-live="polite">默认使用合成数值测试输入，并非真实 MRI。这里展示的是模型计算变化，不代表医学诊断或因果解释。</div>
+ <section class="workspace" aria-label="互动实验台">
+  <article class="panel input-panel">
+   <div class="panel-heading"><div><span class="step">01 / INPUT</span><h2>输入与编辑</h2></div><span class="subtag">左侧 · 输入</span></div>
+   <p class="muted">直接点击图像，选择要修改的区域；调整范围和强度，然后运行实验。</p>
+   <div class="image-frame"><canvas id="inputCanvas" width="224" height="224" aria-label="可编辑的模型输入，点击选择要干预的位置" tabindex="0"></canvas><div class="image-caption"><span id="inputType">合成测试输入</span><span>224 × 224 · 3 通道</span></div></div>
+   <div class="editor">
+    <div class="field"><div class="fieldline"><label for="roiRadius">修改范围 <span class="hint-icon" title="选择图像上一块圆形区域，在该区域内改变实际传入模型的张量数值">ⓘ</span></label><output id="radiusValue" for="roiRadius">18 px</output></div><input type="range" id="roiRadius" min="4" max="64" value="18"></div>
+    <div class="field"><div class="fieldline"><label for="perturbAmount">修改强度 <span class="hint-icon" title="对选中区域的每个通道数值增加一个固定量，仅用于对照实验，不模拟真实病灶">ⓘ</span></label><output id="amountValue" for="perturbAmount">+0.15</output></div><input type="range" id="perturbAmount" min="-0.5" max="0.5" step="0.05" value="0.15"></div>
+   </div>
+   <div class="light-actions"><label class="secondary file-trigger">上传普通图片<input type="file" id="photoInput" accept="image/png,image/jpeg,image/webp" hidden></label><button id="resetBtn" class="secondary" type="button">恢复测试输入</button></div>
+   <p class="helper" id="inputTip">绿色圆圈是选择区域。修改参数后，重新点击上方「开始实验」或「重新计算」。</p>
+  </article>
+  <article class="panel output-panel">
+   <div class="panel-heading"><div><span class="step">02 / OBSERVATION</span><h2>模型内部观测</h2></div><span class="subtag">右侧 · 网络</span></div>
+   <p class="muted" id="networkTip">这里展示真实 ONNX 模型的计算节点和数据流关系，并非虚构的脑神经元。</p>
+   <div class="graph-frame"><canvas id="graph3dCanvas" width="780" height="320" aria-label="模型真实算子及计算依赖的三维布局图"></canvas><div class="graph-foot"><span>拖动旋转网络 · 点击节点查看说明</span><span id="layerLabel">待加载</span></div></div>
+   <div class="metrics">
+    <div class="metric"><span>发生变化的数值</span><strong id="changedMetric">—</strong></div>
+    <div class="metric"><span>平均变化幅度 <span class="hint-icon" title="同一个中间层张量在修改前后，每个对应数值差值绝对值的平均数">ⓘ</span></span><strong id="meanMetric">—</strong></div>
+    <div class="metric"><span>最大变化幅度</span><strong id="maxMetric">—</strong></div>
+   </div>
+   <div class="trace"><div class="trace-title"><strong>内部激活变化</strong><span>实际数值 · 前 64 个元素</span></div><div id="tensorPlot" class="plot-placeholder">开始实验后在这里显示第 6 层的真实计算变化。</div></div>
+  </article>
+ </section>
+ <section class="under" id="records"><div class="under-title"><h2>最近的实验</h2><p>比较结果只在本机记录摘要，原始张量可按需导出。</p></div><div id="historyList" class="history-list"><div class="empty-record">尚未运行实验。点击「开始实验」生成第一条记录。</div></div></section>
+ <section class="under" id="methods"><div class="under-title"><h2>怎么看这次实验？</h2></div><div class="explain"><div><b>① 输入</b><p>选择图像中的一块区域，改变它对应的模型输入数值。</p></div><div><b>② 模型计算</b><p>使用相同的预训练权重做两次真实前向推理，不重新训练。</p></div><div><b>③ 内部响应</b><p>比较 Transformer 第 6 层一个真实中间张量的变化；变化不等于决策因果证据。</p></div></div></section>
+ <details class="advanced" id="advanced">
+   <summary>高级设置 / 科研数据 <span>模型校验、原始张量、审计导出 <span class="chevron">⌄</span></span></summary>
+   <div class="advanced-inner">
+    <div class="technical-grid">
+     <div><small>基础预训练模型 SHA-256</small><code id="sourceSha">未加载</code></div>
+     <div><small>实际观测模型 SHA-256</small><code id="instrumentSha">未加载</code></div>
+     <div><small>计算引擎</small><strong>浏览器 CPU · WebAssembly</strong></div>
+     <div><small>观测张量</small><code id="probeName">ViT 第 6 层 / Attention Value</code></div>
+    </div>
+    <div class="advanced-buttons"><button id="exportJson" class="secondary" disabled>导出完整实验 JSON</button><button id="exportCsv" class="secondary" disabled>导出变化数据 CSV</button><a class="secondary link" href="./lab.html" target="_blank" rel="noopener">旧版技术实验室 ↗</a></div>
+    <p class="helper">ONNX：一种模型文件格式；WASM：让模型在浏览器中运行的技术；SHA-256：用来验证文件未改变的数字指纹。旧版实验室保留 MRI NIfTI 导入和更多技术工具。</p>
+    <p id="graphDetails" class="graph-details">点击右侧计算图节点，查看该计算节点的实际输入和输出张量。</p>
+   </div>
+ </details>
+ <footer> SCEPT · Research Preview · 本地计算，无需重新训练 <span>工程观测不等于医学解释有效性</span></footer>
+</main></div>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script src="./onnx_inspector.js"></script><script src="./graph3d.js"></script><script src="./studio.js"></script>
+</body></html>
