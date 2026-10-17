@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · Universal Core V1 · M3</title>
+<title>SCEPT U10 / Evidential Dependence · Universal Core V1</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://*.xethub.hf.co https://*.cloudfront.net; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:">
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">M3 / Universal Core V1</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">U10 / Scientific Explanation Method</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
 <section class="panel u8-studio" id="u8Studio" aria-label="U8 统一可视化科研工作台">
 <div class="u8-head"><div><h2>U8 / 统一数据驱动科研工作台</h2><p class="muted">展示实际 ONNX 算子依赖、Token / Channel 的真实 A/B/Δ 数值与真实模型输入图像/体数据。未观测计算单元保持中性，不生成模拟激活。</p></div><div class="u8-source-controls">
 <label for="u8Source">实验来源<select id="u8Source"><option value="u5">U5 单次 A/B</option><option value="u6">U6 自动批量</option><option value="u7">U7 XAI 证据</option></select></label>
@@ -179,6 +179,41 @@
 <p class="muted">重放会重新执行真实 ONNX 计算，不会复用审计中的旧张量充当新结果。模型、原始输入或配置不匹配必须拒绝；结果比较使用声明的浮点容差。浏览器关闭后需重新导入文件；不会创建付费计算资源。</p>
 </article>
 </section>
+<section class="workspace" id="u10Mechanism">
+<article class="panel">
+<h2>06 / U10 · SCEPT 原创解释机制：受控证据依赖</h2>
+<p class="muted">对冻结 ONNX 模型执行真实 A/B/C：A 为未修改原始输入；B 为共同背景扰动+目标 ROI 不同剂量遮挡；C 为相同背景扰动+匹配对照 ROI 同剂量遮挡。系统按预注册的强度、随机种子、数值对照、响应稳定性及剂量规则进行判别，不自动宣称医学因果性。</p>
+<label for="u10Protocol">科学实验预注册参数 JSON（张量坐标，手动提供真实 ROI，不能推断病灶）</label>
+<textarea id="u10Protocol" rows="16" spellcheck="false">{
+ "inputName": "",
+ "targetTensor": "",
+ "targetIndex": 0,
+ "targetSourceId": "explicit-model-input-target-ROI",
+ "controlSourceId": "explicit-model-input-control-ROI",
+ "targetIndices": [],
+ "controlIndices": [],
+ "fill": 0,
+ "nuisanceSigma": 0.001,
+ "meanTolerance": 0.1,
+ "stdTolerance": 0.1,
+ "strengths": [0,0.5,1],
+ "nuisanceSeeds": [101,202,303],
+ "outputScale": 1,
+ "minTargetEffect": 0.01,
+ "minSpecificity": 0.005,
+ "minPositiveFraction": 1,
+ "maxSpread": 0.02,
+ "minimumSignAgreement": 1,
+ "doseTolerance": 0.005,
+ "nullTolerance": 0.00001,
+ "expectedSign": null
+}</textarea>
+<div class="buttons"><button id="u10Generate" class="primary" disabled>生成 U10 受控实验 → 导入 U7</button>
+<a href="https://github.com/changxinjiresearch/BrainMirror/blob/main/docs/SCEPT_U10_SCIENTIFIC_METHOD_V1.md" target="_blank" rel="noopener noreferrer">查看完整数学定义与科学边界 ↗</a></div>
+<p id="u10Status" class="status" role="status">先加载真实模型，并指定目标输出与两组经过明确来源说明的张量 ROI。</p>
+<pre id="u10Report" class="u9-verdict">等待 U10 实验执行。若未提供真实、对照匹配的区域索引，将拒绝生成可信实验。</pre>
+<p class="muted">解释机制返回数值对照效应、稳定性/剂量指标及逐层真实数值响应；不产生虚构的 MRI 病灶、不声称神经元空间位置，也不把预注册判别条件当作临床因果证据。</p>
+</article></section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
 <p><strong>已实现（U0–U9）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
@@ -203,4 +238,6 @@
 <script src="./core/scept_audit.js"></script>
 <script src="./core/scept_performance.js"></script>
 <script src="./scept_m3_console.js"></script>
+<script src="./plugins/u10_evidential_dependence.js"></script>
+<script src="./scept_u10_console.js"></script>
 <script src="./universal.js"></script></body></html>
