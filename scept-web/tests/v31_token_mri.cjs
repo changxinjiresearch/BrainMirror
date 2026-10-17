@@ -46,6 +46,7 @@ try{
  assert.equal((await page.evaluate(()=>SCEPT_ACTIVITY3D.getSnapshot())).mode,'compare');
  await page.locator('#tokenZoomIn').click();
  const zoom=await page.evaluate(()=>SCEPT_ACTIVITY3D.getSnapshot());
+ await page.locator('#token3dCanvas').scrollIntoViewIfNeeded();
  const coords=await page.locator('#token3dCanvas').boundingBox();
  await page.mouse.move(coords.x+coords.width*.5,coords.y+coords.height*.5);await page.mouse.down();
  await page.mouse.move(coords.x+coords.width*.75,coords.y+coords.height*.7,{steps:5});await page.mouse.up();
@@ -53,7 +54,7 @@ try{
  await page.locator('#tokenEnter').click();
  assert.equal((await page.evaluate(()=>SCEPT_ACTIVITY3D.getSnapshot())).count,197,'Entering layer must show exactly 197 tokens');
  // Click input Patch and inspect true matching Token, 192 channels.
- const patch=page.locator('#patchInputCanvas'),box=await patch.boundingBox();
+ const patch=page.locator('#patchInputCanvas');await patch.scrollIntoViewIfNeeded();const box=await patch.boundingBox();
  await page.mouse.click(box.x+(7.5/14)*box.width,box.y+(6.5/14)*box.height);
  const linked=await page.evaluate(()=>({p:SCEPT_PATCH.getSnapshot().selected,t:SCEPT_ACTIVITY3D.getSnapshot().selected}));
  assert.equal(linked.t.token,linked.p+1,'Selected exact input patch not linked to corresponding measured token');
