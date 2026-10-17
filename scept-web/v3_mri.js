@@ -145,7 +145,7 @@ $('mriFile').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{
  await install(await decodeFile(await f.arrayBuffer(),f.name),f.name,'local_browser_file');
  }catch(ex){$('mriStatus').textContent='MRI 导入失败：'+ex.message}};
 for(const [id,axis]of [['sliceI',0],['sliceJ',1],['sliceK',2]])$(id).oninput=e=>{
- s.slice[axis]=Number(e.target.value);render();
+ s.slice[axis]=Number(e.target.value);s.revision++;render();
 };
 $('mriRadius').oninput=e=>{s.radius=Number(e.target.value);computeEdit()};
 $('mriAmount').oninput=e=>{s.amount=Number(e.target.value);computeEdit()};
