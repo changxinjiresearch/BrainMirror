@@ -31,6 +31,7 @@ const assert=require('node:assert/strict'),path=require('node:path');
    assert(audit,'Actual dual inference failed: '+await page.locator('#runStatus').innerText());
    assert.equal(audit.architectureProfile,cfg.profile);
    assert.equal(audit.dataAdapter,'typed-tensor-v1');
+   assert.equal(audit.observationAdapter,'runtime-axis-v1');
    assert.equal(audit.adapter,'onnx-wasm');
    assert.equal(audit.originalModelSHA256,snap.hash);
    assert.equal(audit.inputSource,'deterministic-synthetic-nonmedical');
