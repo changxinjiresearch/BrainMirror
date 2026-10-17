@@ -54,3 +54,5 @@ jobs:
         run: python scept-web/tests/instrument_pretrained_vit.py
       - name: Verify real pretrained Transformer intermediate activations with browser CPU
         run: node scept-web/tests/pretrained_probes.cjs
+      - name: Verify one-click pretrained Transformer demo needs no user uploads
+        run: node scept-web/tests/transformer_one_click.cjs
