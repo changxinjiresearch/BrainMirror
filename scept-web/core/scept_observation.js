@@ -33,20 +33,20 @@
    fail('LEGACY_LAYOUT_MISMATCH','197 tokens / 192 channels are permitted solely in exact legacy ViT adapter');
   const axes=(profile.layouts[dims.length]||[]).map(([role,index])=>({role,index,size:dims[index]}));
   const stride=[];let x=1;for(let i=dims.length-1;i>=0;i--){stride[i]=x;x*=dims[i]}
-  const groups=axes.map(axis=>axis.size<=limit?Array.from({length:axis.size},()=>({sum:0,sq:0,changed:0,n:0})):null);
-  let sum=0,sq=0,signed=0,max=0,changed=0;const first12=[];
+  const groups=axes.map(axis=>axis.size<=limit?Array.from({length:axis.size},()=>({sum:0,sq:0,changed:0,n:0,sumA:0,sumB:0})):null);
+  let sum=0,sq=0,signed=0,max=0,changed=0,sumA=0,sumB=0;const first12=[];
   for(let i=0;i<n;i++){
    const va=Number(a.data[i]),vb=Number(b.data[i]);if(!Number.isFinite(va)||!Number.isFinite(vb))fail('NONFINITE_ACTIVATION','Nonfinite output '+name);
-   const d=vb-va,ad=Math.abs(d);if(!Number.isFinite(d))fail('NONFINITE_ACTIVATION','Nonfinite numerical difference '+name);sum+=ad;sq+=d*d;signed+=d;max=Math.max(max,ad);
+   const d=vb-va,ad=Math.abs(d);if(!Number.isFinite(d))fail('NONFINITE_ACTIVATION','Nonfinite numerical difference '+name);sum+=ad;sq+=d*d;signed+=d;sumA+=Math.abs(va);sumB+=Math.abs(vb);max=Math.max(max,ad);
    if(ad>1e-7)changed++;if(i<12)first12.push({index:i,A:va,B:vb,delta:d});
    for(let j=0;j<axes.length;j++){const group=groups[j];if(!group)continue;
-    const ax=axes[j],g=group[Math.floor(i/stride[ax.index])%ax.size];g.sum+=ad;g.sq+=d*d;g.n++;if(ad>1e-7)g.changed++;
+    const ax=axes[j],g=group[Math.floor(i/stride[ax.index])%ax.size];g.sum+=ad;g.sq+=d*d;g.sumA+=Math.abs(va);g.sumB+=Math.abs(vb);g.n++;if(ad>1e-7)g.changed++;
    }
   }
   const axisSummaries={};axes.forEach((ax,j)=>{if(groups[j])axisSummaries[ax.role]=groups[j].map((g,index)=>({
-   index,elements:g.n,changed:g.changed,mean_abs_delta:g.sum/g.n,rms_delta:Math.sqrt(g.sq/g.n)}))});
+   index,elements:g.n,changed:g.changed,mean_abs_A:g.sumA/g.n,mean_abs_B:g.sumB/g.n,mean_abs_delta:g.sum/g.n,rms_delta:Math.sqrt(g.sq/g.n)}))});
   return {tensor:name,type:a.type,shape:dims.slice(),source,profile:profileId,architecture:profile.architecture,
-   axes,axisSummaries,total:n,changed,mean_abs_delta:sum/n,max_abs_delta:max,rms_delta:Math.sqrt(sq/n),
+   axes,axisSummaries,total:n,changed,mean_abs_A:sumA/n,mean_abs_B:sumB/n,mean_abs_delta:sum/n,max_abs_delta:max,rms_delta:Math.sqrt(sq/n),
    mean_signed_delta:signed/n,first12,evidence:'actual-onnx-runtime-graph-outputs',
    caveat:'Numeric dependencies are not biological neurons, anatomical correspondences or scientific explanations'};
  }
