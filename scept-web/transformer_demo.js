@@ -84,4 +84,5 @@ button.onclick=async()=>{
  }finally{button.disabled=false;button.textContent=old;}
 };
 window.SCEPT_DEMO_EXPOSE=exposeIntermediate;
+if(new URLSearchParams(location.search).get('run')==='transformer')button.click();
 })();
