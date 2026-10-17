@@ -32,25 +32,12 @@ async function load(){
  finally{s.loading=false}
 }
 function drawNetwork(values){
- const canvas=$('networkCanvas'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
- ctx.fillStyle='#081923';ctx.fillRect(0,0,w,h);
- ctx.fillStyle='#9fc7c7';ctx.font='13px sans-serif';ctx.fillText('MRI 训练 EfficientNetB3 · 真实 ONNX 模型的算子与分类输出',18,24);
- const ops=s.graph?.nodes??[],N=12,bin=Math.max(1,Math.floor(ops.length/N));
- for(let j=0;j<N;j++){
-  const x=35+j*(w-70)/(N-1);
-  if(j<N-1){ctx.strokeStyle='#30525b';ctx.beginPath();ctx.moveTo(x+10,175);ctx.lineTo(x+(w-70)/(N-1)-8,175);ctx.stroke()}
-  for(let k=0;k<5;k++){ctx.beginPath();ctx.arc(x,100+k*34,4.4,0,Math.PI*2);ctx.fillStyle='#7598a0';ctx.fill()}
-  ctx.fillStyle='#95b8bc';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('G'+j,x,287);
- }
- if(values){
-  const d=values.after.map((n,i)=>Math.abs(n-values.before[i])),max=Math.max(...d,1e-12);
-  for(let i=0;i<4;i++){
-   const x=w/2-90+i*60,y=330;
-   ctx.fillStyle=`rgba(${Math.floor(70+95*d[i]/max)},${Math.floor(135+90*d[i]/max)},153,1)`;
-   ctx.beginPath();ctx.arc(x,y,6+5*d[i]/max,0,Math.PI*2);ctx.fill();
-  }
- }
- ctx.textAlign='left';ctx.fillStyle='#83abad';ctx.font='11px sans-serif';ctx.fillText('灰色 = 未暴露内部激活 · 下方彩色点 = 实测分类输出差异（不是层内神经元）',17,355);
+ // Reuse the same real 3D ONNX operator graph, without claiming intermediate
+ // responses: this MRI CNN exposes only final classification outputs.
+ window.SCEPT_NETWORK3D?.setGraph(s.graph);
+ window.SCEPT_NETWORK3D?.setObservations([]);
+ if(s.graph)document.getElementById('networkNodeDetails').textContent=
+ 'MRI CNN 结构：实际 ONNX 算子与生产者→消费者张量依赖。此模型目前只开放四个最终输出；未开放中间层数值，节点颜色仅表示算子种类。';
 }
 function plot(values){
  const canvas=$('responseChart'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
