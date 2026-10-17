@@ -17,7 +17,7 @@ const js=()=>({
  try{
   for(const width of sizes){
    const page=await browser.newPage({viewport:{width,height:900}});
-   await page.goto(base,{waitUntil:'domcontentloaded'});
+   await page.goto(base+'/lab.html',{waitUntil:'domcontentloaded'});
    const before=await page.evaluate(js);
    assert(before.htmlWidth<=width+2,'horizontal overflow before loading at '+width+': '+JSON.stringify(before));
    assert(before.bodyWidth<=width+2,'body overflow before loading at '+width+': '+JSON.stringify(before));
