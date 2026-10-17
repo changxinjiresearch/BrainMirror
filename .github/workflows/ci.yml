@@ -21,6 +21,10 @@ jobs:
         run: python -m compileall -q brainmirror scripts
       - name: Tests
         run: python -m pytest -q tests
+      - name: Browser JavaScript syntax checks
+        run: |
+          node --check site/app.js
+          node --check --input-type=module < site/brain3d.js
       - name: Prohibit tracked patient/secret artifacts
         run: |
           if git ls-files | grep -Ei '(\.nii(\.gz)?$|\.dcm$|\.npy$|\.npz$|\.pt$|\.pth$|(^|/)\.env$)'; then
