@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    const page=await browser.newPage({viewport:{width:1366,height:900},acceptDownloads:true});
    const errors=[];
    page.on('pageerror',e=>errors.push('JS '+e.message));
-   await page.goto('http://127.0.0.1:8765',{waitUntil:'domcontentloaded'});
+   await page.goto(process.env.SCEPT_TEST_URL || 'http://127.0.0.1:8765',{waitUntil:'domcontentloaded'});
    await page.locator('#transformerDemo').click();
    await page.waitForFunction(()=>{
       const text=document.querySelector('#transformerStatus')?.textContent||'';
