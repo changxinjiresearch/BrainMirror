@@ -52,3 +52,11 @@
  .response-tabs button{padding:7px 8px}
  .network-frame #networkCanvas{height:315px}
 }
+
+
+/* Overlay labels for A/B scenes. Both panes use one synchronized camera. */
+.network-canvas-shell{position:relative;min-width:0}
+.network-pair-labels{position:absolute;inset:6px 8px auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;pointer-events:none;z-index:2}
+.network-pair-labels[hidden]{display:none}
+.network-pair-labels span{text-align:center;display:block;border:1px solid #376b69;border-radius:7px;background:#092c37db;padding:5px 7px;color:#a8f0d6;font-size:11px}
+.network-pair-labels span:nth-child(2){color:#ffd08a;border-color:#725b39}
