@@ -1,0 +1,26 @@
+{
+  "schema": "scept.u7.experiment.v1",
+  "id": "m2-engineering-cnn-demo",
+  "version": "1.0.0",
+  "model": {
+    "sha256": "48fc8cae3a030276775eb383c12ef29b0f54a13740ac0c642d2aa29765f535a0",
+    "modelId": "user-uploaded-onnx",
+    "requiredCapabilities": ["inference"]
+  },
+  "target": {"adapterId":"u7.target.tensor-element","tensor":"conv_output","index":0},
+  "intervention": {
+    "pluginId":"u5.noise",
+    "mode":"sweep",
+    "parameter":"sigma",
+    "config":{"region":{"bounds":[[0,1],[0,1],[0,1],[0,2]]}},
+    "intensities":[0,0.1,0.2],
+    "baseSeed":240216
+  },
+  "observation":{"profileId":"cnn-nchw","tensors":["conv_hidden"]},
+  "method":{"adapterId":"u7.method.activation-response","params":{"topK":3}},
+  "evaluations":[
+    {"adapterId":"u7.eval.directional-shift","params":{"direction":"absolute","minimum":0}},
+    {"adapterId":"u7.eval.dose-monotonicity","params":{"tolerance":100}}
+  ],
+  "scientificBoundary":"Untrained generated CNN engineering fixture, synthetic input, NOT a medical result."
+}
