@@ -32,6 +32,25 @@ jobs:
         run: python -m pip install numpy==2.2.6 onnxruntime==1.23.2
       - name: Pre-data unit falsification, failures and statistical boundary checks
         run: python -m unittest discover -s tests -p 'test_u11_registered_real_benchmark.py' -v
+      - name: Independent scientific Python vs actual U10 trusted JS plugin nuisance and dose parity
+        run: |
+          node tests/u11_js_python_parity.cjs > /tmp/scept-u11-u10-js-numeric.json
+          python - <<'PY'
+          import importlib.util, json, numpy as np
+          spec=importlib.util.spec_from_file_location('b','scripts/u11_real_mnist_benchmark.py')
+          b=importlib.util.module_from_spec(spec);spec.loader.exec_module(b)
+          observed=json.load(open('/tmp/scept-u11-u10-js-numeric.json'))
+          original=np.asarray(observed['original'],dtype=np.float32)
+          z=b.u10_noise(original,109,.001)
+          for result in observed['results']:
+              q=result['dose']
+              expected_b=b.occlude(z,np.array([0,1],dtype=np.intp),q)
+              expected_c=b.occlude(z,np.array([6,7],dtype=np.intp),q)
+              np.testing.assert_allclose(result['A'],original,atol=0,rtol=0)
+              np.testing.assert_allclose(result['B'],expected_b,atol=1e-7,rtol=0)
+              np.testing.assert_allclose(result['C'],expected_c,atol=1e-7,rtol=0)
+          print('PASS actual U10 JS intervention vs standalone Python preregistered benchmark numerical nuisance/ROI parity')
+          PY
       - name: Real pretrained model + original MNIST test IDX pilot (2 per digit, 20 true images)
         run: |
           python scripts/u11_real_mnist_benchmark.py \
