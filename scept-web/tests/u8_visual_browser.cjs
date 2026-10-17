@@ -46,7 +46,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   assert(view.views.some(v=>v.tensor==='conv_hidden'&&v.role==='channel'));
   assert(view.graph.nodes.some(n=>n.observed?.tensor==='conv_hidden'));
   assert(view.renderedNodes.some(n=>n.measured&&n.delta>0));
-  assert(view.renderedNodes.some(n=>!n.measured));
+  assert(view.renderedNodes.every(n=>n.measured?n.tensor!==null:n.A===null),'All unobserved nodes must remain neutral, without faked A/B magnitudes');
   assert.equal(view.hasModelInput,true,'real paired image input must be passed to U8');
   assert(view.modelInput.changed>0);
   assert.equal(view.modelInput.layout,'NCHW');
