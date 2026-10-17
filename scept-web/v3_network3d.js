@@ -92,6 +92,9 @@ function nodeVisual(node,mode){
  const observed=observedFor(node);
  if(!observed)return {color:[.35,.48,.53],size:node.size,measured:false,metric:null};
  const value=metricValue(observed,mode);
+ // A true zero-delta tensor must look neutral, not artificially active.
+ if(mode==='delta'&&value<=1e-7)return{color:[.35,.48,.53],size:8,measured:true,metric:value,intensity:0,
+  delta:observed.deltaMean,before:observed.beforeMean,after:observed.afterMean,layer:observed.layer};
  const scale=mode==='delta'?state.deltaScale:state.signalScale;
  const t=strength(value,scale);
  // Quantitative magnitude is represented by a continuous color and radius.
