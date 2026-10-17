@@ -48,6 +48,10 @@ jobs:
           exit 1
       - name: Check Token A/B/Δ visual density with real MRI (screenshot-based acceptance)
         run: node scept-web/tests/v31_token_visual_clarity.cjs
+      - name: Verify actual deployed A/B visual fix using Chromium and pretrained model
+        env:
+          SCEPT_V31_VISUAL_URL: https://brainmirror-observatory-du60leoc3-jayson-s-projects6.vercel.app/v3.html
+        run: node scept-web/tests/v31_token_visual_clarity.cjs
       - name: Retain Token visual acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4
