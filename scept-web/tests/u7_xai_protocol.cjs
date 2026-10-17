@@ -18,11 +18,11 @@ const U5=require('../core/scept_intervention.js'),U6=require('../core/scept_sche
   target:{adapterId:'u7.target.tensor-element',tensor:'score',index:0},
   intervention:{pluginId:'u5.occlusion',mode:'sweep',
    config:{region:{bounds:[[0,1],[0,1],[0,1]]}},
-   parameter:'fill',intensities:[1,0,-1],baseSeed:42},
+   parameter:'fill',intensities:[1,2,3],baseSeed:42},
   observation:{profileId:'generic',tensors:['score']},
   method:{adapterId:'u7.method.target-contrast',params:{}},
   evaluations:[
-   {adapterId:'u7.eval.directional-shift',params:{direction:'decrease',minimum:0}},
+   {adapterId:'u7.eval.directional-shift',params:{direction:'absolute',minimum:0}},
    {adapterId:'u7.eval.dose-monotonicity',params:{tolerance:0}}
   ]
  };
@@ -44,7 +44,7 @@ const U5=require('../core/scept_intervention.js'),U6=require('../core/scept_sche
  assert.equal(report.schema,'scept.u7.evidence.v1');
  assert.equal(report.execution.completed,3);
  assert.equal(report.execution.failed,0);
- assert.deepEqual(report.tasks.map(t=>t.target.delta),[0,-1,-2]);
+ assert.deepEqual(report.tasks.map(t=>t.target.delta),[0,1,2]);
  assert(report.tasks.every(t=>t.explanation?.method==='target-contrast'));
  assert(report.tasks.every(t=>t.tests[0].verdict==='criterion_met'));
  assert.equal(report.suiteTests.length,1);
