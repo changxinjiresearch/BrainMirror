@@ -11,9 +11,9 @@ console.log('MRI-trained candidate ONNX bytes',buffer.byteLength,'source SHA256'
 if(buffer.byteLength>170000000)throw Error('MRI model too large for constrained browser smoke test');
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
-const page=await browser.newPage();await page.goto('http://127.0.0.1:8765/v3.html',{waitUntil:'domcontentloaded'});
-const meta=await page.evaluate(async bin=>{
- const buf=new Uint8Array(bin),graph=SCEPT_INSPECT_ONNX(buf.buffer);
+const page=await browser.newPage();await page.route('http://127.0.0.1:8765/candidate-mri.onnx',route=>route.fulfill({status:200,contentType:'application/octet-stream',body:buffer}));await page.goto('http://127.0.0.1:8765/v3.html',{waitUntil:'domcontentloaded'});
+const meta=await page.evaluate(async()=>{
+ const buf=new Uint8Array(await(await fetch('/candidate-mri.onnx')).arrayBuffer()),graph=SCEPT_INSPECT_ONNX(buf.buffer);
  ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
  ort.env.wasm.numThreads=1;
  const session=await ort.InferenceSession.create(buf,{executionProviders:['wasm']});
@@ -25,7 +25,7 @@ const meta=await page.evaluate(async bin=>{
  const outputs=Object.fromEntries(Object.entries(out).map(([n,t])=>[n,{shape:t.dims,first:Array.from(t.data.slice(0,10))}]));
  await session.release();
  return{input:name,metadata:m,outputs,numOperators:graph.totalNodes};
- },Array.from(buffer));
+ });
  console.log('MRI-trained model browser compatibility PASS',JSON.stringify(meta).slice(0,1800));
 }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
