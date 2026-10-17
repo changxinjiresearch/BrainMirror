@@ -9,6 +9,8 @@ registry.register('data',dataAdapter);
 const interventionEngine=SCEPT_INTERVENTION.make(registry,SCEPT_CORE,dataAdapter);
 interventionEngine.registerBuiltins();
 SCEPT_XAI.registerBuiltins(registry,SCEPT_CORE);
+// U10 is a standalone, trusted SDK plugin bundle. No modifications to U5/U6/U7 logic.
+SCEPT_U10_MECHANISM.install({sdk:SCEPT_SDK,registry,core:SCEPT_CORE});
 const observationAdapter=SCEPT_OBSERVATION.make();
 registry.register('observation',observationAdapter);
 const PRESETS={
@@ -18,6 +20,7 @@ const PRESETS={
 let state={bytes:null,hash:null,inspect:null,source:null,session:null,loaded:null,audit:null};
 let scheduler=null,u7Engine=null,u7Active=null,u6OriginalSpec=null,u7OriginalManifest=null;
 const visualStudio=SCEPT_VISUAL_STUDIO;
+const u10Console=SCEPT_U10_CONSOLE.make({core:SCEPT_CORE,getSession:()=>state.session,getFeeds:buildInputs});
 const m3Console=SCEPT_M3_CONSOLE.make({core:SCEPT_CORE,registry,xai:SCEPT_XAI,
  schedulerFactory:SCEPT_SCHEDULER,interventionEngine,observationAdapter,
  dataAdapter,getSession:()=>state.session,getFeeds:buildInputs,getU6:()=>scheduler,
@@ -88,7 +91,7 @@ async function attach(){
   note('modelStatus','正在创建真正的 ONNX WASM 推理会话…');
   state.session=await SCEPT_CORE.openModel(registry,manifest,raw,{wasmPaths:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/'});
   state.loaded=manifest;state.audit=null;$('export').disabled=true;
-  $('run').disabled=false;updateU6Controls();updateU7Controls();visualStudio.attach(state.session);m3Console.refresh();
+  $('run').disabled=false;updateU6Controls();updateU7Controls();visualStudio.attach(state.session);m3Console.refresh();u10Console.refresh();
   note('modelStatus','已接入真实模型：'+state.session.description.inputs.length+' 个输入，'+state.session.description.outputs.length+' 个实际输出（含 '+probes.length+' 个选定观测点）。','success');
  }catch(e){state.session=null;note('modelStatus','模型接入失败：'+e.message,'error')}
  finally{$('load').disabled=false}
@@ -359,7 +362,7 @@ $('u7Run').onclick=async()=>{
  try{
   if(u7Engine.snapshot().cancelled)u7Engine.resume();
   note('u7Status','正在执行真正的 ONNX 推理和 U7 证据评价…');
-  const report=await u7Engine.run();selectVisualSource('u7');
+  const report=await u7Engine.run();selectVisualSource('u7');u10Console.render(report);
   note('u7Status','执行结束：完成 '+report.execution.completed+'/'+report.execution.total+
    ' · 失败 '+report.execution.failed+' · 汇总检验 '+report.suiteTests.length,
    report.execution.failed?'error':'success');
@@ -383,6 +386,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u5-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,getU8Snapshot:()=>visualStudio.getSnapshot(),getU9Snapshot:()=>m3Console.getSnapshot(),xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,getU8Snapshot:()=>visualStudio.getSnapshot(),getU10Ids:()=>SCEPT_U10_MECHANISM.IDs,getU9Snapshot:()=>m3Console.getSnapshot(),xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
 
 })();
