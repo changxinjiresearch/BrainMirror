@@ -20,7 +20,7 @@ let scheduler=null,u7Engine=null,u7Active=null;
 const visualStudio=SCEPT_VISUAL_STUDIO;
 function evidenceForVisual(){try{return u7Engine?.exportEvidence()||null}catch(_){return null}}
 function syncVisual(){visualStudio.snapshots({audit:state.audit,u6:scheduler?.snapshot()||null,u7:evidenceForVisual()})}
-function selectVisualSource(kind){const select=$('u8Source');if(select.value!==kind){select.value=kind;select.dispatchEvent(new Event('change'))}else syncVisual()}
+function selectVisualSource(kind){const select=$('u8Source');if(select.value!==kind){select.value=kind;select.dispatchEvent(new Event('change'))}syncVisual()}
 function note(id,msg,kind='pending'){const el=$(id);el.textContent=msg;el.dataset.state=kind}
 function tableCells(parent,values){const tr=document.createElement('tr');for(const v of values){const td=document.createElement('td');td.textContent=v;tr.append(td)}parent.append(tr)}
 function safeData(buf){if(buf.byteLength>160*1024*1024)throw Error('Model exceeds 160 MB local resource guard');return buf}
