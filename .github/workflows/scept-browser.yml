@@ -1,7 +1,7 @@
 name: SCEPT Browser Engine Acceptance
 on:
   push:
-    branches: [main, "phase/**"]
+    branches: [main, "phase/**", "fix/**"]
     paths:
       - "scept-web/**"
       - "scripts/expose_onnx_probes.py"
@@ -28,13 +28,21 @@ jobs:
           node-version: "22"
       - name: Check frontend syntax
         run: |
+          node --check scept-web/core/scept_core.js
+          node --check scept-web/core/onnx_probes.js
+          node --check scept-web/core/onnx_adapter.js
+          node --check scept-web/universal.js
           node --check scept-web/app.js
           node --check scept-web/mri.js
           node --check scept-web/fixtures.js
           node --check scept-web/tests/browser.cjs
           python -m compileall -q scripts/expose_onnx_probes.py
+      - name: Verify U1 universal plugin contracts and fail-closed scientific capability rules
+        run: node scept-web/tests/u1_core_contract.cjs
       - name: Install CPU model testing tools
         run: python -m pip install onnx onnxruntime pytest numpy
+      - name: Generate and validate two NEW ONNX model architectures for U2
+        run: python scept-web/tests/generate_u2_fixture.py
       - name: Numerical validation of real ONNX graph execution
         run: python -m pytest -q scept-web/tests/test_engineering_reference.py
       - name: Install browser test runner
@@ -46,6 +54,8 @@ jobs:
           python -m http.server 8765 -d scept-web >/tmp/scept-http.log 2>&1 &
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && exit 0; sleep 1; done
           exit 1
+      - name: U2 generic ONNX real MLP/CNN model import plus matching true probes
+        run: node scept-web/tests/u2_generic_adapter.cjs
       - name: Check Token A/B/Δ visual density with real MRI (screenshot-based acceptance)
         run: node scept-web/tests/v31_token_visual_clarity.cjs
       - name: Verify actual deployed A/B visual fix using Chromium and pretrained model
