@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · U5 通用干预引擎</title>
+<title>SCEPT Universal Core · U6 自动实验调度</title>
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">U5 / 通用干预插件</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">U6 / 自动实验编排</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
 <section class="workspace">
 <article class="panel"><h2>01 / 导入冻结模型</h2>
 <label for="modelPreset">模型来源</label>
@@ -61,14 +61,56 @@
 <div class="buttons"><button id="export" disabled>导出可核查实验 JSON</button><a href="./v3.html">进入成熟 MRI 三维观测器 ↗</a></div>
 </article>
 </section>
+<section class="workspace">
+<article class="panel">
+<h2>03 / U6 自动实验调度</h2>
+<p class="muted">同一冻结模型下自动运行 A/B、多强度和批量对照。每个任务会独立保留随机种子、进度、失败信息和真实张量观测结果。计算在当前浏览器按序执行，不依赖付费服务器。</p>
+<label for="u6Mode">实验类型</label>
+<select id="u6Mode">
+<option value="ab">单次 A/B 干预</option>
+<option value="sweep">多强度扫描</option>
+<option value="batch">批量对照实验</option>
+</select>
+<label for="u6Plugin">干预插件（继承 U5）</label><select id="u6Plugin">
+<option value="u5.noise">高斯噪声</option>
+<option value="u5.occlusion">区域遮挡</option>
+<option value="u5.replace">区域替换</option>
+<option value="u5.matched-control">A/B/C 数值匹配对照</option>
+<option value="u5.internal-mask">真实 ONNX 内部状态遮罩（需插桩）</option>
+</select>
+<label for="u6Config">基础干预参数 JSON</label>
+<textarea id="u6Config" rows="3" spellcheck="false" placeholder='{"sigma":0.1}'></textarea>
+<label for="u6Seed">实验基础随机种子（uint32）</label>
+<input id="u6Seed" type="number" min="0" max="4294967295" step="1" value="240216">
+<label for="u6Parameter">扫描参数（仅多强度）</label>
+<select id="u6Parameter"><option value="sigma">sigma · 噪声标准差</option><option value="fill">fill · 遮挡值</option><option value="value">value · 内部遮罩倍率</option></select>
+<label for="u6Intensities">多强度列表 JSON（仅多强度）</label>
+<textarea id="u6Intensities" rows="2">[0.0,0.1,0.2,0.3]</textarea>
+<label for="u6Controls">批量对照列表 JSON（仅批量，每个元素包含 id 和 config）</label>
+<textarea id="u6Controls" rows="3" spellcheck="false" placeholder='[{"id":"control-1","config":{"sigma":0.1}},{"id":"control-2","config":{"sigma":0.2}}]'></textarea>
+<div class="buttons">
+<button id="u6Create" class="primary" disabled>建立实验队列</button>
+<button id="u6Run" disabled>开始 / 继续执行</button>
+<button id="u6Cancel" disabled>在当前推理后取消</button>
+<button id="u6Retry" disabled>重新排队失败任务</button>
+</div>
+<p id="u6Status" class="status" role="status" aria-live="polite">请先加载真实模型。U6 不会自动训练模型或上传用户数据。</p>
+<div id="u6Facts" class="facts">—</div>
+<div class="scroll"><table><thead><tr><th>任务</th><th>干预</th><th>种子</th><th>状态</th><th>结果 / 错误</th></tr></thead><tbody id="u6TaskRows"></tbody></table></div>
+<div class="buttons">
+<button id="u6Json" disabled>导出审计 JSON</button>
+<button id="u6Csv" disabled>导出结果 CSV</button>
+</div>
+<p class="muted">任务队列只在当前页面会话执行；关闭网页后不会后台继续运行。导出记录仅包含元数据、输入哈希和计算结果，不会包含原始 MRI 张量。要继续相同实验，需重新加载原模型、输入及实验配置。</p>
+</article></section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
-<p><strong>已实现（U0–U5）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
-<p><strong>仍未完成（U6 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>已实现（U0–U6）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>仍未完成（U7 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
 <p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
 </div></section>
 </main>
-<footer>SCEPT Universal Core · U5 插件式干预预览 · 无 GPU 训练 · 浏览器本地执行</footer>
+<footer>SCEPT Universal Core · U6 自动实验调度预览 · 无 GPU 训练 · 浏览器本地执行</footer>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./core/scept_core.js"></script>
@@ -77,4 +119,5 @@
 <script src="./core/scept_data_adapter.js"></script>
 <script src="./core/scept_observation.js"></script>
 <script src="./core/scept_intervention.js"></script>
+<script src="./core/scept_scheduler.js"></script>
 <script src="./universal.js"></script></body></html>
