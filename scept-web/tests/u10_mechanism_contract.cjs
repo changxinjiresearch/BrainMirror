@@ -81,6 +81,26 @@ const mask=async(indices,sourceId)=>({inputName:'x',shape:[1,8],
    analysis:{method:t.explanation,target:t.target}}}));
  const falsePositive=U10.suite({tasks:mockedTasks,config:manifest.evaluations[1].params});
  assert.equal(falsePositive.verdict,'criterion_not_met','Stable zero response is not evidence');
+ const nullCells=result.tasks.filter(t=>t.intervention.strength===0);
+ assert(nullCells.every(t=>t.tests[0].verdict==='not_evaluable'),
+  'Zero intervention dose must never be reported as a positive explanation');
+ const tamperPlan={...manifest,id:'scept-u10-mask-hash-tamper',
+  intervention:{...manifest.intervention,controls:manifest.intervention.controls.map((task,i)=>i===0?
+   {...task,config:{...task.config,targetMask:{...task.config.targetMask,
+    indicesSha256:'0'.repeat(64)}}}:task)}};
+ const tamper=make();tamper.registerExperiment(tamperPlan);
+ await tamper.prepare(tamperPlan.id,{feeds});
+ const tampered=await tamper.run();
+ assert.equal(tampered.execution.failed,1,'Mask tampering must not execute as real evidence');
+ assert.equal(tampered.tasks[0].error.code,'MASK_HASH_MISMATCH');
+ assert.equal(tampered.suiteTests[0].verdict,'not_evaluable');
+ const overlapMask=await mask([0,1],'overlapping-control-forbidden');
+ const badOverlap=U10.plan({...params,controlMask:overlapMask});
+ const overlap=make();overlap.registerExperiment(badOverlap);
+ await overlap.prepare(badOverlap.id,{feeds});
+ const overlapEvidence=await overlap.run();
+ assert.equal(overlapEvidence.execution.failed,9);
+ assert(overlapEvidence.tasks.every(t=>t.error.code==='CONTROL_OVERLAP'));
  const deleted=mockedTasks.slice(0,8);
  assert.equal(U10.suite({tasks:deleted,config:manifest.evaluations[1].params}).verdict,'not_evaluable');
  assert.throws(()=>U10.plan({...params,nuisanceSeeds:[101,101,303]}),e=>e.code==='INVALID_PLAN');
