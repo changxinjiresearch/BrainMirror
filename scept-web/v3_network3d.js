@@ -235,6 +235,6 @@ function bind(){
 initialize();bind();paint();updateUI();
 window.SCEPT_NETWORK3D={
  setGraph,setObservations,highlightLayer:setLayer,enterLayer,overview,selectNode,
- getSnapshot:()=>({backend:state.backend,mode:state.mode,layer:state.layer,yaw:state.yaw,pitch:state.pitch,distance:state.distance,displayNodes:state.nodes.length,displayEdges:state.edges.length,totalNodes:state.graphNodes,totalEdges:state.graphEdges,selected:state.selected,layoutSerial:state.layoutSerial,pickTarget:state.nodes.length?{id:state.nodes[Math.floor(state.nodes.length/2)].id,...screenPoint(state.nodes[Math.floor(state.nodes.length/2)].p)}:null})
+ getSnapshot:()=>({backend:state.backend,mode:state.mode,layer:state.layer,yaw:state.yaw,pitch:state.pitch,distance:state.distance,displayNodes:state.nodes.length,displayEdges:state.edges.length,totalNodes:state.graphNodes,totalEdges:state.graphEdges,edgesVerified:state.edges.every(e=>state.graph?.edges.some(real=>real.from===e.from&&real.to===e.to&&real.tensor===e.tensor)),observedProducers:state.probeNames.size,selected:state.selected,layoutSerial:state.layoutSerial,pickTarget:state.nodes.length?{id:state.nodes[Math.floor(state.nodes.length/2)].id,...screenPoint(state.nodes[Math.floor(state.nodes.length/2)].p)}:null})
 };
 })();
