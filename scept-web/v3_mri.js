@@ -111,7 +111,8 @@ function render(){
  $('sliceI').value=String(s.slice[0]);$('sliceJ').value=String(s.slice[1]);$('sliceK').value=String(s.slice[2]);
  $('mriRadiusValue').textContent=s.radius+' 体素';
  $('mriAmountValue').textContent=(s.amount>=0?'+':'')+s.amount.toFixed(2);
- $('roiCoords').textContent='中心点：['+s.center.join(', ')+']';
+ $('roiCoords').textContent='三维 ROI 中心：['+s.center.join(', ')+'] · 三视图切片坐标：['+s.slice.join(', ')+']';
+ window.SCEPT_PATCH?.refresh();
 }
 async function install(data,name,source){
  s.dimensions=data.dimensions;s.spacing=data.spacing;s.limits=data.limits;s.affine=data.affine;s.orient=data.orient;
