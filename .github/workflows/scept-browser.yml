@@ -57,7 +57,7 @@ jobs:
           python scept-web/tests/generate_u2_fixture.py
           python scripts/expose_onnx_probes.py scept-web/tests/generated/u2_cnn.onnx scept-web/tests/generated/u5_cnn_mask.onnx --ablate conv_hidden
       - name: Numerical validation of real ONNX graph execution
-        run: python -m pytest -q scept-web/tests/test_engineering_reference.py
+        run: python -m pytest -q scept-web/tests/test_engineering_reference.py scept-web/tests/test_u5_internal_reference.py
       - name: Install browser test runner
         run: |
           npm install --no-save playwright@1.56.1
