@@ -44,6 +44,10 @@ jobs:
           node --check scept-web/core/scept_audit.js
           node --check scept-web/core/scept_performance.js
           node --check scept-web/scept_m3_console.js
+          node --check scept-web/plugins/u10_evidential_dependence.js
+          node --check scept-web/scept_u10_console.js
+          node --check scept-web/tests/u10_mechanism_contract.cjs
+          node --check scept-web/tests/u10_mechanism_browser.cjs
           node --check scept-web/plugins/u9_method_evaluation_sdk_template.js
           node --check scept-web/plugins/u9_intervention_sdk_template.js
           node --check scept-web/tests/u9_m3_contract.cjs
@@ -80,6 +84,8 @@ jobs:
         run: node scept-web/tests/u9_m3_contract.cjs
       - name: M3 browser security / trustworthy plugin / zero-fee release static hardening
         run: node scept-web/tests/u9_security_check.cjs
+      - name: U10 scientific mechanism independent SDK + controlled signed contrast and stability/dose contracts
+        run: node scept-web/tests/u10_mechanism_contract.cjs
       - name: Install CPU model testing tools
         run: python -m pip install onnx onnxruntime pytest numpy
       - name: Generate and validate two NEW ONNX model architectures for U2
@@ -110,6 +116,8 @@ jobs:
         run: node scept-web/tests/u8_visual_browser.cjs
       - name: M3 final real Chromium ONNX SDK, audit-file integrity/tamper and true U6/U7 replay acceptance
         run: node scept-web/tests/u9_m3_browser.cjs
+      - name: U10 genuine ONNX Chrome matched target/control nuisance-dose explanation mechanism + 7 preregistered gates and replay
+        run: node scept-web/tests/u10_mechanism_browser.cjs
       - name: U2 generic ONNX real MLP/CNN model import plus matching true probes
         run: node scept-web/tests/u2_generic_adapter.cjs
       - name: U2 deployed Universal Core acceptance with TWO unseen model architectures
