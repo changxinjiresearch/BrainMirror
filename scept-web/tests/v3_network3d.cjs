@@ -20,6 +20,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   await page.mouse.move(r.x+r.width*.5,r.y+r.height*.5);
   await page.mouse.down();await page.mouse.move(r.x+r.width*.7,r.y+r.height*.72,{steps:8});await page.mouse.up();
   let after=await page.evaluate(()=>SCEPT_NETWORK3D.getSnapshot());
+  console.log('3D DRAG GEOMETRY',JSON.stringify({rect:r,priorYaw:v.yaw,afterYaw:after.yaw,priorPitch:v.pitch,afterPitch:after.pitch,operatorVisible:await c.isVisible(),viewport:page.viewportSize()}));
   assert(Math.abs(after.yaw-v.yaw)>.15&&Math.abs(after.pitch-v.pitch)>.1,'3D orbit did not update camera');
   await page.mouse.move(r.x+r.width*.5,r.y+r.height*.5);
   await page.mouse.wheel(0,-320);
