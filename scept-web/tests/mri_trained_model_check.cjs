@@ -17,7 +17,7 @@ const meta=await page.evaluate(async()=>{
  ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
  ort.env.wasm.numThreads=1;
  const session=await ort.InferenceSession.create(buf,{executionProviders:['wasm']});
- const name=session.inputNames[0],m=graph.inputMetadata[name],shape=m?.shape;
+ const name=session.inputNames[0],m=graph.inputMetadata[name],shape=m?.shape?.map((v,i)=>i===0 && typeof v!=='number'?1:v);
  if(!shape||shape.some(x=>typeof x!=='number' || x<=0))throw Error('MRI model requires a model-specific dynamic input adapter: '+JSON.stringify(m));
  if(shape.reduce((a,b)=>a*b,1)>2000000)throw Error('MRI model input too large for Chrome smoke test');
  const arr=new Float32Array(shape.reduce((a,b)=>a*b,1));for(let i=0;i<arr.length;i++)arr[i]=i%256;
