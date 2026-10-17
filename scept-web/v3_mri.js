@@ -5,7 +5,7 @@
 (function(){
 const DEFAULT_URL='https://niivue.github.io/niivue-demo-images/mni152.nii.gz';
 const $=id=>document.getElementById(id);
-const s={volume:null,edited:null,baseline:null,offset:null,dimensions:null,center:[0,0,0],radius:10,amount:.15,limits:[0,1],name:null,affine:null,spacing:null,source:null,revision:0,rotation:.6,tilt:.35,cloud:[],wait:null};
+const s={volume:null,edited:null,baseline:null,offset:null,dimensions:null,center:[0,0,0],slice:[0,0,0],radius:10,amount:.15,limits:[0,1],name:null,affine:null,spacing:null,source:null,revision:0,rotation:.6,tilt:.35,cloud:[],wait:null};
 const index=(x,y,z)=>x+s.dimensions[0]*(y+s.dimensions[1]*z);
 async function decodeFile(buffer,name){
  if(/\.gz$/i.test(name)){
@@ -63,9 +63,9 @@ function computeEdit(){
 }
 function renderPlane(plane){
  const d=s.dimensions;
- const specs=plane===0?{width:d[0],height:d[1],axis:(u,v)=>[u,d[1]-1-v,s.center[2]],click:(u,v)=>[u,d[1]-1-v,s.center[2]]}:
- plane===1?{width:d[0],height:d[2],axis:(u,v)=>[u,s.center[1],d[2]-1-v],click:(u,v)=>[u,s.center[1],d[2]-1-v]}:
- {width:d[1],height:d[2],axis:(u,v)=>[s.center[0],u,d[2]-1-v],click:(u,v)=>[s.center[0],u,d[2]-1-v]};
+ const specs=plane===0?{width:d[0],height:d[1],axis:(u,v)=>[u,d[1]-1-v,s.slice[2]],click:(u,v)=>[u,d[1]-1-v,s.slice[2]]}:
+ plane===1?{width:d[0],height:d[2],axis:(u,v)=>[u,s.slice[1],d[2]-1-v],click:(u,v)=>[u,s.slice[1],d[2]-1-v]}:
+ {width:d[1],height:d[2],axis:(u,v)=>[s.slice[0],u,d[2]-1-v],click:(u,v)=>[s.slice[0],u,d[2]-1-v]};
  const canvas=$(['viewAxial','viewCoronal','viewSagittal'][plane]),ctx=canvas.getContext('2d');
  const tmp=document.createElement('canvas');tmp.width=specs.width;tmp.height=specs.height;
  const tctx=tmp.getContext('2d');const im=tctx.createImageData(specs.width,specs.height);
@@ -108,19 +108,21 @@ function render(){
  if(!s.dimensions)return;
  for(let plane=0;plane<3;plane++)renderPlane(plane);
  updateCloud();drawCloud();
- $('sliceI').value=String(s.center[0]);$('sliceJ').value=String(s.center[1]);$('sliceK').value=String(s.center[2]);
+ $('sliceI').value=String(s.slice[0]);$('sliceJ').value=String(s.slice[1]);$('sliceK').value=String(s.slice[2]);
  $('mriRadiusValue').textContent=s.radius+' 体素';
  $('mriAmountValue').textContent=(s.amount>=0?'+':'')+s.amount.toFixed(2);
- $('roiCoords').textContent='中心点：['+s.center.join(', ')+']';
+ $('roiCoords').textContent='三维 ROI 中心：['+s.center.join(', ')+'] · 三视图切片坐标：['+s.slice.join(', ')+']';
+ window.SCEPT_PATCH?.refresh();
 }
 async function install(data,name,source){
  s.dimensions=data.dimensions;s.spacing=data.spacing;s.limits=data.limits;s.affine=data.affine;s.orient=data.orient;
  s.baseline=data.values;s.edited=new Float32Array(data.values);s.name=name;s.source=source;
  s.center=data.dimensions.map(x=>Math.floor(x/2));
+ s.slice=[...s.center];
  s.radius=Math.max(3,Math.min(10,Math.floor(Math.min(...data.dimensions)/6)));
  s.amount=.15;
  for(const [id,axis]of [['sliceI',0],['sliceJ',1],['sliceK',2]]){
-  const el=$(id);el.max=String(data.dimensions[axis]-1);el.value=String(s.center[axis]);
+  const el=$(id);el.max=String(data.dimensions[axis]-1);el.value=String(s.slice[axis]);
  }
  $('mriRadius').value=String(s.radius);$('mriAmount').value='.15';
  computeEdit();
@@ -143,7 +145,7 @@ $('mriFile').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{
  await install(await decodeFile(await f.arrayBuffer(),f.name),f.name,'local_browser_file');
  }catch(ex){$('mriStatus').textContent='MRI 导入失败：'+ex.message}};
 for(const [id,axis]of [['sliceI',0],['sliceJ',1],['sliceK',2]])$(id).oninput=e=>{
- s.center[axis]=Number(e.target.value);computeEdit();
+ s.slice[axis]=Number(e.target.value);s.revision++;render();
 };
 $('mriRadius').oninput=e=>{s.radius=Number(e.target.value);computeEdit()};
 $('mriAmount').oninput=e=>{s.amount=Number(e.target.value);computeEdit()};
@@ -162,7 +164,7 @@ c.onpointermove=e=>{if(!drag)return;s.rotation+=(e.clientX-drag[0])*.01;s.tilt+=
 c.onpointerup=()=>drag=null;
 function sampleSlice(edited=true,axis=2){
  if(!s.dimensions)throw Error('MRI 未加载');
- const d=s.dimensions,a=s.center[axis],lo=s.limits[0],hi=s.limits[1],out=new Float32Array(3*224*224);
+ const d=s.dimensions,a=s.slice[axis],lo=s.limits[0],hi=s.limits[1],out=new Float32Array(3*224*224);
  const select=(u,v)=>{
   const x=axis===0?a:Math.round(u*(d[0]-1)/223),y=axis===1?a:Math.round(v*(d[1]-1)/223),z=axis===2?a:Math.round(v*(d[2]-1)/223);
   return axis===2?[x,Math.round(v*(d[1]-1)/223),z]:axis===1?[x,y,Math.round(v*(d[2]-1)/223)]:[x,Math.round(u*(d[1]-1)/223),z];
@@ -175,7 +177,7 @@ function sampleSlice(edited=true,axis=2){
 }
 function makeCnnInput(edited=true){
  if(!s.dimensions)throw Error('MRI 尚未加载');
- const d=s.dimensions,depth=s.center[2],lo=s.limits[0],hi=s.limits[1];
+ const d=s.dimensions,depth=s.slice[2],lo=s.limits[0],hi=s.limits[1];
  const out=new Float32Array(256*256*3);
  for(let y=0;y<256;y++)for(let x=0;x<256;x++){
   const vx=Math.min(d[0]-1,Math.round((x/255)*(d[0]-1)));
@@ -186,6 +188,6 @@ function makeCnnInput(edited=true){
  return out;
 }
 async function checksumVolume(){return s.baseline?crypto.subtle.digest('SHA-256',s.baseline.buffer).then(buf=>Array.from(new Uint8Array(buf)).map(v=>v.toString(16).padStart(2,'0')).join('')):null}
-window.SCEPT_MRI={loadDefault,get state(){return{loaded:!!s.baseline,dimensions:s.dimensions,spacing:s.spacing,affine:s.affine,orient:s.orient,source:s.source,name:s.name,center:[...s.center],radius:s.radius,amount:s.amount,revision:s.revision}},makeSlice:sampleSlice,makeCnnInput,sourceHash:checksumVolume,decodeFile,applyEdit:computeEdit};
+window.SCEPT_MRI={loadDefault,get state(){return{loaded:!!s.baseline,dimensions:s.dimensions,spacing:s.spacing,affine:s.affine,orient:s.orient,source:s.source,name:s.name,center:[...s.center],slice:[...s.slice],radius:s.radius,amount:s.amount,revision:s.revision}},makeSlice:sampleSlice,makeCnnInput,sourceHash:checksumVolume,decodeFile,applyEdit:computeEdit};
 loadDefault();
 })();
