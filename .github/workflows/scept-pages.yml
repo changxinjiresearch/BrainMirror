@@ -1,0 +1,73 @@
+name: SCEPT Universal Core V1 - free GitHub Pages publish
+on:
+  workflow_run:
+    workflows: ["SCEPT Browser Engine Acceptance"]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: scept-universal-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout the tested same-repository main commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+          persist-credentials: false
+      - name: Verify essential browser artifacts
+        shell: bash
+        run: |
+          test -f scept-web/universal.html
+          test -f scept-web/core/scept_sdk.js
+          test -f scept-web/core/scept_audit.js
+          test -f scept-web/scept_m3_console.js
+          test -f scept-web/core/scept_performance.js
+          echo "Only versioned browser assets are published; no model datasets or raw MRI files."
+      - name: Configure existing GitHub Pages (owner must first select Actions source in Settings -> Pages)
+        uses: actions/configure-pages@v5
+      - name: Stage Universal Core V1 as home and preserve old Transformer demo
+        shell: bash
+        run: |
+          cp scept-web/index.html scept-web/legacy-studio.html
+          python - <<'PY'
+          from pathlib import Path
+          root=Path("scept-web")
+          landing='''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+          <meta http-equiv="refresh" content="0;url=./universal.html">
+          <title>SCEPT Universal Core V1</title></head><body><main>
+          <h1>SCEPT Universal Core V1</h1>
+          <p><a href="./universal.html">Open Universal Core V1 research workbench</a></p>
+          <p><a href="./legacy-studio.html">Legacy Transformer demonstration</a></p>
+          </main></body></html>'''
+          (root/"index.html").write_text(landing,encoding="utf-8")
+          universal=root/"universal.html"
+          universal.write_text(universal.read_text(encoding="utf-8").replace(
+            'href="./index.html"','href="./legacy-studio.html"'),encoding="utf-8")
+          PY
+      - name: Upload static SCEPT website artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: scept-web
+      - name: Publish tested static browser assets
+        id: deploy
+        uses: actions/deploy-pages@v4
+      - name: Verify public Universal V1 HTTP artifact
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deploy.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --retry-delay 2 --max-time 30 "${PAGE_URL%/}/universal.html" | grep -q 'SCEPT Universal Core'

@@ -16,8 +16,13 @@ const PRESETS={
  cnn:{id:'mri-cnn-experimental',url:'https://huggingface.co/Udit013/brain-tumor-efficientnetb3/resolve/main/efficientnetb3.onnx',sha256:'320b1ef648f3da5216f6ee0374349324b3cb00a76bebf7dbd1c3796e6155991c'}
 };
 let state={bytes:null,hash:null,inspect:null,source:null,session:null,loaded:null,audit:null};
-let scheduler=null,u7Engine=null,u7Active=null;
+let scheduler=null,u7Engine=null,u7Active=null,u6OriginalSpec=null,u7OriginalManifest=null;
 const visualStudio=SCEPT_VISUAL_STUDIO;
+const m3Console=SCEPT_M3_CONSOLE.make({core:SCEPT_CORE,registry,xai:SCEPT_XAI,
+ schedulerFactory:SCEPT_SCHEDULER,interventionEngine,observationAdapter,
+ dataAdapter,getSession:()=>state.session,getFeeds:buildInputs,getU6:()=>scheduler,
+ getU7:()=>u7Engine,getU6Definition:()=>u6OriginalSpec,getU7Definition:()=>u7OriginalManifest,
+ getReference:()=>parseReferenceJson($('referenceJson').value)});
 function evidenceForVisual(){try{return u7Engine?.exportEvidence()||null}catch(_){return null}}
 function syncVisual(){visualStudio.snapshots({audit:state.audit,u6:scheduler?.snapshot()||null,u7:evidenceForVisual()})}
 function selectVisualSource(kind){const select=$('u8Source');if(select.value!==kind){select.value=kind;select.dispatchEvent(new Event('change'))}syncVisual()}
@@ -26,9 +31,9 @@ function tableCells(parent,values){const tr=document.createElement('tr');for(con
 function safeData(buf){if(buf.byteLength>160*1024*1024)throw Error('Model exceeds 160 MB local resource guard');return buf}
 async function inspectModel(){
  if(u7Engine?.snapshot().status==='running'){note('modelStatus','U7 XAI 队列仍在运行，禁止切换模型','error');return}
- u7Engine=null;u7Active=null;updateU7Controls();
+ u7Engine=null;u7Active=null;u7OriginalManifest=null;updateU7Controls();
  if(scheduler?.snapshot().status==='running'){note('modelStatus','调度任务仍在执行，请先取消队列','error');return}
- scheduler=null;updateU6Controls();visualStudio.attach(null);
+ scheduler=null;u6OriginalSpec=null;updateU6Controls();visualStudio.attach(null);
  $('inspect').disabled=true;$('load').disabled=true;$('run').disabled=true;$('export').disabled=true;
  try{
   if(state.session){await state.session.dispose();state.session=null}
@@ -71,9 +76,9 @@ async function inspectModel(){
 }
 async function attach(){
  if(u7Engine?.snapshot().status==='running')return;
- u7Engine=null;u7Active=null;updateU7Controls();
+ u7Engine=null;u7Active=null;u7OriginalManifest=null;updateU7Controls();
  if(scheduler?.snapshot().status==='running')return;
- scheduler=null;updateU6Controls();visualStudio.attach(null);
+ scheduler=null;u6OriginalSpec=null;updateU6Controls();visualStudio.attach(null);
  if(!state.bytes||!state.inspect)return;
  $('load').disabled=true;$('run').disabled=true;
  try{
@@ -83,7 +88,7 @@ async function attach(){
   note('modelStatus','正在创建真正的 ONNX WASM 推理会话…');
   state.session=await SCEPT_CORE.openModel(registry,manifest,raw,{wasmPaths:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/'});
   state.loaded=manifest;state.audit=null;$('export').disabled=true;
-  $('run').disabled=false;updateU6Controls();updateU7Controls();visualStudio.attach(state.session);
+  $('run').disabled=false;updateU6Controls();updateU7Controls();visualStudio.attach(state.session);m3Console.refresh();
   note('modelStatus','已接入真实模型：'+state.session.description.inputs.length+' 个输入，'+state.session.description.outputs.length+' 个实际输出（含 '+probes.length+' 个选定观测点）。','success');
  }catch(e){state.session=null;note('modelStatus','模型接入失败：'+e.message,'error')}
  finally{$('load').disabled=false}
@@ -213,6 +218,7 @@ $('interventionMode').onchange=()=>{
 $('interventionMode').onchange();
 function u6StatusSnapshot(){return scheduler?.snapshot()||{status:'idle',total:0,tasks:[],pending:0,running:0,completed:0,failed:0,cancelled:0}}
 function updateU6Controls(){
+ m3Console.refresh();
  const s=u6StatusSnapshot(),busy=s.status==='running',ready=!!state.session;
  $('u6Create').disabled=!ready||busy;
  $('u6Run').disabled=!ready||busy||!(s.pending>0||s.cancelled>0);
@@ -260,9 +266,9 @@ $('u6Create').onclick=async()=>{
    observationAdapter,dataAdapter,core:SCEPT_CORE,
    onTaskVisual:payload=>visualStudio.capture('u6',payload),
    onProgress:()=>{updateU6Controls();syncVisual()}});
-  await scheduler.create(spec,{feeds,referenceFeeds,profileId:$('architectureProfile').value});
+  await scheduler.create(spec,{feeds,referenceFeeds,profileId:$('architectureProfile').value});u6OriginalSpec=JSON.parse(JSON.stringify(spec));
   note('u6Status','已建立 '+scheduler.snapshot().total+' 项任务；模型和输入指纹已记录。','success');
- }catch(e){scheduler=null;note('u6Status','建立失败：'+e.message,'error')}
+ }catch(e){scheduler=null;u6OriginalSpec=null;note('u6Status','建立失败：'+e.message,'error')}
  finally{updateU6Controls()}
 };
 $('u6Run').onclick=async()=>{
@@ -289,6 +295,7 @@ updateU6Controls();
 // U7 plugin manifests are data, not eval or dynamically executed user JavaScript.
 function u7Snapshot(){return u7Engine?.snapshot()||{status:'idle',total:0,tasks:[],completed:0,failed:0,cancelled:0,pending:0}}
 function updateU7Controls(){
+ m3Console.refresh();
  const s=u7Snapshot(),busy=s.status==='running',ready=!!state.session;
  $('u7Register').disabled=!ready||busy;
  $('u7Prepare').disabled=!ready||busy||!u7Active;
@@ -327,9 +334,9 @@ $('u7Register').onclick=()=>{
    dataAdapter,core:SCEPT_CORE,schedulerFactory:SCEPT_SCHEDULER,
    onTaskVisual:payload=>visualStudio.capture('u7',payload),
    onProgress:()=>{updateU7Controls();syncVisual()}});
-  u7Engine.registerExperiment(m);u7Active=m.id;
+  u7Engine.registerExperiment(m);u7Active=m.id;u7OriginalManifest=JSON.parse(JSON.stringify(m));
   note('u7Status','实验插件 '+m.id+' 已注册。现在可以校验模型、目标、观测、算法、评价和数据前置条件。','success');
- }catch(e){u7Active=null;u7Engine=null;note('u7Status','注册失败：'+e.message,'error')}
+ }catch(e){u7Active=null;u7OriginalManifest=null;u7Engine=null;note('u7Status','注册失败：'+e.message,'error')}
  updateU7Controls();
 };
 $('u7Prepare').onclick=async()=>{
@@ -376,6 +383,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u5-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,getU8Snapshot:()=>visualStudio.getSnapshot(),xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,getU8Snapshot:()=>visualStudio.getSnapshot(),getU9Snapshot:()=>m3Console.getSnapshot(),xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
 
 })();

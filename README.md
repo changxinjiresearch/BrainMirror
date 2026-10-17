@@ -1,3 +1,9 @@
+# SCEPT Universal Core V1 — M3 engineering candidate
+
+The reusable SCEPT research infrastructure now includes architecture-independent real ONNX inference, U5 intervention, U6 deterministic scheduling, U7 pluggable explanation/evidence evaluation, U8 unified true-data 3D visualization, and U9 SDK / SHA-256 audit / actual replay / measured performance. [M3 release specification](docs/SCEPT_U9_M3_UNIVERSAL_CORE_V1.md) | [Universal workbench source](scept-web/universal.html) | [Trusted extension template](scept-web/plugins/u9_method_evaluation_sdk_template.js).
+
+**Release gates:** full final-head CI and merged main, followed by **separate verified public Pages deployment**. Free GitHub Pages requires one-time Settings → Pages → Source: GitHub Actions activation; no public URL is claimed until a READY deployment. Vercel existing project access is not authorized through the current connector. These are engineering numerical tools, not validated biomedical or causal XAI conclusions.
+
 > **SCEPT U8 universal data-driven visual research workstation:** [engineering design/acceptance](docs/SCEPT_U8_UNIFIED_VISUAL_WORKSTATION.md). Uses real U5/U6/U7 experiment results to drive shared-scale 3D ONNX graph/Token/Channel A/B/Δ displays and explicit native-axis typed input (including rank-5 volumetric) slices, without inventing activations or assuming medical anatomy. Legacy v3.1 is preserved. Check final CI before asserting acceptance.
 
 > **SCEPT U7 / M2:** [XAI plugin and evidence protocol](docs/SCEPT_U7_M2_XAI_PLUGIN_EVIDENCE.md). New declarative experiment JSON specifies pinned model, actual target/observations, U5/U6 intervention plan, independently registered explanation algorithms, and per-task / suite numeric evaluations. A synthetic sparse-mask lesion-removal hypothesis is supported; **medical/causal results are not established**. Check final-head CI before declaring M2 verified.

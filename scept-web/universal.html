@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · U8 统一可视化科研工作台</title>
+<title>SCEPT Universal Core · Universal Core V1 · M3</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://*.xethub.hf.co https://*.cloudfront.net; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:">
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">U8 / 数据驱动科研可视化</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">M3 / Universal Core V1</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
 <section class="panel u8-studio" id="u8Studio" aria-label="U8 统一可视化科研工作台">
 <div class="u8-head"><div><h2>U8 / 统一数据驱动科研工作台</h2><p class="muted">展示实际 ONNX 算子依赖、Token / Channel 的真实 A/B/Δ 数值与真实模型输入图像/体数据。未观测计算单元保持中性，不生成模拟激活。</p></div><div class="u8-source-controls">
 <label for="u8Source">实验来源<select id="u8Source"><option value="u5">U5 单次 A/B</option><option value="u6">U6 自动批量</option><option value="u7">U7 XAI 证据</option></select></label>
@@ -149,14 +150,43 @@
 <div class="buttons"><button id="u7Export" disabled>导出 U7 证据与检验 JSON</button></div>
 <p class="muted">输出为真实 ONNX 数值响应和预先声明的检验条件。criterion_met 仅表示数值条件达到，不能表述为“证实了病灶因果依赖”。对于病灶移除，必须提供经过外部准备的掩膜索引及精确校验指纹；系统不自行制造病灶标签。</p>
 </article></section>
+
+<section class="workspace" id="u9Station">
+<article class="panel">
+<h2>05 / M3 · SCEPT Universal Core V1 插件 SDK、审计与重放</h2>
+<p class="muted">只有已经加载并验证指纹的真实 ONNX 模型才能通过兼容性检查。插件 JSON 是数据，不允许执行任意脚本；外部算法扩展必须事先审核为可信 JavaScript。</p>
+<div class="buttons">
+<button id="u9Compatibility" class="primary" disabled>插件 / 模型兼容性验收</button>
+<button id="u9GenerateTemplate" disabled>生成当前模型实验插件模板</button>
+<button id="u9Benchmark" disabled>真实推理性能测量（3次）</button>
+</div>
+<p id="u9Status" class="status" role="status">M3 核心测试：请先加载真实模型。</p>
+<pre class="u9-verdict" id="u9Details" aria-live="polite">尚未执行 M3 核验。</pre>
+<h3>审计文件 · 完整性指纹</h3>
+<p class="muted">U6 或 U7 运行成功后导出有 SHA-256 完整性校验的 U9 记录。审计会遮盖潜在的原始张量与掩膜索引，但推导出的统计结果和插件参数仍可能敏感，分享前应审阅。</p>
+<div class="buttons">
+<button id="u9ExportU6" disabled>导出 U6 完整性审计</button>
+<button id="u9ExportU7" disabled>导出 U7 完整性审计</button>
+</div>
+<label for="u9BundleFile">导入 M3 审计文件（JSON）</label>
+<input type="file" id="u9BundleFile" accept=".json,application/json">
+<label for="u9Definition">提供对应原始实验定义 JSON（U6 原计划或 U7 原插件；必填，不可从截断的审计反推）</label>
+<textarea id="u9Definition" rows="4" spellcheck="false" placeholder='{"schema":"scept.u7.experiment.v1",...}'></textarea>
+<div class="buttons">
+<button id="u9Verify" disabled>校验哈希 / 来源 / 输入</button>
+<button id="u9Replay" disabled class="primary">真实推理重放并比较</button>
+</div>
+<p class="muted">重放会重新执行真实 ONNX 计算，不会复用审计中的旧张量充当新结果。模型、原始输入或配置不匹配必须拒绝；结果比较使用声明的浮点容差。浏览器关闭后需重新导入文件；不会创建付费计算资源。</p>
+</article>
+</section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
-<p><strong>已实现（U0–U8）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
-<p><strong>仍未完成（U9 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>已实现（U0–U9）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>独立科学验证事项：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
 <p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
 </div></section>
 </main>
-<footer>SCEPT Universal Core · U8 Data-driven Research Workstation · 无 GPU 训练 · 浏览器本地执行</footer>
+<footer>SCEPT Universal Core · Universal Core V1 (M3 engineering) · 无 GPU 训练 · 浏览器本地执行</footer>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./core/scept_core.js"></script>
@@ -169,4 +199,8 @@
 <script src="./core/scept_xai.js"></script>
 <script src="./core/scept_visual_data.js"></script>
 <script src="./scept_visual_studio.js"></script>
+<script src="./core/scept_sdk.js"></script>
+<script src="./core/scept_audit.js"></script>
+<script src="./core/scept_performance.js"></script>
+<script src="./scept_m3_console.js"></script>
 <script src="./universal.js"></script></body></html>
