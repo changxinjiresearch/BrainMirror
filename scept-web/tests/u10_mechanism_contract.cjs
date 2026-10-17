@@ -72,7 +72,8 @@ const mask=async(indices,sourceId)=>({inputName:'x',shape:[1,8],
  for(const t of fake.tasks){
   if(t.intervention.strength===1){
    t.explanation.targetedEffect=0;t.explanation.matchedControlEffect=0;t.explanation.score=0;
-   t.explanation.targetSignedDelta=0;
+   t.explanation.targetSignedDelta=0;t.explanation.controlledSignedDelta=0;
+   t.explanation.controlledMagnitude=0;
   }
  }
  const mockedTasks=fake.tasks.map(t=>({status:t.status,id:t.id,seed:t.seed,
@@ -82,10 +83,7 @@ const mask=async(indices,sourceId)=>({inputName:'x',shape:[1,8],
  assert.equal(falsePositive.verdict,'criterion_not_met','Stable zero response is not evidence');
  const deleted=mockedTasks.slice(0,8);
  assert.equal(U10.suite({tasks:deleted,config:manifest.evaluations[1].params}).verdict,'not_evaluable');
- const badSeeds=U10.plan({...params,nuisanceSeeds:[101,101,303]});
- assert.fail('duplicate seeds must not pass plan',badSeeds);
-})().catch(e=>{
- if(e.code==='INVALID_PLAN'&&String(e.message).includes('nuisance seeds')){
-  console.log('PASS U10: independent SDK plug-ins, real U6/U7 mock transparent target/control test, stable/dose formal gate, zero-effect not falsely validated, reproducibility and fail-closed seeds');
- }else{console.error(e);process.exitCode=1}
-});
+ assert.throws(()=>U10.plan({...params,nuisanceSeeds:[101,101,303]}),e=>e.code==='INVALID_PLAN');
+ assert.throws(()=>U10.plan({...params,strengths:[0,.5,.5,1]}),e=>e.code==='INVALID_PLAN');
+ console.log('PASS U10: independent SDK plug-ins, numerical transparent MOCK U6/U7, stability/dose/control, null-effect rejection, seeded replay, fail-closed preregistration');
+})().catch(e=>{console.error(e);process.exitCode=1});
