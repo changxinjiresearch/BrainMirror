@@ -1,4 +1,4 @@
-## SCEPT Browser Studio (separate from model training)
+> **SCEPT Observatory v2 browser-first preview** is under [scept-web/](scept-web/) with [engineering acceptance contract](docs/SCEPT_BROWSER_PLATFORM_V2.md). It is **training-independent** and does not need another model training run; existing P0–P8 training-oriented docs below are retained as historical BrainMirror plans, not SCEPT prerequisites. Full science/production validation is NOT complete. I-JEPA is explicitly excluded.\n\n## SCEPT Browser Studio (separate from model training)
 
 **Online research studio:** https://scept-studio-brainmirror.vercel.app  
 **Source:** [scept-studio/](scept-studio/)  

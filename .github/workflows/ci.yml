@@ -16,7 +16,7 @@ jobs:
       - name: Install CPU dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest
+          pip install -r requirements.txt pytest 'httpx2>=2.10,<3'
       - name: Compilation
         run: python -m compileall -q brainmirror scripts
       - name: Tests

@@ -1,0 +1,75 @@
+name: SCEPT Browser Engine Acceptance
+on:
+  push:
+    branches: [main, "phase/**"]
+    paths:
+      - "scept-web/**"
+      - "scripts/expose_onnx_probes.py"
+      - ".github/workflows/scept-browser.yml"
+  pull_request:
+    paths:
+      - "scept-web/**"
+      - "scripts/expose_onnx_probes.py"
+permissions:
+  contents: read
+jobs:
+  numeric-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check frontend syntax
+        run: |
+          node --check scept-web/app.js
+          node --check scept-web/mri.js
+          node --check scept-web/fixtures.js
+          node --check scept-web/tests/browser.cjs
+          python -m compileall -q scripts/expose_onnx_probes.py
+      - name: Install CPU model testing tools
+        run: python -m pip install onnx onnxruntime pytest numpy
+      - name: Numerical validation of real ONNX graph execution
+        run: python -m pytest -q scept-web/tests/test_engineering_reference.py
+      - name: Install browser test runner
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start local static server
+        run: |
+          python -m http.server 8765 -d scept-web >/tmp/scept-http.log 2>&1 &
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Chrome CPU/WASM, MRI and audit end-to-end test
+        run: node scept-web/tests/browser.cjs
+      - name: Chinese SCEPT simplified UI, ROI real ViT and responsive acceptance
+        run: node scept-web/tests/chinese_studio.cjs
+      - name: Verify deployed Chinese SCEPT studio on real Vercel preview
+        env:
+          SCEPT_STUDIO_URL: https://brainmirror-observatory-cfsp7x5vb-jayson-s-projects6.vercel.app
+        run: node scept-web/tests/chinese_studio.cjs
+      - name: Responsive Chromebook layout across viewport widths and pretrained ViT
+        run: node scept-web/tests/responsive_layout.cjs
+      - name: Two externally pretrained architectures (ViT / CNN), verified SHA-256, Chrome CPU
+        run: node scept-web/tests/pretrained_models.cjs
+      - name: Instrument actual pretrained transformer middle-layer probes without training
+        run: python scept-web/tests/instrument_pretrained_vit.py
+      - name: Verify real pretrained Transformer intermediate activations with browser CPU
+        run: node scept-web/tests/pretrained_probes.cjs
+      - name: Verify one-click pretrained Transformer demo needs no user uploads
+        run: node scept-web/tests/transformer_one_click.cjs
+      - name: Confirm one-click Transformer on actual Vercel preview deployment
+        env:
+          SCEPT_TEST_URL: https://brainmirror-observatory-5s7sb6ng5-jayson-s-projects6.vercel.app
+        run: node scept-web/tests/transformer_one_click.cjs
+      - name: Live one-link Transformer autostart, no files and no clicks
+        env:
+          SCEPT_TEST_URL: https://brainmirror-observatory-5s7sb6ng5-jayson-s-projects6.vercel.app
+          SCEPT_TEST_AUTOSTART: '1'
+        run: node scept-web/tests/transformer_one_click.cjs
