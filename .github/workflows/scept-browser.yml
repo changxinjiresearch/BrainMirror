@@ -33,6 +33,10 @@ jobs:
           node --check scept-web/core/onnx_adapter.js
           node --check scept-web/core/scept_data_adapter.js
           node --check scept-web/core/scept_observation.js
+          node --check scept-web/core/scept_visual_data.js
+          node --check scept-web/scept_visual_studio.js
+          node --check scept-web/tests/u8_visual_contract.cjs
+          node --check scept-web/tests/u8_visual_browser.cjs
           node --check scept-web/core/scept_intervention.js
           node --check scept-web/core/scept_scheduler.js
           node --check scept-web/core/scept_xai.js
@@ -61,11 +65,14 @@ jobs:
         run: node scept-web/tests/u6_scheduler.cjs
       - name: U7 XAI protocol/manifest evaluation and synthetic lesion-hypothesis fail-closed contracts
         run: node scept-web/tests/u7_xai_protocol.cjs
+      - name: U8 dynamic real observation source, exact graph edges and actual paired 2D/3D input contract
+        run: node scept-web/tests/u8_visual_contract.cjs
       - name: Install CPU model testing tools
         run: python -m pip install onnx onnxruntime pytest numpy
       - name: Generate and validate two NEW ONNX model architectures for U2
         run: |
           python scept-web/tests/generate_u2_fixture.py
+          python scept-web/tests/generate_u8_fixture.py
           python scripts/expose_onnx_probes.py scept-web/tests/generated/u2_cnn.onnx scept-web/tests/generated/u5_cnn_mask.onnx --ablate conv_hidden
       - name: Numerical validation of real ONNX graph execution
         run: python -m pytest -q scept-web/tests/test_engineering_reference.py scept-web/tests/test_u5_internal_reference.py
@@ -86,6 +93,8 @@ jobs:
         run: node scept-web/tests/u6_browser.cjs
       - name: M2 real browser ONNX import of external XAI experiment JSON with target/method/evaluation and lesion mask
         run: node scept-web/tests/u7_m2_browser.cjs
+      - name: U8 real Chrome experimental-data-driven 3D graph, arbitrary CNN Token and input MRI/volume slices across U5 U6 U7
+        run: node scept-web/tests/u8_visual_browser.cjs
       - name: U2 generic ONNX real MLP/CNN model import plus matching true probes
         run: node scept-web/tests/u2_generic_adapter.cjs
       - name: U2 deployed Universal Core acceptance with TWO unseen model architectures
