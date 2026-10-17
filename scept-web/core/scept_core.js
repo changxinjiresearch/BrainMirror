@@ -11,7 +11,7 @@
  if(typeof module==='object'&&module.exports)module.exports=api;
  if(root)root.SCEPT_CORE=api;
 })(typeof window!=='undefined'?window:null,function(){
- const VERSION='1.0.0-u2';
+ const VERSION='1.1.0-u4';
  const KINDS=Object.freeze(['model','data','target','observation','intervention','explanation','evaluation']);
  const CAPABILITIES=Object.freeze([
   'inference','graph.read','observations.output','observations.intermediate',
