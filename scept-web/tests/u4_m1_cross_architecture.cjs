@@ -30,6 +30,17 @@ const assert=require('node:assert/strict'),path=require('node:path');
    const audit=await page.evaluate(()=>SCEPT_UNIVERSAL.getAudit());
    assert(audit,'Actual dual inference failed: '+await page.locator('#runStatus').innerText());
    assert.equal(audit.architectureProfile,cfg.profile);
+   // U8 extends M1: genuine pretrained ViT and independent CNN hidden tensors
+   // must automatically produce the same architecture-independent visual schema.
+   const visual=await page.evaluate(()=>SCEPT_UNIVERSAL.getU8Snapshot());
+   assert(visual?.hasScene,'U8 cannot omit real M1 ONNX observations');
+   assert.equal(visual.modelSha256,snap.hash);
+   const unitView=visual.views.find(v=>v.tensor===cfg.probe);
+   assert(unitView,'U8 missing actual selected ONNX probe');
+   assert.equal(unitView.role,cfg.profile==='vit-token-channel'?'token':'channel');
+   assert.equal(unitView.units.length,unitView.shape[cfg.profile==='vit-token-channel'?1:1]);
+   assert(unitView.units.every(v=>Number.isFinite(v.A)&&Number.isFinite(v.B)&&Number.isFinite(v.delta)));
+
    assert.equal(audit.dataAdapter,'typed-tensor-v1');
    assert.equal(audit.observationAdapter,'runtime-axis-v1');
    assert.equal(audit.adapter,'onnx-wasm');
