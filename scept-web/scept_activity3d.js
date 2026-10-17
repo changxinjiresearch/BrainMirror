@@ -85,6 +85,16 @@ function render(){
   ctx.restore();
  }
  if(modes.length===2){ctx.strokeStyle='#2b656d';ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke()}
+ // A/B share the exact same labelled color domain, locked after first run.
+ // The bar explains magnitudes rather than pretending subtle A/B colors are Δ.
+ if(modes[0]!=='delta'&&Number.isFinite(s.colorLo)&&Number.isFinite(s.colorHi)){
+  const xx=12,yy=h-24,length=Math.min(135,w*.28),gradient=ctx.createLinearGradient(xx,0,xx+length,0);
+  for(let i=0;i<COLOR_STOPS.length;i++)gradient.addColorStop(i/(COLOR_STOPS.length-1),palette(i/(COLOR_STOPS.length-1)));
+  ctx.fillStyle='rgba(7,24,35,.88)';ctx.fillRect(6,h-37,Math.min(335,w-12),35);
+  ctx.fillStyle=gradient;ctx.fillRect(xx,yy,Math.max(2,length),9);
+  ctx.font='10px system-ui';ctx.fillStyle='#c2dcdb';
+  ctx.fillText('A/B 共用 |激活| 色标 '+fmt(s.colorLo)+' → '+fmt(s.colorHi),xx+length+8,yy+9);
+ }
  ctx.setTransform(1,0,0,1,0,0);
  const stale=s.runRevision!==null&&SCEPT_MRI.state.revision!==s.runRevision;
  $('tokenDepth').textContent=(s.scope==='all'?'五层概览':'第 '+s.layer+' 层')+' · '+arr.length+' 个真实 Token';
@@ -155,10 +165,15 @@ function recalibrate(){
 function clear(){s.data=null;s.raw=null;s.selected=null;s.scaleA=null;s.scaleD=null;s.colorLo=null;s.colorHi=null;s.kind='operators';$('viewTokens').disabled=true;show('operators')}
 const get=()=>({kind:s.kind,scope:s.scope,mode:mode(),version:s.version,layer:s.layer,selected:s.selected,
  yaw:s.yaw,pitch:s.pitch,distance:s.dist,count:nodes().length,runRevision:s.runRevision,scaleA:s.scaleA,scaleD:s.scaleD,colorLo:s.colorLo,colorHi:s.colorHi,
+ renderedSamples:s.data?s.data.layers.flatMap(l=>l.tokens.slice(0,197).map(t=>({layer:l.layer,token:t.token,
+    colorA:style(t,'before').fill,colorB:style(t,'after').fill,
+    baseRadius:style(t,'before').r,markedB:style(t,'after').deltaOutline>0.08,
+    rms:t.rms}))).slice(0,985):[],
  layers:s.data?.layers.map(l=>({layer:l.layer,tokens:l.tokens.map(t=>({token:t.token,before:t.before,after:t.after,mae:t.mae,rms:t.rms,changed:t.changed}))}))||[]});
 $('viewTokens').disabled=true;
 $('viewTokens').onclick=()=>show('tokens');$('viewOperators').onclick=()=>show('operators');
 for(const id of ['responseCompare','responseDelta','responseBefore','responseAfter'])$(id).addEventListener('click',render);
+$('responseCalibrate').addEventListener('click',()=>{if(s.kind==='tokens')recalibrate()});
 $('tokenOverview').onclick=()=>{s.scope='all';s.dist=14;render()};
 $('tokenEnter').onclick=()=>{s.scope='layer';s.dist=10;render()};
 $('tokenZoomIn').onclick=()=>{s.dist=clamp(s.dist-1.1,4,36);render()};
