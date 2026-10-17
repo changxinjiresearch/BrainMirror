@@ -11,7 +11,7 @@ const canvas=document.getElementById('networkCanvas');if(!canvas)return;
 const $=id=>document.getElementById(id);
 const state={graph:null,mode:'overview',layer:6,selected:null,nodes:[],edges:[],allLayerCounts:[],
  yaw:-.3,pitch:.16,distance:15,backend:null,gl:null,ctx:null,observed:new Map(),probeNames:new Map(),
- drag:null,down:null,lastTap:0,layoutSerial:0,graphNodes:0,graphEdges:0};
+ drag:null,down:null,lastTap:0,layoutSerial:0,graphNodes:0,graphEdges:0,layeringKind:'transformer'};
 const dec=(n,places=3)=>Number.isFinite(n)?n.toFixed(places):'—';
 const light={MatMul:[.37,.84,.76],Gemm:[.46,.88,.73],Conv:[.43,.78,.96],Add:[.44,.69,.91],LayerNormalization:[.75,.61,.97],Softmax:[.97,.78,.49],Reshape:[.43,.65,.70],Transpose:[.42,.65,.70],Gather:[.48,.74,.77]};
 const decodeLayer=(name)=>{
@@ -60,9 +60,10 @@ function initialize(){
   if(!state.ctx){state.backend='unavailable';$('networkStats').textContent='当前浏览器无法创建三维渲染上下文';}
  }
 }
+function layerOf(node,id){return state.layeringKind==='transformer'?decodeLayer(node.name):Math.min(11,Math.floor(id*12/Math.max(1,state.graphNodes)))}
 function listLayers(g){
  const counts=Array.from({length:12},()=>0);
- g.nodes.forEach(n=>{const l=decodeLayer(n.name);if(l>=0&&l<12)counts[l]++});return counts;
+ g.nodes.forEach((n,id)=>{const l=layerOf(n,id);if(l>=0&&l<12)counts[l]++});return counts;
 }
 function opColor(node){
  const c=light[node.op]||[.39,.61,.67];
@@ -87,7 +88,7 @@ function nodePosition(id,part,total,layer,focus){
 function makeView(){
  const g=state.graph;if(!g){state.nodes=[];state.edges=[];paint();return}
  const ids=[],layerBuckets=Array.from({length:12},()=>[]);
- g.nodes.forEach((n,id)=>{const l=decodeLayer(n.name);if(l>=0&&l<12)layerBuckets[l].push(id)});
+ g.nodes.forEach((n,id)=>{const l=layerOf(n,id);if(l>=0&&l<12)layerBuckets[l].push(id)});
  const focus=state.mode==='layer';
  if(focus){ids.push(...layerBuckets[state.layer]);}
  else for(let l=0;l<12;l++){
@@ -104,7 +105,7 @@ function makeView(){
  const order=new Map(ids.map((id,i)=>[id,i])),positions=[];
  const counters=new Map();
  for(const id of ids){
-  const n=g.nodes[id],layer=decodeLayer(n.name),bucket=layerBuckets[layer]||[],part=bucket.indexOf(id);
+  const n=g.nodes[id],layer=layerOf(n,id),bucket=layerBuckets[layer]||[],part=bucket.indexOf(id);
   const p=nodePosition(id,part,bucket.length,layer,focus);
   positions.push({id,layer,op:n.op,name:n.name,inputs:n.inputs,outputs:n.outputs,p,size:state.probeNames.has(id)?8:5});
  }
@@ -114,6 +115,7 @@ function makeView(){
 function setGraph(g){
  if(!g||!Array.isArray(g.nodes)||!Array.isArray(g.edges))return;
  if(g!==state.graph){state.graph=g;state.graphNodes=g.nodes.length;state.graphEdges=g.edges.length;
+  state.layeringKind=g.nodes.some(n=>decodeLayer(n.name)>=0&&decodeLayer(n.name)<12)?'transformer':'sequence';
   state.probeNames.clear();
   g.nodes.forEach((n,i)=>n.outputs.forEach(name=>{
    const m=name.match(/\/vit\/encoder\/layer\.(\d+)\/attention\/attention\/value\/MatMul_output_0$/);
@@ -193,9 +195,9 @@ function selectNode(id){
 function updateUI(){
  $('networkOverview').disabled=state.mode==='overview';
  $('networkEnter').disabled=!state.graph||state.mode==='layer'||!state.allLayerCounts[state.layer];
- $('networkDepth').textContent=state.mode==='layer'?'第 '+state.layer+' 层 · 算子详细视图':'完整 Transformer · 三维结构总览';
+ $('networkDepth').textContent=state.mode==='layer'?(state.layeringKind==='transformer'?'第 '+state.layer+' 层':'顺序段 '+state.layer)+' · 算子详细视图':(state.layeringKind==='transformer'?'Transformer':'ONNX 网络')+' · 三维结构总览';
  $('networkStats').textContent=state.graph?
- (state.mode==='layer'?'第 '+state.layer+' 层，真实算子 '+state.allLayerCounts[state.layer]+' 个 · ':'实际 ONNX 结构 · ')+
+ (state.mode==='layer'?(state.layeringKind==='transformer'?'第 ':'顺序段 ')+state.layer+' ，真实算子 '+state.allLayerCounts[state.layer]+' 个 · ':'实际 ONNX 结构 · ')+
  '显示 '+state.nodes.length+'/'+state.graphNodes+' 算子 · '+state.edges.length+'/'+state.graphEdges+' 条直接数据依赖 · '+(state.backend==='webgl2'?'WebGL 3D':'透视降级模式')
  :'等待获取真实 ONNX 计算结构';
  if(state.mode==='layer'&&state.selected===null)$('networkNodeDetails').textContent='当前显示第 '+state.layer+' 层全部已解析算子。单击节点查看真实张量输入输出；连线仅代表 ONNX 定义的直接依赖。';
