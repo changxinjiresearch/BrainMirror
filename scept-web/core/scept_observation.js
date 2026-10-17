@@ -6,8 +6,7 @@
  const profiles=Object.freeze({
   generic:{architecture:'unknown',layouts:{}},
   'vit-token-channel':{architecture:'vision-transformer',layouts:{
-   2:[['batch',0],['feature',1]],3:[['batch',0],['token',1],['channel',2]],
-   4:[['batch',0],['head',1],['query_token',2],['key_token',3]]}},
+   2:[['batch',0],['feature',1]],3:[['batch',0],['token',1],['channel',2]]}},
   'cnn-nchw':{architecture:'convolutional',layouts:{
    2:[['batch',0],['feature',1]],4:[['batch',0],['channel',1],['height',2],['width',3]]}},
   'cnn-nhwc':{architecture:'convolutional',layouts:{
@@ -30,7 +29,7 @@
   if(check(b,meta,name)!==n||a.type!==b.type||a.dims.some((x,i)=>x!==b.dims[i]))fail('PAIRED_SHAPE_MISMATCH','A/B shape mismatch '+name);
   if(!Number.isInteger(limit)||limit<0||limit>16384)fail('INVALID_LIMIT','Axis output limit');
   const dims=a.dims;
-  if(profile.exact&&(profile.exact.length!==dims.length||profile.exact.some((d,i)=>dims[i]!==d)))
+  if(profile.exact&&dims.length===3&&profile.exact.some((d,i)=>dims[i]!==d))
    fail('LEGACY_LAYOUT_MISMATCH','197 tokens / 192 channels are permitted solely in exact legacy ViT adapter');
   const axes=(profile.layouts[dims.length]||[]).map(([role,index])=>({role,index,size:dims[index]}));
   const stride=[];let x=1;for(let i=dims.length-1;i>=0;i--){stride[i]=x;x*=dims[i]}
@@ -38,7 +37,7 @@
   let sum=0,sq=0,signed=0,max=0,changed=0;const first12=[];
   for(let i=0;i<n;i++){
    const va=Number(a.data[i]),vb=Number(b.data[i]);if(!Number.isFinite(va)||!Number.isFinite(vb))fail('NONFINITE_ACTIVATION','Nonfinite output '+name);
-   const d=vb-va,ad=Math.abs(d);sum+=ad;sq+=d*d;signed+=d;max=Math.max(max,ad);
+   const d=vb-va,ad=Math.abs(d);if(!Number.isFinite(d))fail('NONFINITE_ACTIVATION','Nonfinite numerical difference '+name);sum+=ad;sq+=d*d;signed+=d;max=Math.max(max,ad);
    if(ad>1e-7)changed++;if(i<12)first12.push({index:i,A:va,B:vb,delta:d});
    for(let j=0;j<axes.length;j++){const group=groups[j];if(!group)continue;
     const ax=axes[j],g=group[Math.floor(i/stride[ax.index])%ax.size];g.sum+=ad;g.sq+=d*d;g.n++;if(ad>1e-7)g.changed++;
