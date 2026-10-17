@@ -198,44 +198,81 @@ function enterLayer(layer=state.layer){
 }
 function overview(){if(!state.graph)return;state.mode='overview';state.selected=null;state.distance=15;state.yaw=-.3;state.pitch=.16;makeView()}
 function zoom(dir){state.distance=Math.max(4,Math.min(37,state.distance+dir));paint();updateUI()}
-function uniforms(point){
- const {gl,uniform}=state.gl,w=canvas.width,h=canvas.height;
- gl.uniform1f(uniform.uYaw,state.yaw);gl.uniform1f(uniform.uPitch,state.pitch);gl.uniform1f(uniform.uDistance,state.distance);
- gl.uniform1f(uniform.uScale,3.6);gl.uniform1f(uniform.uAspect,w/h);gl.uniform1f(uniform.uPoint,point?1:0);
+function uniforms(point,viewWidth,viewHeight){
+ const {gl,uniform}=state.gl;
+ gl.uniform1f(uniform.uYaw,state.yaw);
+ gl.uniform1f(uniform.uPitch,state.pitch);
+ gl.uniform1f(uniform.uDistance,state.distance);
+ gl.uniform1f(uniform.uScale,3.6);
+ gl.uniform1f(uniform.uAspect,viewWidth/viewHeight);
+ gl.uniform1f(uniform.uPoint,point?1:0);
 }
-function pack(arr){const data=new Float32Array(arr.length*7);for(let i=0;i<arr.length;i++){const n=arr[i],idx=i*7;data.set([...n.p,...n.color,n.size],idx)}return data}
+function pack(arr){
+ const data=new Float32Array(arr.length*7);
+ for(let i=0;i<arr.length;i++)data.set([...arr[i].p,...arr[i].color,arr[i].size],i*7);
+ return data;
+}
+function paneModes(){return state.visualMode==='compare'?['before','after']:[state.visualMode]}
 function paint(){
- const nodes=state.nodes;
+ const nodes=state.nodes,modes=paneModes();
  if(state.backend==='webgl2'){
   const {gl,buffer}=state.gl,ratio=window.devicePixelRatio||1;
   const w=Math.min(1500,Math.max(2,Math.round(canvas.clientWidth*ratio))),h=Math.min(850,Math.max(2,Math.round(canvas.clientHeight*ratio)));
   if(w!==canvas.width||h!==canvas.height){canvas.width=w;canvas.height=h}
-  gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.025,.085,.12,1);gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.viewport(0,0,w,h);gl.clearColor(.025,.085,.12,1);gl.clear(gl.COLOR_BUFFER_BIT);
   gl.useProgram(state.gl.program);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
-  if(state.edges.length){
-   const lines=[];for(const e of state.edges){const a=nodes[e.a],b=nodes[e.b];lines.push({p:a.p,color:[.20,.36,.42],size:1},{p:b.p,color:[.20,.36,.42],size:1})}
-   gl.bufferData(gl.ARRAY_BUFFER,pack(lines),gl.DYNAMIC_DRAW);uniforms(false);gl.drawArrays(gl.LINES,0,lines.length);
-  }
-  if(nodes.length){
-   const points=nodes.map(n=>({...n,color:state.selected===n.id?[1,.92,.43]:opColor(n),size:state.selected===n.id?11:n.size}));
-   gl.bufferData(gl.ARRAY_BUFFER,pack(points),gl.DYNAMIC_DRAW);uniforms(true);gl.drawArrays(gl.POINTS,0,points.length);
+  const allLines=[];
+  for(const e of state.edges){const a=nodes[e.a],b=nodes[e.b];allLines.push({p:a.p,color:[.19,.31,.36],size:1},{p:b.p,color:[.19,.31,.36],size:1})}
+  for(let i=0;i<modes.length;i++){
+   const x0=Math.round(w*i/modes.length),x1=Math.round(w*(i+1)/modes.length),paneWidth=x1-x0;
+   gl.viewport(x0,0,paneWidth,h);
+   if(allLines.length){gl.bufferData(gl.ARRAY_BUFFER,pack(allLines),gl.DYNAMIC_DRAW);uniforms(false,paneWidth,h);gl.drawArrays(gl.LINES,0,allLines.length)}
+   if(nodes.length){
+    const pts=nodes.map(n=>({...n,...nodeVisual(n,modes[i])}));
+    for(const pt of pts)if(state.selected===pt.id){pt.color=[1,.94,.63];pt.size+=5}
+    gl.bufferData(gl.ARRAY_BUFFER,pack(pts),gl.DYNAMIC_DRAW);
+    uniforms(true,paneWidth,h);gl.drawArrays(gl.POINTS,0,pts.length);
+   }
   }
  }else if(state.ctx){
-  const ctx=state.ctx;ctx.fillStyle='#061923';ctx.fillRect(0,0,canvas.width,canvas.height);
-  for(const e of state.edges){const a=screenPoint(nodes[e.a].p),b=screenPoint(nodes[e.b].p);ctx.strokeStyle='#325662';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
-  const pts=nodes.map(n=>({...n,q:screenPoint(n.p)})).sort((a,b)=>a.q.depth-b.q.depth);
-  for(const n of pts){const c=state.selected===n.id?[1,.9,.36]:opColor(n);ctx.fillStyle='rgb('+c.map(x=>Math.round(x*255)).join(',')+')';ctx.beginPath();ctx.arc(n.q.x,n.q.y,state.selected===n.id?6.5:4,0,Math.PI*2);ctx.fill()}
+  const ctx=state.ctx,w=canvas.clientWidth||canvas.width,h=canvas.clientHeight||canvas.height;
+  ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);
+  ctx.fillStyle='#061923';ctx.fillRect(0,0,w,h);
+  for(let i=0;i<modes.length;i++){
+   const kind=modes[i],left=i*w/modes.length,right=(i+1)*w/modes.length;
+   ctx.save();ctx.beginPath();ctx.rect(left,0,right-left,h);ctx.clip();
+   for(const e of state.edges){
+    const a=screenPoint(nodes[e.a].p,kind),b=screenPoint(nodes[e.b].p,kind);
+    ctx.strokeStyle='#2c4d58';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+   }
+   const pts=nodes.map(n=>({...n,q:screenPoint(n.p,kind)})).sort((a,b)=>b.q.depth-a.q.depth);
+   for(const n of pts){
+    const vis=nodeVisual(n,kind),rgb=(state.selected===n.id?[1,.94,.63]:vis.color).map(v=>Math.round(v*255));
+    const radius=vis.measured?Math.max(6,vis.size*.37):3;
+    if(vis.measured){ctx.fillStyle='rgba(255,166,65,.13)';ctx.beginPath();ctx.arc(n.q.x,n.q.y,radius+5,0,Math.PI*2);ctx.fill()}
+    ctx.fillStyle='rgb('+rgb.join(',')+')';ctx.beginPath();ctx.arc(n.q.x,n.q.y,radius,0,Math.PI*2);ctx.fill();
+    if(state.selected===n.id){ctx.strokeStyle='#fff7c8';ctx.lineWidth=2;ctx.stroke()}
+   }
+   ctx.restore();
+  }
+  if(modes.length===2){ctx.strokeStyle='#3a7780';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke()}
+  ctx.setTransform(1,0,0,1,0,0);
  }
 }
-function screenPoint(p){
+function screenPoint(p,which){
  const ca=Math.cos(state.yaw),sa=Math.sin(state.yaw),cp=Math.cos(state.pitch),sp=Math.sin(state.pitch);
  const x=p[0]*ca+p[2]*sa,z=-p[0]*sa+p[2]*ca,y=p[1]*cp-z*sp,dz=p[1]*sp+z*cp,depth=Math.max(1,state.distance-dz);
- const aspect=canvas.width/canvas.height;
- return{x:(x*3.6/(aspect*depth)+1)*canvas.clientWidth/2,y:(1-y*3.6/depth)*canvas.clientHeight/2,depth};
+ const modes=paneModes(),view=which|| (modes.length===2?'after':modes[0]);
+ const paneIndex=modes.length===2&&view==='after'?1:0;
+ const width=(canvas.clientWidth||canvas.width)/modes.length,height=canvas.clientHeight||canvas.height;
+ const aspect=width/height;
+ return{x:(x*3.6/(aspect*depth)+1)*width/2+paneIndex*width,
+         y:(1-y*3.6/depth)*height/2,depth};
 }
-function nearest(x,y,max=17){
+function nearest(x,y,max=21){
  let best=null,d=max*max;
- for(const n of state.nodes){const p=screenPoint(n.p),dd=(p.x-x)**2+(p.y-y)**2;if(dd<d){d=dd;best=n}}
+ const view=state.visualMode==='compare'?(x<(canvas.clientWidth||canvas.width)/2?'before':'after'):state.visualMode;
+ for(const n of state.nodes){const p=screenPoint(n.p,view),dd=(p.x-x)**2+(p.y-y)**2;if(dd<d){d=dd;best=n}}
  return best;
 }
 function selectNode(id){
