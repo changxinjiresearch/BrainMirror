@@ -72,11 +72,12 @@
  function pack(t){return{id:t.id,variant:t.variant,pluginId:t.pluginId,config:cloneJson(t.config),seed:t.seed,
   intensity:t.intensity,status:t.status,attempts:t.attempts,error:t.error,
   result:t.result,startedAt:t.startedAt,finishedAt:t.finishedAt}}
- function make({session,interventionEngine,observationAdapter,dataAdapter,core,onProgress=null,analysisAdapter=null}){
+ function make({session,interventionEngine,observationAdapter,dataAdapter,core,onProgress=null,analysisAdapter=null,onTaskVisual=null}){
   if(!session||typeof session.run!=='function'||!session.description||!session.sha256||
     !interventionEngine?.execute||!observationAdapter?.observePair||!dataAdapter?.prepare||!core?.sha256)
     fail('INVALID_ENGINE','Requires genuine opened model session and U3/U4/U5 engines');
   if(onProgress!==null&&typeof onProgress!=='function')fail('INVALID_ENGINE','onProgress must be callable');
+  if(onTaskVisual!==null&&typeof onTaskVisual!=='function')fail('INVALID_ENGINE','onTaskVisual must be callable');
   if(analysisAdapter!==null&&typeof analysisAdapter.evaluateTask!=='function')fail('INVALID_ENGINE','analysisAdapter must declare evaluateTask()');
   let schedule=null,context=null,working=false,cancelRequested=false,disposed=false;
   function emit(){if(onProgress)try{onProgress(snapshot())}catch(_){/* UI callbacks cannot corrupt experiments */}}
@@ -144,6 +145,11 @@
        seed:t.seed,intervention:change.intervention,outputs,matchedControlOutputs:controls,
        genuineInference:true,numberOfForwards:c?3:2,...(analysis===null?{}:{analysis:cloneJson(analysis)})};
       t.status='completed';
+      if(onTaskVisual)try{onTaskVisual({taskId:t.id,seed:t.seed,variant:t.variant,
+       modelSha256:context.modelSha256,description:context.description,
+       baseline:change.baseline,edited:change.edited,control:change.control,
+       observations:outputs,controlObservations:controls});}
+      catch(_){/* A visualization failure cannot rewrite genuine experiment evidence */}
      }catch(error){
       t.status='failed';t.error=scrubError(error);
      }finally{

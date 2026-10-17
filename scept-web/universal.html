@@ -1,11 +1,34 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · U7 XAI 证据评价</title>
+<title>SCEPT Universal Core · U8 统一可视化科研工作台</title>
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">U7 / 新实验即插即用 M2</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">U8 / 数据驱动科研可视化</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="panel u8-studio" id="u8Studio" aria-label="U8 统一可视化科研工作台">
+<div class="u8-head"><div><h2>U8 / 统一数据驱动科研工作台</h2><p class="muted">展示实际 ONNX 算子依赖、Token / Channel 的真实 A/B/Δ 数值与真实模型输入图像/体数据。未观测计算单元保持中性，不生成模拟激活。</p></div><div class="u8-source-controls">
+<label for="u8Source">实验来源<select id="u8Source"><option value="u5">U5 单次 A/B</option><option value="u6">U6 自动批量</option><option value="u7">U7 XAI 证据</option></select></label>
+<label for="u8Task">已完成实验任务<select id="u8Task" disabled></select></label>
+<label for="u8Mode">共享 A/B/Δ 显示<select id="u8Mode"><option value="compare">A / B / Δ 并排</option><option value="before">A 原始</option><option value="after">B 干预</option><option value="delta">Δ 差分</option></select></label>
+</div></div>
+<p class="status" id="u8Status" role="status">等待真实模型与实验数据。</p><p class="facts" id="u8Facts">—</p>
+<div class="u8-views">
+<div class="u8-chart"><h3>真实 ONNX 算子依赖 / 三维导航</h3><canvas id="u8Graph" aria-label="真正的 ONNX 算子与实际数据依赖三维可视化"></canvas><p class="muted" id="u8GraphInfo">仅展示模型实际计算图，位置为视觉导航布局。</p></div>
+<div class="u8-chart"><h3>Token / Channel / Feature · 真实 A/B/Δ</h3><label for="u8Tensor">选择真实观测张量</label><select id="u8Tensor" disabled></select><canvas id="u8Units" aria-label="按真实张量动态维度聚合的三维 Token 或 Channel 变化"></canvas><p class="muted" id="u8UnitsInfo">Token 和 Channel 数由实际模型决定。</p></div>
+<div class="u8-chart u8-volume"><h3>模型输入切片 / MRI 数据通道</h3><p class="muted">仅在声明实际输入布局后展示真实 A/B/Δ 像素或体素数据。MRI 身份、世界坐标与病灶注册不自动判定。</p>
+<div class="u8-input-controls">
+<label for="u8InputName">模型输入名称（留空取首个）<input id="u8InputName" type="text" placeholder="如 image_data 或 pixel_values"></label>
+<label for="u8InputLayout">显式输入坐标布局<select id="u8InputLayout">
+<option value="off">暂不捕获输入体数据</option>
+<option value="NCHW">二维 [N,C,H,W]</option><option value="NHWC">二维 [N,H,W,C]</option>
+<option value="NCDHW">三维体数据 [N,C,D,H,W]</option><option value="NDHWC">三维体数据 [N,D,H,W,C]</option></select></label>
+<label for="u8SliceAxis">原始张量正交切面<select id="u8SliceAxis"><option value="axial">维度 0 固定</option><option value="coronal">维度 1 固定</option><option value="sagittal">维度 2 固定</option></select></label>
+</div>
+<input id="u8Slice" type="range" min="0" max="1" value="0" disabled aria-label="选择体数据切片">
+<canvas id="u8Volume" aria-label="来自真实模型输入的 A B Δ 图像切片"></canvas><p class="muted" id="u8VolumeInfo">没有 MRI 掩膜时不可推断解剖结构；三维体数据可查看三个正交张量切面。</p></div>
+</div><p class="muted">可拖动三维算子/Token 画布旋转、滚轮缩放。A 和 B 共用色标；Δ 单独使用差分色标。没有真实 ONNX 观测的节点始终灰色，不会推断神经元、模型因果机制或脑解剖映射。</p>
+</section>
 <section class="workspace">
 <article class="panel"><h2>01 / 导入冻结模型</h2>
 <label for="modelPreset">模型来源</label>
@@ -20,6 +43,8 @@
 <option value="vit-token-channel">ViT / [batch, tokens, channels]</option>
 <option value="cnn-nchw">CNN / [batch, channels, height, width]</option>
 <option value="cnn-nhwc">CNN / [batch, height, width, channels]</option>
+<option value="cnn-volume-ncdhw">3D CNN / [batch, channel, depth, height, width]</option>
+<option value="cnn-volume-ndhwc">3D CNN / [batch, depth, height, width, channel]</option>
 <option value="generic">未知模型 / 只观测真实张量，不推断轴</option>
 <option value="legacy-vit-197x192">旧版专用 ViT / 严格 [1,197,192]（仅兼容层）</option>
 </select>
@@ -126,12 +151,12 @@
 </article></section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
-<p><strong>已实现（U0–U7）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
-<p><strong>仍未完成（U8 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>已实现（U0–U8）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>仍未完成（U9 之后）：</strong>临床级 MRI 空间变换、解释目标、任意未经插桩的隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
 <p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
 </div></section>
 </main>
-<footer>SCEPT Universal Core · U7 XAI Plugin M2 · 无 GPU 训练 · 浏览器本地执行</footer>
+<footer>SCEPT Universal Core · U8 Data-driven Research Workstation · 无 GPU 训练 · 浏览器本地执行</footer>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./core/scept_core.js"></script>
@@ -142,4 +167,6 @@
 <script src="./core/scept_intervention.js"></script>
 <script src="./core/scept_scheduler.js"></script>
 <script src="./core/scept_xai.js"></script>
+<script src="./core/scept_visual_data.js"></script>
+<script src="./scept_visual_studio.js"></script>
 <script src="./universal.js"></script></body></html>

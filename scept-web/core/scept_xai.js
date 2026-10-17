@@ -193,7 +193,7 @@
     fail('MASK_REQUIRED','Sparse lesion experiment must explicitly declare external lesion mask precondition');
   return Object.freeze(m);
  }
- function make({registry,session,interventionEngine,observationAdapter,dataAdapter,core,schedulerFactory,onProgress=null}){
+ function make({registry,session,interventionEngine,observationAdapter,dataAdapter,core,schedulerFactory,onProgress=null,onTaskVisual=null}){
   if(!registry||!session?.run||!interventionEngine?.execute||!observationAdapter?.observePair||
      !dataAdapter?.prepare||!core?.sha256||!schedulerFactory?.make)
    fail('INVALID_ENGINE','U1/U3/U4/U5/U6 and genuine opened model session required');
@@ -261,7 +261,7 @@
    }
    if(spec.mode==='batch')spec.controls=manifest.intervention.controls;
    const fresh=schedulerFactory.make({session,interventionEngine,observationAdapter,dataAdapter,core,
-    analysisAdapter,onProgress:()=>{if(onProgress)onProgress(snapshot())}});
+    analysisAdapter,onTaskVisual,onProgress:()=>{if(onProgress)onProgress(snapshot())}});
    const prepared=await fresh.create(spec,{feeds,referenceFeeds,profileId:manifest.observation.profileId||'generic'});
    active=id;queue=fresh;return prepared;
   }

@@ -17,6 +17,10 @@ const PRESETS={
 };
 let state={bytes:null,hash:null,inspect:null,source:null,session:null,loaded:null,audit:null};
 let scheduler=null,u7Engine=null,u7Active=null;
+const visualStudio=SCEPT_VISUAL_STUDIO;
+function evidenceForVisual(){try{return u7Engine?.exportEvidence()||null}catch(_){return null}}
+function syncVisual(){visualStudio.snapshots({audit:state.audit,u6:scheduler?.snapshot()||null,u7:evidenceForVisual()})}
+function selectVisualSource(kind){const select=$('u8Source');if(select.value!==kind){select.value=kind;select.dispatchEvent(new Event('change'))}syncVisual()}
 function note(id,msg,kind='pending'){const el=$(id);el.textContent=msg;el.dataset.state=kind}
 function tableCells(parent,values){const tr=document.createElement('tr');for(const v of values){const td=document.createElement('td');td.textContent=v;tr.append(td)}parent.append(tr)}
 function safeData(buf){if(buf.byteLength>160*1024*1024)throw Error('Model exceeds 160 MB local resource guard');return buf}
@@ -24,7 +28,7 @@ async function inspectModel(){
  if(u7Engine?.snapshot().status==='running'){note('modelStatus','U7 XAI 队列仍在运行，禁止切换模型','error');return}
  u7Engine=null;u7Active=null;updateU7Controls();
  if(scheduler?.snapshot().status==='running'){note('modelStatus','调度任务仍在执行，请先取消队列','error');return}
- scheduler=null;updateU6Controls();
+ scheduler=null;updateU6Controls();visualStudio.attach(null);
  $('inspect').disabled=true;$('load').disabled=true;$('run').disabled=true;$('export').disabled=true;
  try{
   if(state.session){await state.session.dispose();state.session=null}
@@ -69,7 +73,7 @@ async function attach(){
  if(u7Engine?.snapshot().status==='running')return;
  u7Engine=null;u7Active=null;updateU7Controls();
  if(scheduler?.snapshot().status==='running')return;
- scheduler=null;updateU6Controls();
+ scheduler=null;updateU6Controls();visualStudio.attach(null);
  if(!state.bytes||!state.inspect)return;
  $('load').disabled=true;$('run').disabled=true;
  try{
@@ -79,7 +83,7 @@ async function attach(){
   note('modelStatus','正在创建真正的 ONNX WASM 推理会话…');
   state.session=await SCEPT_CORE.openModel(registry,manifest,raw,{wasmPaths:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/'});
   state.loaded=manifest;state.audit=null;$('export').disabled=true;
-  $('run').disabled=false;updateU6Controls();updateU7Controls();
+  $('run').disabled=false;updateU6Controls();updateU7Controls();visualStudio.attach(state.session);
   note('modelStatus','已接入真实模型：'+state.session.description.inputs.length+' 个输入，'+state.session.description.outputs.length+' 个实际输出（含 '+probes.length+' 个选定观测点）。','success');
  }catch(e){state.session=null;note('modelStatus','模型接入失败：'+e.message,'error')}
  finally{$('load').disabled=false}
@@ -172,6 +176,7 @@ async function run(){
    originalModelSHA256:state.session.sha256,adapter:state.loaded.adapterId,dataAdapter:dataAdapter.id,observationAdapter:observationAdapter.id,architectureProfile:profileId,inputs:state.session.description.inputs,
    inputSource:source,intervention,
    outputs:observations,matchedControlOutputs:controls,limits:['No diagnosis','No validated explanation','No training','Only explicitly declared outputs']};
+  visualStudio.onAB({baseline,edited});selectVisualSource('u5');
   const container=$('results');container.replaceChildren();
   for(const row of observations){
    const box=document.createElement('div');box.className='result';
@@ -252,7 +257,9 @@ $('u6Create').onclick=async()=>{
   const referenceFeeds=spec.pluginId==='u5.replace'||mode==='batch'&&spec.controls.some(x=>x.pluginId==='u5.replace')?
    parseReferenceJson($('referenceJson').value):null;
   scheduler=SCEPT_SCHEDULER.make({session:state.session,interventionEngine,
-   observationAdapter,dataAdapter,core:SCEPT_CORE,onProgress:updateU6Controls});
+   observationAdapter,dataAdapter,core:SCEPT_CORE,
+   onTaskVisual:payload=>visualStudio.capture('u6',payload),
+   onProgress:()=>{updateU6Controls();syncVisual()}});
   await scheduler.create(spec,{feeds,referenceFeeds,profileId:$('architectureProfile').value});
   note('u6Status','已建立 '+scheduler.snapshot().total+' 项任务；模型和输入指纹已记录。','success');
  }catch(e){scheduler=null;note('u6Status','建立失败：'+e.message,'error')}
@@ -264,7 +271,7 @@ $('u6Run').onclick=async()=>{
  try{
   if(scheduler.snapshot().cancelled)scheduler.resume();
   note('u6Status','正在执行真实 ONNX 任务队列；将逐项记录结果、失败及种子…');
-  const s=await scheduler.run();
+  const s=await scheduler.run();selectVisualSource('u6');
   note('u6Status','批次结束：完成 '+s.completed+'/'+s.total+' · 失败 '+s.failed+
    ' · 取消 '+s.cancelled+' · 待执行 '+s.pending,s.failed?'error':'success');
  }catch(e){note('u6Status','调度失败：'+e.message,'error')}
@@ -317,7 +324,9 @@ $('u7Register').onclick=()=>{
   const m=JSON.parse($('u7Manifest').value);
   // Registry accepts trusted JS adapters; JSON can only reference registered methods.
   u7Engine=SCEPT_XAI.make({registry,session:state.session,interventionEngine,observationAdapter,
-   dataAdapter,core:SCEPT_CORE,schedulerFactory:SCEPT_SCHEDULER,onProgress:updateU7Controls});
+   dataAdapter,core:SCEPT_CORE,schedulerFactory:SCEPT_SCHEDULER,
+   onTaskVisual:payload=>visualStudio.capture('u7',payload),
+   onProgress:()=>{updateU7Controls();syncVisual()}});
   u7Engine.registerExperiment(m);u7Active=m.id;
   note('u7Status','实验插件 '+m.id+' 已注册。现在可以校验模型、目标、观测、算法、评价和数据前置条件。','success');
  }catch(e){u7Active=null;u7Engine=null;note('u7Status','注册失败：'+e.message,'error')}
@@ -332,7 +341,7 @@ $('u7Prepare').onclick=async()=>{
   const usesReplacement=m.intervention.pluginId==='u5.replace'||
    (m.intervention.controls||[]).some(v=>v.pluginId==='u5.replace');
   const referenceFeeds=usesReplacement?parseReferenceJson($('referenceJson').value):null;
-  const s=await u7Engine.prepare(u7Active,{feeds,referenceFeeds});
+  const s=await u7Engine.prepare(u7Active,{feeds,referenceFeeds});selectVisualSource('u7');
   note('u7Status','已生成 '+s.total+' 个 XAI 任务。所有目标与观测张量已经通过模型输出签名检查。','success');
  }catch(e){note('u7Status','无法调度：'+e.message,'error')}
  updateU7Controls();
@@ -343,7 +352,7 @@ $('u7Run').onclick=async()=>{
  try{
   if(u7Engine.snapshot().cancelled)u7Engine.resume();
   note('u7Status','正在执行真正的 ONNX 推理和 U7 证据评价…');
-  const report=await u7Engine.run();
+  const report=await u7Engine.run();selectVisualSource('u7');
   note('u7Status','执行结束：完成 '+report.execution.completed+'/'+report.execution.total+
    ' · 失败 '+report.execution.failed+' · 汇总检验 '+report.suiteTests.length,
    report.execution.failed?'error':'success');
@@ -367,6 +376,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u5-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],interventionMode:$('interventionMode').value,availableInterventions:interventionEngine.available().map(x=>x.id),profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,getU6Snapshot:()=>u6StatusSnapshot(),getU7Snapshot:()=>u7Snapshot(),getU7Evidence:()=>u7Engine?.exportEvidence()||null,getU8Snapshot:()=>visualStudio.getSnapshot(),xaiRegistry:registry,createU6:()=>$('u6Create').click(),runU6:()=>$('u6Run').click(),interventionEngine,observePair:observationAdapter.observePair};
 
 })();
