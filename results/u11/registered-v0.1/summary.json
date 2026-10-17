@@ -280,7 +280,7 @@
   },
   "runtime": {
     "actual_onnx_forward_calls": 158020,
-    "wall_seconds": 5.591462175000004
+    "wall_seconds": 8.977057548000005
   },
   "claims": {
     "engineering": "measured, not simulated",
