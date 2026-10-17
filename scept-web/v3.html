@@ -15,7 +15,20 @@
 <div class="roi-editor"><div class="field"><div class="fieldhead"><label for="mriRadius">球形 ROI 半径</label><output id="mriRadiusValue">10 体素</output></div><input type="range" id="mriRadius" min="2" max="30" value="10"></div><div class="field"><div class="fieldhead"><label for="mriAmount">强度变化</label><output id="mriAmountValue">+0.15</output></div><input type="range" id="mriAmount" min="-0.75" max="0.75" step=".05" value=".15"></div></div>
 <div id="roiCoords" class="small">ROI 中心：</div><div class="buttons"><label class="secondary upload">导入自己的 NIfTI <input hidden id="mriFile" type="file" accept=".nii,.nii.gz"></label><button class="secondary" id="mriUndo">撤销强度修改</button><button class="secondary" id="reloadTemplate">恢复公开脑模板</button></div><p class="small" id="mriInfo">等待加载 MRI 数据</p>
 </article>
-<article class="panel"><div class="panel-title"><span>02 / INTERNAL RESPONSE</span><h2>真实神经网络响应</h2><p>同一个冻结模型运行两次。颜色表示真实观测张量的变化幅度；灰色表示该计算位置尚未开放观测点。</p></div><div class="network-frame"><canvas id="networkCanvas" width="800" height="365"></canvas><div class="network-footer"><span>点击层查看内部数值 · 模型权重完全不变</span><span id="networkState">等待计算</span></div></div>
+<article class="panel"><div class="panel-title"><span>02 / INTERNAL RESPONSE</span><h2>真实神经网络响应</h2><p>同一个冻结模型运行两次。颜色表示真实观测张量的变化幅度；灰色表示该计算位置尚未开放观测点。</p></div><div class="network-frame">
+<div class="network-toolbar" role="toolbar" aria-label="三维计算网络操作">
+  <button id="networkOverview" type="button">结构总览</button>
+  <button id="networkEnter" type="button" disabled>进入选中层</button>
+  <button id="networkZoomIn" type="button" aria-label="放大三维网络">＋</button>
+  <button id="networkZoomOut" type="button" aria-label="缩小三维网络">－</button>
+  <button id="networkReset" type="button">重置视角</button>
+</div>
+<div class="network-depth" id="networkDepth">真实 ONNX · 三维网络结构总览</div>
+<canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas>
+<div class="network-footer"><span>拖动旋转 · 滚轮缩放 · 单击选中 · 双击进入层 · Esc 返回</span><span id="networkState">等待计算</span></div>
+<div id="networkStats" class="network-stats" role="status">正在读取 ONNX 实际算子和连接</div>
+<div id="networkNodeDetails" class="network-node-details" aria-live="polite">单击一个真实算子节点，查看其输入、输出和数据依赖关系。</div>
+</div>
 <div class="metric-row"><div><small>已观测中间层</small><strong id="metricLayers">—</strong></div><div><small>发生变化的数值</small><strong id="metricChanged">—</strong></div><div><small>当前层平均 |Δ|</small><strong id="metricMean">—</strong></div></div>
 <div class="layer-heading"><h3>多层内部激活差异</h3><label>查看层 <select id="layerSelect"><option>等待模型加载</option></select></label></div><div id="layerTable" class="layer-table"><div class="empty">运行实验后显示多个真实 Transformer 隐藏层的响应。</div></div>
 <div class="plotframe"><canvas id="responseChart" width="800" height="185"></canvas></div><div class="explain-box" id="interpretation">当前没有计算结果。改变 MRI 后点击「开始实验」，右侧将更新真实模型多层响应；不再仅显示一张固定网络图。</div>
@@ -26,4 +39,4 @@
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./v3_mri.js"></script>
-<script src="./v3_engine.js"></script><script src="./v3_mri_cnn.js"></script></body></html>
+<script src="./v3_network3d.js"></script><script src="./v3_engine.js"></script><script src="./v3_mri_cnn.js"></script></body></html>
