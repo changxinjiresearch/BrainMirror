@@ -41,6 +41,10 @@ const url=process.env.SCEPT_V3_URL||'http://127.0.0.1:8765/v3.html';
   for(const width of [390,768,1024,1366,1440]){
    await page.setViewportSize({width,height:900});
    const v=await page.evaluate(()=>({width:document.documentElement.scrollWidth,inner:window.innerWidth}));
+   if(v.width>v.inner+2){
+    const offenders=await page.evaluate(()=>[...document.querySelectorAll('body *')].map(e=>({tag:e.tagName,id:e.id,cls:String(e.className||'').slice(0,70),right:Math.round(e.getBoundingClientRect().right),left:Math.round(e.getBoundingClientRect().left),scroll:e.scrollWidth,client:e.clientWidth})).filter(o=>o.right>innerWidth+1||o.scroll>o.client+6).slice(0,22));
+    console.log('OVERFLOW DETAILS',width,JSON.stringify(offenders));
+   }
    assert(v.width<=v.inner+2,'Horizontal overflow at width '+width+': '+JSON.stringify(v));
   }
   await page.screenshot({path:'/tmp/scept-v3-brain-mri.png',fullPage:true});
