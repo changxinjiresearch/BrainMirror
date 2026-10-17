@@ -3,3 +3,10 @@
 @media(max-width:980px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;display:block;padding:14px}.sidebar .brand{padding:5px 10px 10px}.sidebar>.eyebrow,.side-bottom{display:none}.sidebar .side-link{display:inline-block;padding:9px;font-size:12px}main{padding:24px 16px}.workspace{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){.workspace{grid-template-columns:1fr}.modebar{flex-direction:column;align-items:stretch}.mode-actions{width:100%}.cards{grid-template-columns:1fr}}
 @media(max-width:520px){main{padding:16px 10px}.panel{padding:12px}.views{gap:7px}.scan{padding:6px}.scan header{font-size:10px}.roi-editor{grid-template-columns:1fr;gap:8px}.metric-row{grid-template-columns:1fr 1fr}.metric-row>div:last-child{grid-column:span 2}.info-grid{grid-template-columns:1fr}.layer-row{grid-template-columns:70px minmax(0,1fr) 60px}}
+
+.mode-explainer{display:grid;gap:6px;max-width:670px;min-width:0}
+.mode-explainer .mode-label{color:#88d2c3;font-size:11px;letter-spacing:.5px}
+.mode-explainer select{background:#0a2530;border:1px solid #3e796e;color:#d7fff0;border-radius:9px;padding:11px 13px;max-width:100%;font-weight:650}
+.mode-explainer small{line-height:1.65;color:#92b7b7}
+.layer-row{overflow-wrap:anywhere}
+@media(max-width:850px){.mode-explainer{width:100%}}
