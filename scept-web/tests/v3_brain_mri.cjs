@@ -5,7 +5,7 @@ const url=process.env.SCEPT_V3_URL||'http://127.0.0.1:8765/v3.html';
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:900},acceptDownloads:true});
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.SCEPT_MRI?.state.loaded||document.querySelector('#mriStatus')?.textContent.includes('失败'),null,{timeout:80000});
