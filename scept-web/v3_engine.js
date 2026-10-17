@@ -67,6 +67,7 @@ async function init(){
   st.modelSha=await sha256(patched.model);
   $('instrumentedHash').textContent=st.modelSha;
   st.graph=window.SCEPT_INSPECT_ONNX(patched.model);
+  window.SCEPT_NETWORK3D?.setGraph(st.graph);
   status('初始化本地 CPU 推理…');
   ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
   ort.env.wasm.numThreads=1;
@@ -150,29 +151,10 @@ function drawAll(){
  }
  drawNetwork();drawResponse();
 }
-function choose(layer){st.selected=layer;$('layerSelect').value=String(layer);drawAll()}
+function choose(layer){st.selected=layer;$('layerSelect').value=String(layer);drawAll();window.SCEPT_NETWORK3D?.highlightLayer(layer)}
 $('layerSelect').onchange=e=>choose(Number(e.target.value));
-function drawNetwork(){
- const canvas=$('networkCanvas'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
- ctx.fillStyle='#061823';ctx.fillRect(0,0,w,h);
- const p=st.results?.layers??[],look=new Map(p.map(x=>[x.layer,x])),max=Math.max(1e-9,...p.map(x=>x.summary.mean));
- const yBase=180,step=(w-102)/11;
- for(let layer=0;layer<12;layer++){
-  const x=52+layer*step,info=look.get(layer),strength=info?Math.min(1,info.summary.mean/max):0;
-  if(layer<11){ctx.strokeStyle='#29515b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+11,yBase);ctx.lineTo(x+step-11,yBase);ctx.stroke()}
-  for(let group=0;group<8;group++){
-   const y=yBase+(group-3.5)*24;
-   const g=info?.summary.groups[group]??null;
-   const c=g===null?null:Math.min(1,g/max),color=c===null?'#54737d':`rgba(${Math.floor(57+100*c)},${Math.floor(132+97*c)},${Math.floor(140-40*c)},1)`;
-   ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,group===4&&layer===st.selected?8:6,0,2*Math.PI);ctx.fill();
-   if(layer===st.selected&&info){ctx.strokeStyle='#b1f5dd';ctx.lineWidth=1.4;ctx.stroke()}
-  }
-  ctx.fillStyle=info?'#b6ede0':'#6f9098';ctx.textAlign='center';ctx.font='12px sans-serif';ctx.fillText('L'+layer,x,312);
- }
- ctx.fillStyle='#8ab9b4';ctx.font='12px sans-serif';ctx.textAlign='left';
- ctx.fillText('模型中的层级顺序 · 只给有真实观测张量的层上色',16,24);
- ctx.fillText('每个圆点 = 该层真实张量的 1/8 分块均值；不是单一生物神经元',16,345);
-}
+window.SCEPT_NETWORK3D_LAYER_SELECTED=(l)=>{if(st.results?.layers.some(x=>x.layer===l))choose(l)};
+function drawNetwork(){window.SCEPT_NETWORK3D?.setObservations(st.results?.layers||[])}
 function drawResponse(){
  const canvas=$('responseChart'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
  ctx.fillStyle='#081923';ctx.fillRect(0,0,w,h);
@@ -183,13 +165,6 @@ function drawResponse(){
  for(let i=0;i<64;i++){const d=Math.abs(layer.after[i]-layer.before[i]),bar=d/vmax*125;ctx.fillStyle=d>1e-7?'#62d5ba':'#49716e';ctx.fillRect(18+i*gap,h-23-bar,Math.max(2,gap-3),Math.max(1,bar))}
  ctx.fillStyle='#accbc6';ctx.font='12px sans-serif';ctx.fillText('第 '+st.selected+' 层：真实 |激活差异| 前 64 项',14,20);
 }
-function networkSelect(e){
- if(!st.results)return;
- const canvas=$('networkCanvas'),rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)*canvas.width/rect.width;
- const layer=Math.max(0,Math.min(11,Math.round((x-52)/((canvas.width-102)/11))));
- if(st.results.layers.some(p=>p.layer===layer))choose(layer);
-}
-$('networkCanvas').onpointerdown=networkSelect;
 function listHistory(){
  const root=$('records');root.replaceChildren();if(!st.history.length){root.textContent='尚无本次实验记录。';return}
  for(const r of st.history.slice(0,8)){const el=document.createElement('div');el.className='record';const a=document.createElement('span'),b=document.createElement('span');a.textContent=new Date(r.at).toLocaleString('zh-CN')+' · '+r.mri;b.textContent=r.layers+' 层观测';el.append(a,b);root.append(el)}
@@ -208,6 +183,7 @@ $('modelMode').onchange=()=>{
  for(const p of st.probes){const o=document.createElement('option');o.value=String(p.layer);o.textContent='第 '+p.layer+' 层';selector.add(o)}
  st.selected=st.probes.some(x=>x.layer===6)?6:st.probes[0]?.layer||6;selector.value=String(st.selected);
  $('networkState').textContent='ViT 多层观测';
+ window.SCEPT_NETWORK3D?.setGraph(st.graph);
  drawAll();readyIfPossible();status(st.results?'ViT 观测记录已恢复':'ViT 冻结模型就绪','ready');
 };
 
