@@ -12,7 +12,10 @@ assert(html.includes("script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-ev
 assert(!html.includes("'unsafe-eval'"),'No general eval permission');
 assert(!html.includes("script-src 'unsafe-inline'"),'No inline JS permitted');
 assert.match(html,/onnxruntime-web@1\.20\.1\/dist\/ort\.min\.js/);
-assert(!/<script(?:\s[^>]*)?>\s*[\w\W]+?<\/script>/i.test(html),'No inline script body');
+for(const match of html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)){
+ assert(/\\bsrc\\s*=/.test(match[1]),'Every JS element must be external');
+ assert(!match[2].trim(),'External script tags must not include inline code');
+}
 for(const [name,code]of [['sdk',sdk],['audit',audit],['browser',consoleCode]]){
  assert(!/\beval\s*\(/.test(code),name+' must not evaluate uploaded JSON');
  assert(!/\bnew\s+Function\s*\(/.test(code),name+' must not construct executable JS');
