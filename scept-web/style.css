@@ -27,3 +27,66 @@
 .graph3d-frame{background:linear-gradient(140deg,#0b2530,#06131c);border:1px solid #27545a;border-radius:12px;overflow:hidden;margin-bottom:12px}.graph3d-frame canvas{display:block;width:100%;height:auto;max-height:350px;touch-action:none;cursor:grab}.graph3d-frame canvas:active{cursor:grabbing}
 
 .vit-auto{background:linear-gradient(145deg,#153c44,#0b2532);border:1px solid #4a9d90;border-radius:12px;padding:16px;margin:16px 0}.vit-auto strong{color:#8cf3d0;font-size:11px;letter-spacing:1.1px}.vit-auto p{color:#bed7d8;font-size:12px;line-height:1.6;margin:10px 0 14px}.vit-auto #transformerStatus{font-size:11px;line-height:1.6}
+
+
+/* Responsive layout hardening (2026-10-17):
+   Prevent long ONNX graph tensor names from enforcing an intrinsic grid width. */
+html{width:100%}
+body{width:100%;max-width:100%;overflow-x:clip}
+.shell{
+  width:100%;
+  max-width:100%;
+  grid-template-columns:clamp(200px,15.5vw,230px) minmax(0,1fr);
+}
+.shell>main{min-width:0;max-width:100%;width:100%;margin:0;overflow-wrap:anywhere;padding:30px clamp(18px,2.8vw,46px) 26px}
+.sidebar{min-width:0}
+.topbar{min-width:0;flex-wrap:wrap;align-items:flex-start}
+.topbar>div:first-child{min-width:0;flex:1 1 430px}
+.header-actions{min-width:0;flex:0 1 auto;flex-wrap:wrap;white-space:normal;justify-content:flex-end}
+.status-pill{overflow-wrap:anywhere;text-align:center}
+.section-head,.card-title,.metadata,.workspace,.modelgrid,.mri-panels,.docgrid,.metricgrid{min-width:0;max-width:100%}
+.modelgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}
+.modelgrid>.card,.workspace>.card,.docgrid>.card,.metadata>div,.metricgrid>div{min-width:0;max-width:100%}
+.metadata{grid-template-columns:repeat(2,minmax(0,1fr))}
+.metadata strong,.metadata small,.card-title,.card-title span,.callout,#inputDefs,#outputDefs,#modelName,.graphdetails,.mri-report{white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.field input,.field textarea,.field select,select{max-width:100%}
+.workspace{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.docgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.metricgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mri-panels{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mri-view{min-width:0;max-width:100%}
+.tablewrap,.graphinspector,.graph3d-frame{min-width:0;max-width:100%}
+.graphnodes{width:100%;max-width:100%}
+footer{gap:12px;flex-wrap:wrap}
+@media(max-width:1250px){
+  .shell>main{padding:28px clamp(18px,2.5vw,32px) 22px}
+  .workspace{grid-template-columns:minmax(0,1fr)}
+  .mri-panels{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:1050px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;display:block;padding:12px 16px}
+  .brand{padding:3px 8px 12px}
+  .sidebar-caption,.sessioncard,.sidefooter{display:none}
+  .sidebar nav{display:flex;flex-wrap:wrap;margin:0;gap:6px}
+  .navitem{font-size:12px;padding:10px}
+  .shell>main{padding:25px clamp(16px,3vw,32px)}
+}
+@media(max-width:760px){
+  .modelgrid,.docgrid{grid-template-columns:minmax(0,1fr)}
+  .topbar{flex-direction:column}
+  .header-actions{justify-content:flex-start}
+  .section-head{align-items:flex-start;flex-wrap:wrap}
+}
+@media(max-width:550px){
+  .shell>main{padding:18px 12px}
+  .card,.evidence{padding:15px}
+  .metadata,.metricgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mri-panels{grid-template-columns:minmax(0,1fr)}
+  .mri-toolbar .upload{min-width:0}
+  .topbar h1{font-size:clamp(25px,7vw,33px)}
+  .header-actions .ghost{padding:8px 10px}
+  .selectrow{align-items:stretch;flex-direction:column;gap:7px}
+  .selectrow select{max-width:100%}
+  .barrow{grid-template-columns:38px minmax(0,1fr) 75px}
+}
