@@ -98,6 +98,7 @@ function render(){
  ctx.setTransform(1,0,0,1,0,0);
  const stale=s.runRevision!==null&&SCEPT_MRI.state.revision!==s.runRevision;
  $('tokenDepth').textContent=(s.scope==='all'?'五层概览':'第 '+s.layer+' 层')+' · '+arr.length+' 个真实 Token';
+ $('networkDepth').textContent=(s.scope==='all'?'五层真实 Token 活动概览':'第 '+s.layer+' 层 · 真实 Token 响应')+' · '+(mode()==='compare'?'同步 A/B':mode()==='delta'?'真实差异 Δ':mode()==='before'?'原始 A':'修改后 B');
  $('token3dNote').textContent=(stale?'输入已修改，显示的是上一次计算结果；请重新计算。':'当前显示最近一次推理的真实张量数据。')+
  (mode()==='delta'?' Token 颜色表示逐通道 RMS 差异。':' A/B 共用首次真实计算校准的颜色区间 ['+fmt(s.colorLo||0)+', '+fmt(s.colorHi||0)+']，B 中金色细环表示真实 RMS 差异；原始激活本身可能接近。')+
  ' 节点半径限制为邻近 Token 屏幕距离的 30%，避免遮挡；没有绘制未经测量的注意力连接。';
@@ -133,10 +134,12 @@ function show(k){
  if(k==='tokens'&&!s.data)return false;
  s.kind=k;
  $('operator3dShell').hidden=k!=='operators';$('token3dShell').hidden=k!=='tokens';
+ $('networkStats').hidden=k!=='operators';$('networkNodeDetails').hidden=k!=='operators';
  $('networkOverview').closest('.network-toolbar').hidden=k!=='operators';
  $('tokenDetails').hidden=k!=='tokens'||!s.selected;
  for(const [id,val]of [['viewOperators','operators'],['viewTokens','tokens']]){
   $(id).classList.toggle('active',k===val);$(id).setAttribute('aria-pressed',String(k===val))}
+ if(k==='operators'){SCEPT_NETWORK3D.highlightLayer(s.layer)}
  if(k==='tokens'){
   // Favor a readable, inspectable single-layer grid rather than compressing
   // all 985 token discs into narrow A/B panes on a Chromebook.
