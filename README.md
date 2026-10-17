@@ -1,3 +1,5 @@
+> **SCEPT U6 on-demand experiment scheduler:** [engineering contract](docs/SCEPT_U6_EXPERIMENT_SCHEDULER.md). Real A/B, explicit intensity sweeps, numeric matched A/B/C batches, deterministic task seeds, status/retry/cancellation and JSON/CSV audit. Code completion is distinct from green CI and public website deployment.
+
 > **SCEPT U5 universal intervention engine:** [engineering contract](docs/SCEPT_U5_INTERVENTION_ENGINE.md). Includes seeded Gaussian noise, tensor ROI occlusion, explicit reference replacement, numeric matched control A/B/C and genuine in-graph internal masks where a compatible ONNX graph is instrumented. U5 scientific validity remains unverified; check CI before asserting U5 gate passed.
 
 > **SCEPT U3–U4 M1 architecture-independence development** is in branch `phase/scept-u3-u4-m1-architecture-independence` with [U3/U4 acceptance contract](docs/SCEPT_U3_U4_M1_ARCHITECTURE_INDEPENDENCE.md). Do not call M1 verified before CI browser evidence. The older ViT 197×192 visualisation remains isolated in its model-specific legacy path.
