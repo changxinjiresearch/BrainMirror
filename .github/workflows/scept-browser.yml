@@ -45,6 +45,7 @@ jobs:
           node --check scept-web/core/scept_performance.js
           node --check scept-web/scept_m3_console.js
           node --check scept-web/plugins/u9_method_evaluation_sdk_template.js
+          node --check scept-web/plugins/u9_intervention_sdk_template.js
           node --check scept-web/tests/u9_m3_contract.cjs
           node --check scept-web/tests/u9_security_check.cjs
           node --check scept-web/tests/u9_m3_browser.cjs
