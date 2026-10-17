@@ -17,7 +17,7 @@
   state.audit=null;state.u6=null;state.u7=null;state.selectionTask=null;
   $('u8Task').replaceChildren();$('u8Tensor').replaceChildren();
   $('u8Task').disabled=true;$('u8Tensor').disabled=true;
-  state.graphBase=state.session?api.createScene:null;
+  state.graphBase=null;
   paint();
  }
  function attach(session){
@@ -251,7 +251,8 @@
   if(!p){
    label(ctx,'2D 输入没有该正交方向；请选择第一视图。',18,35);return
   }
-  const min=Math.min(...v.A,...v.B),max=Math.max(...v.A,...v.B);
+  let min=Infinity,max=-Infinity;
+  for(const buffer of [v.A,v.B])for(const value of buffer){if(value<min)min=value;if(value>max)max=value}
   const modes=mode==='compare'?['before','after','delta']:[mode],pane=w/modes.length;
   for(let i=0;i<modes.length;i++){
    const x=i*pane;ctx.save();ctx.beginPath();ctx.rect(x,0,pane,h);ctx.clip();
