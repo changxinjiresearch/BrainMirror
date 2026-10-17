@@ -8,7 +8,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
  const page=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];
  page.on('pageerror',e=>errors.push(e.stack||e.message));
- await page.goto('http://127.0.0.1:8765/universal.html',{waitUntil:'domcontentloaded'});
+ await page.goto(process.env.SCEPT_U2_URL||'http://127.0.0.1:8765/universal.html',{waitUntil:'domcontentloaded'});
  for(const item of [{file:'u2_mlp.onnx',inName:'features',probe:'mm_hidden',dims:[1,4],out:'scores'},
                     {file:'u2_cnn.onnx',inName:'image_data',probe:'conv_hidden',dims:[1,1,4,4],out:'conv_output'}]){
   await page.locator('#modelPreset').selectOption('local');
