@@ -1,7 +1,11 @@
 SCEPT Universal Core V1
 Milestone: M3
-Release phase: engineering acceptance candidate
-Scope: U0-U9 real ONNX, plugin SDK, evidence audit, numerical replay, visual research workbench
 Version: 1.0.0
-Scientific claim: no causal, biological or clinical validity established
-Public deployment: separate GitHub Pages activation and successful publish required
+Architecture: real ONNX/WASM model, U1-U9 plugin/experiment/evidence/visual/audit pipeline
+Plugin SDK: trusted explanation, evaluation, independent intervention extensions
+Audit: SHA256 integrity, original model/definition/input verification, real U6/U7 replay
+Performance: on-device measured ONNX inference and input-buffer budget
+Privacy: known raw data and ROI indices redacted; no clinical anonymization guarantee
+Engineering release gate: final-head browser CI plus no-paid security tests
+Public deployment gate: owner enables GitHub Actions Pages, then Pages job completes and public URL is HTTP verified
+Scientific claim: no medical, causal or biological validity proven
