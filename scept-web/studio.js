@@ -134,7 +134,7 @@ async function loadModel(){
   if(!st.session.inputNames.includes('pixel_values')||!st.session.outputNames.includes(PROBE))throw Error('预训练模型的输入或内部观测点不匹配');
   setStatus('模型已就绪','ready');$('progressText').textContent='可以开始：用同一套模型权重比较输入修改前后';
   $('startBtn').disabled=false;$('startBtn').textContent='开始实验';clearWarning();
-  if(new URLSearchParams(location.search).get('run')==='transformer')await execute();
+  if(new URLSearchParams(location.search).get('run')==='transformer'){st.busy=false;await execute();}
  }catch(e){setStatus('模型准备失败','error');warn('模型准备失败：'+e.message);$('startBtn').textContent='重新加载模型';$('startBtn').disabled=false}
  finally{st.busy=false}
 }
