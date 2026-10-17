@@ -72,11 +72,12 @@
  function pack(t){return{id:t.id,variant:t.variant,pluginId:t.pluginId,config:cloneJson(t.config),seed:t.seed,
   intensity:t.intensity,status:t.status,attempts:t.attempts,error:t.error,
   result:t.result,startedAt:t.startedAt,finishedAt:t.finishedAt}}
- function make({session,interventionEngine,observationAdapter,dataAdapter,core,onProgress=null}){
+ function make({session,interventionEngine,observationAdapter,dataAdapter,core,onProgress=null,analysisAdapter=null}){
   if(!session||typeof session.run!=='function'||!session.description||!session.sha256||
     !interventionEngine?.execute||!observationAdapter?.observePair||!dataAdapter?.prepare||!core?.sha256)
     fail('INVALID_ENGINE','Requires genuine opened model session and U3/U4/U5 engines');
   if(onProgress!==null&&typeof onProgress!=='function')fail('INVALID_ENGINE','onProgress must be callable');
+  if(analysisAdapter!==null&&typeof analysisAdapter.evaluateTask!=='function')fail('INVALID_ENGINE','analysisAdapter must declare evaluateTask()');
   let schedule=null,context=null,working=false,cancelRequested=false,disposed=false;
   function emit(){if(onProgress)try{onProgress(snapshot())}catch(_){/* UI callbacks cannot corrupt experiments */}}
   function snapshot(){
@@ -131,9 +132,17 @@
        profileId:context.profileId,maxAxisUnits:128};
       const outputs=observationAdapter.observePair(args);
       const controls=c?observationAdapter.observePair({...args,edited:c}):null;
+      const analysis=analysisAdapter?await analysisAdapter.evaluateTask({
+       description:context.description,task:{id:t.id,variant:t.variant,seed:t.seed,config:cloneJson(t.config)},
+       intervention:change.intervention,baseline:a,edited:b,control:c,
+       observations:outputs,matchedControlObservations:controls,
+       modelSha256:context.modelSha256,inputHashes:context.inputHashes}):null;
+      if(analysis!==null){checkJson(analysis);if(!plain(analysis))fail('INVALID_ANALYSIS','Analysis must be a JSON object');
+       const serialized=JSON.stringify(analysis);
+       if(serialized.length>1000000)fail('RESOURCE_LIMIT','Per-task analysis exceeds 1 MB');}
       t.result={schema:'scept.u6.task.result.v1',modelSha256:context.modelSha256,
        seed:t.seed,intervention:change.intervention,outputs,matchedControlOutputs:controls,
-       genuineInference:true,numberOfForwards:c?3:2};
+       genuineInference:true,numberOfForwards:c?3:2,...(analysis===null?{}:{analysis:cloneJson(analysis)})};
       t.status='completed';
      }catch(error){
       t.status='failed';t.error=scrubError(error);
