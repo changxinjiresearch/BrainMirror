@@ -292,7 +292,7 @@
    {name:'nuisance-effect-stability',value:effectSpread,threshold:q.maxSpread,
     verdict:verdict(effectSpread<=q.maxSpread)},
    {name:'nuisance-sign-agreement',value:signAgreement,threshold:q.minimumSignAgreement,
-    verdict:verdict(direction!==0&&signAgreement>=q.minimumSignAgreement)},
+    verdict:verdict(direction!==0&&medianSigned!==0&&signAgreement>=q.minimumSignAgreement)},
    {name:'graded-sensitivity',value:doseProblems.length,threshold:q.doseTolerance,
     verdict:verdict(doseProblems.length===0)},
    {name:'zero-dose-null',value:Math.max(...nullCells),threshold:q.nullTolerance,
