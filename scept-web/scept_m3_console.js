@@ -44,7 +44,7 @@
   }
   byId('u9Compatibility').onclick=()=>wrap('兼容性预检',async()=>{
    const m=JSON.parse(byId('u7Manifest').value);
-   const result=SCEPT_SDK.compatibility({registry,core,xai,session:getSession(),manifest:m});
+   const result=SCEPT_SDK.compatibility({registry,core,xai,observationModule:SCEPT_OBSERVATION,session:getSession(),manifest:m});
    return result;
   });
   byId('u9GenerateTemplate').onclick=()=>wrap('生成模型对应插件模板',async()=>{
