@@ -1,3 +1,5 @@
+> **SCEPT U7 / M2:** [XAI plugin and evidence protocol](docs/SCEPT_U7_M2_XAI_PLUGIN_EVIDENCE.md). New declarative experiment JSON specifies pinned model, actual target/observations, U5/U6 intervention plan, independently registered explanation algorithms, and per-task / suite numeric evaluations. A synthetic sparse-mask lesion-removal hypothesis is supported; **medical/causal results are not established**. Check final-head CI before declaring M2 verified.
+
 > **SCEPT U6 on-demand experiment scheduler:** [engineering contract](docs/SCEPT_U6_EXPERIMENT_SCHEDULER.md). Real A/B, explicit intensity sweeps, numeric matched A/B/C batches, deterministic task seeds, status/retry/cancellation and JSON/CSV audit. Code completion is distinct from green CI and public website deployment.
 
 > **SCEPT U5 universal intervention engine:** [engineering contract](docs/SCEPT_U5_INTERVENTION_ENGINE.md). Includes seeded Gaussian noise, tensor ROI occlusion, explicit reference replacement, numeric matched control A/B/C and genuine in-graph internal masks where a compatible ONNX graph is instrumented. U5 scientific validity remains unverified; check CI before asserting U5 gate passed.
