@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SCEPT v3 · 脑 MRI 模型机制观测台</title><link rel="stylesheet" href="./v3.css"></head>
+<body><div class="app"><aside class="sidebar"><a class="brand" href="#top"><span class="mark">◇</span><span><strong>SCEPT<span class="accent">.</span></strong><small>NEURAL MECHANISM OBSERVATORY</small></span></a><span class="eyebrow">科研工作台</span><a class="side-link active" href="#workbench">◉ 机制观测</a><a class="side-link" href="#audit">▦ 实验记录</a><a class="side-link" href="#protocol">◎ 科学边界</a><div class="side-bottom"><span class="glow"></span> 真实计算 · 本地执行<br><small>不重新训练 · I-JEPA 未接入</small></div></aside>
+<main id="top"><header class="header"><div><span class="eyebrow">BRAINMIRROR / SCEPT V3</span><h1>让脑 MRI 与真实模型计算连接起来<span class="accent">.</span></h1><p>编辑真实 MRI 三维体数据，观察冻结神经网络多个隐藏层的实际计算差异。</p></div><span id="readyLabel" class="ready">正在初始化…</span></header>
+<div class="modebar"><div><b>当前计算模型：预训练视觉 Transformer</b><small>研究预览：模型不是 MRI 专用网络，当前只能证明真实计算响应，不是医学诊断或医学模型解释。</small></div><div class="mode-actions"><button id="runExperiment" class="primary" disabled>模型准备中…</button><span id="runProgress">获取真实 MRI 与预训练模型</span></div></div>
+<div id="warning" class="warning">MRI 来自公开 MNI152 脑模板。模型使用公开预训练视觉 ViT，输入为从三维 MRI 提取的二维切片，当前未通过医学预处理一致性和临床任务有效性验证。</div>
+<section class="workspace" id="workbench">
+<article class="panel"><div class="panel-title"><span>01 / MRI INPUT</span><h2>三维脑 MRI · 编辑区域</h2><p>这是真实 MRI 衍生的脑模板，不是随机条纹。点击切片选中位置，在三维体数据中修改局部球形区域。</p></div>
+<div class="source"><strong id="mriSource">MNI152 模板</strong><small id="mriStatus">正在读取 NIfTI…</small></div>
+<div class="views">
+ <div class="scan"><header>近似轴位 · 体素 i–j</header><canvas width="256" height="256" id="viewAxial"></canvas><input id="sliceK" type="range" min="0" max="1"></div>
+ <div class="scan"><header>近似冠状位 · 体素 i–k</header><canvas width="256" height="256" id="viewCoronal"></canvas><input id="sliceJ" type="range" min="0" max="1"></div>
+ <div class="scan"><header>近似矢状位 · 体素 j–k</header><canvas width="256" height="256" id="viewSagittal"></canvas><input id="sliceI" type="range" min="0" max="1"></div>
+ <div class="scan"><header>三维体素点云 · 拖动旋转</header><canvas width="256" height="256" id="view3d"></canvas><small>点云不是已验证的解剖脑表面</small></div>
+</div>
+<div class="roi-editor"><div class="field"><div class="fieldhead"><label for="mriRadius">球形 ROI 半径</label><output id="mriRadiusValue">10 体素</output></div><input type="range" id="mriRadius" min="2" max="30" value="10"></div><div class="field"><div class="fieldhead"><label for="mriAmount">强度变化</label><output id="mriAmountValue">+0.15</output></div><input type="range" id="mriAmount" min="-0.75" max="0.75" step=".05" value=".15"></div></div>
+<div id="roiCoords" class="small">ROI 中心：</div><div class="buttons"><label class="secondary upload">导入自己的 NIfTI <input hidden id="mriFile" type="file" accept=".nii,.nii.gz"></label><button class="secondary" id="mriUndo">撤销强度修改</button><button class="secondary" id="reloadTemplate">恢复公开脑模板</button></div><p class="small" id="mriInfo">等待加载 MRI 数据</p>
+</article>
+<article class="panel"><div class="panel-title"><span>02 / INTERNAL RESPONSE</span><h2>真实神经网络响应</h2><p>同一个冻结模型运行两次。颜色表示真实观测张量的变化幅度；灰色表示该计算位置尚未开放观测点。</p></div><div class="network-frame"><canvas id="networkCanvas" width="800" height="365"></canvas><div class="network-footer"><span>点击层查看内部数值 · 模型权重完全不变</span><span id="networkState">等待计算</span></div></div>
+<div class="metric-row"><div><small>已观测中间层</small><strong id="metricLayers">—</strong></div><div><small>发生变化的数值</small><strong id="metricChanged">—</strong></div><div><small>当前层平均 |Δ|</small><strong id="metricMean">—</strong></div></div>
+<div class="layer-heading"><h3>多层内部激活差异</h3><label>查看层 <select id="layerSelect"><option>等待模型加载</option></select></label></div><div id="layerTable" class="layer-table"><div class="empty">运行实验后显示多个真实 Transformer 隐藏层的响应。</div></div>
+<div class="plotframe"><canvas id="responseChart" width="800" height="185"></canvas></div><div class="explain-box" id="interpretation">当前没有计算结果。改变 MRI 后点击「开始实验」，右侧将更新真实模型多层响应；不再仅显示一张固定网络图。</div>
+</article></section>
+<section class="cards" id="audit"><article><h3>实验记录</h3><p>保存模型、MRI 来源、ROI、预处理和每层数值变化的校验信息。</p><div id="records">尚无本次实验记录。</div></article><article id="protocol"><h3>证据等级与科学边界</h3><p>本阶段观测为真实预训练网络的张量变化（L1）；不同层的变化不自动等于因果解释。MRI 模型专属解释须在 MRI 训练权重、任务目标及预处理匹配后另外验收。</p><p>默认采用 MNI152 脑模板。编辑是探索性的强度干预，不代表生物学有效病灶模拟。</p></article></section>
+<details class="advanced"><summary>高级设置与科研数据 <span>模型适配 · 张量导出 · 科学审计 ↓</span></summary><div class="advance-content"><div class="info-grid"><div><small>预训练源模型</small><code id="sourceModelHash">正在核验</code></div><div><small>插装后的模型</small><code id="instrumentedHash">—</code></div><div><small>MRI 原始数据 SHA-256</small><code id="mriHash">—</code></div><div><small>输入及解释边界</small><code>二维 MRI 切片 → 非 MRI 专用 ViT（OOD）</code></div></div><div class="buttons"><button id="saveAudit" class="secondary" disabled>下载实验 JSON</button><button id="saveLayers" class="secondary" disabled>下载多层 CSV</button><a href="./lab.html" class="secondary" target="_blank" rel="noopener">完整 ONNX 适配器 / 实验室</a></div><p>兼容的 3D MRI 训练模型可以通过原有 ONNX 适配器导入；BraTS 专用模型、四模态配准与标准化和端到端三维推理必须另行测试才能标为医学有效。</p></div></details>
+<footer>SCEPT v3 · Real MRI input / genuine pretrained tensor observation · research preview <span>I-JEPA remains excluded</span></footer></main></div>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script src="./onnx_inspector.js"></script>
+<script src="./v3_mri.js"></script>
+<script src="./v3_engine.js"></script></body></html>
