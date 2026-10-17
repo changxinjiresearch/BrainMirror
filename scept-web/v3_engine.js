@@ -108,6 +108,10 @@ async function run(){
  st.running=true;$('runExperiment').disabled=true;$('runExperiment').textContent='计算中…';
  try{
   const before=window.SCEPT_MRI.makeSlice(false,2),after=window.SCEPT_MRI.makeSlice(true,2);
+  const inputPatchMap=window.SCEPT_TENSOR_ADAPTER.mapInput(before,after);
+  if(inputPatchMap.changedPixels===0&&SCEPT_MRI.state.amount!==0){
+    $('runProgress').textContent='选中的 3D ROI 未改变当前实际输入切片：本次是零差异对照。';
+  }
   $('runProgress').textContent='模型前向计算 1/2：原始脑切片';
   const a=await st.session.run({pixel_values:new ort.Tensor('float32',before,[1,3,224,224])});
   $('runProgress').textContent='模型前向计算 2/2：ROI 修改后脑切片';
@@ -120,9 +124,12 @@ async function run(){
    const summary=metrics(baseline,edited);
    layers.push({layer:p.layer,probe:p.name,shape:Array.from(xa.dims),summary,before:baseline,after:edited});
   }
-  st.results={layers,at:new Date().toISOString(),model_sha256:st.modelSha,pretrained_source_sha256:SOURCE_HASH,raw_mri_sha256:await window.SCEPT_MRI.sourceHash(),mri:window.SCEPT_MRI.state,baseline_input_sha256:await sha256(before.buffer),intervened_input_sha256:await sha256(after.buffer),experiment_type:'TRUE_MRI_ATLAS_INPUT__PRETRAINED_NATURAL_IMAGE_VIT_OUT_OF_DOMAIN',evidence:'L1 genuine numeric activation changes, NOT a medically valid or causal model explanation',preprocessing:'single native voxel i-j slice z=center, nearest-neighbor 224x224, 2-98 percentile clipped to 0..1, three repeated grayscale channels; ViT natural-image preprocessor NOT matched'};
+  st.results={layers,inputPatchMap,at:new Date().toISOString(),model_sha256:st.modelSha,pretrained_source_sha256:SOURCE_HASH,raw_mri_sha256:await window.SCEPT_MRI.sourceHash(),mri:window.SCEPT_MRI.state,baseline_input_sha256:await sha256(before.buffer),intervened_input_sha256:await sha256(after.buffer),experiment_type:'TRUE_MRI_ATLAS_INPUT__PRETRAINED_NATURAL_IMAGE_VIT_OUT_OF_DOMAIN',evidence:'L1 genuine numeric activation changes, NOT a medically valid or causal model explanation',preprocessing:'single native voxel i-j slice z=center, nearest-neighbor 224x224, 2-98 percentile clipped to 0..1, three repeated grayscale channels; ViT natural-image preprocessor NOT matched'};
   st.history.unshift({at:st.results.at,mri:st.results.mri.name,layers:layers.length,changed:layers.find(x=>x.layer===st.selected)?.summary.changed??null});st.history=st.history.slice(0,20);
   try{localStorage.setItem('scept-v3-audit-list',JSON.stringify(st.history))}catch{}
+  // Reject false token mappings if runtime dimensions do not match actual ONNX tensors.
+  window.SCEPT_ACTIVITY3D.update(layers,st.results.mri.revision);
+  window.SCEPT_PATCH?.refresh();
   drawAll();listHistory();$('saveAudit').disabled=false;$('saveLayers').disabled=false;
   $('runProgress').textContent='真实计算完成 · '+layers.length+' 个观测层可查看';
   $('networkState').textContent='已观测 '+layers.length+' 个层级';
@@ -151,7 +158,7 @@ function drawAll(){
  }
  drawNetwork();drawResponse();
 }
-function choose(layer){st.selected=layer;$('layerSelect').value=String(layer);drawAll();window.SCEPT_NETWORK3D?.highlightLayer(layer)}
+function choose(layer){st.selected=layer;$('layerSelect').value=String(layer);drawAll();window.SCEPT_NETWORK3D?.highlightLayer(layer);window.SCEPT_ACTIVITY3D?.highlightLayer(layer)}
 $('layerSelect').onchange=e=>choose(Number(e.target.value));
 window.SCEPT_NETWORK3D_LAYER_SELECTED=(l)=>{if(st.results?.layers.some(x=>x.layer===l))choose(l)};
 function drawNetwork(){window.SCEPT_NETWORK3D?.setObservations(st.results?.layers||[])}
@@ -174,7 +181,7 @@ $('saveAudit').onclick=()=>{if($('modelMode').value==='mri_cnn')return window.SC
 $('saveLayers').onclick=()=>{if($('modelMode').value==='mri_cnn')return window.SCEPT_MRI_CNN?.exportCsv();if(!st.results)return;const rows=['layer,tensor_name,total,changed,mean_abs_delta,max_abs_delta,up,down'];for(const l of st.results.layers){const s=l.summary;rows.push([l.layer,l.probe,s.total,s.changed,s.mean,s.max,s.up,s.down].join(','))}save(rows.join('\n'),'scept-v3-layer-summary.csv','text/csv')};
 $('runExperiment').onclick=run;
 $('modelMode').onchange=()=>{
- if($('modelMode').value==='mri_cnn'){window.SCEPT_MRI_CNN?.activate();return}
+ if($('modelMode').value==='mri_cnn'){window.SCEPT_ACTIVITY3D?.clear();window.SCEPT_MRI_CNN?.activate();return}
  $('modelInfo').textContent='视觉 ViT 并非 MRI 专业模型；只用于证明多层可观察性，不构成医学解释。';
  $('warning').textContent='MRI 来自公开 MNI152 脑模板。ViT 训练于普通图像，MRI 输入是跨域技术验证，不能视为医学诊断或 MRI 专用解释。';
  $('sourceModelHash').textContent=SOURCE_HASH;
@@ -184,6 +191,7 @@ $('modelMode').onchange=()=>{
  st.selected=st.probes.some(x=>x.layer===6)?6:st.probes[0]?.layer||6;selector.value=String(st.selected);
  $('networkState').textContent='ViT 多层观测';
  window.SCEPT_NETWORK3D?.setGraph(st.graph);
+ if(st.results)window.SCEPT_ACTIVITY3D?.update(st.results.layers,st.results.mri.revision);
  drawAll();readyIfPossible();status(st.results?'ViT 观测记录已恢复':'ViT 冻结模型就绪','ready');
 };
 
