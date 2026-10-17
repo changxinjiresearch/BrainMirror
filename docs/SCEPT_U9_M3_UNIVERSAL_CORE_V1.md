@@ -7,7 +7,7 @@ M3 requires the complete U0–U8 regression suite to remain green, genuine Chrom
 ### Plugin SDK
 
 - scept-web/core/scept_sdk.js provides validateAdapter, install, compatibility, template and exampleManifest. It uses the existing U1 kind/capability registry and U7 experiment schema.
-- scept-web/plugins/u9_method_evaluation_sdk_template.js is a standalone trusted script with an explanation adapter and evaluation adapter. Installing it does not require modifying SCEPT's core program. This is a numerical engineering extension, not an established XAI technique.
+- scept-web/plugins/u9_method_evaluation_sdk_template.js is a standalone trusted script with an explanation adapter and evaluation adapter. scept-web/plugins/u9_intervention_sdk_template.js independently registers a real typed-input intervention which the unchanged U5/U6 engine can execute. Installing it does not require modifying SCEPT's core program. This is a numerical engineering extension, not an established XAI technique.
 - SDK compatibility checks declared plugin capabilities, adapter existence, session model SHA-256, actual exposed runtime outputs, requested target/observations, and optional U4 axis profiles. A static pass is not proof the model runs on the given device, or of clinical validity.
 - JSON manifests are data. JavaScript method plugins are **trusted host code**, not isolated or safe-to-run untrusted scripts. Review extensions before installing.
 
@@ -36,7 +36,7 @@ M3 requires the complete U0–U8 regression suite to remain green, genuine Chrom
 
 ### Tests and source
 
-- scept-web/tests/u9_m3_contract.cjs: trusted plugin template and SDK validation; U6/U7 full audit and actual reruns; tamper, wrong model/input/definition, numeric drift, privacy, runtime performance bounds.
+- scept-web/tests/u9_m3_contract.cjs: trusted algorithm/evaluator/intervention plugin templates installed independently and executed on typed inputs, plus SDK validation; U6/U7 full audit and actual reruns; tamper, wrong model/input/definition, numeric drift, privacy, runtime performance bounds.
 - scept-web/tests/u9_m3_browser.cjs: Chrome + genuine ONNX WASM, U9 SDK capability report, measured inference performance, actual downloaded U6 and U7 audit and real replays after re-import, rejects altered file and altered typed source.
 - scept-web/tests/u9_security_check.cjs: static CSP/no-eval, audit policy and Pages workflow safeguards.
 - Existing M1/M2, U8 3D/Token/volume, pretrained ViT/CNN, real MRI, previous v3.1 tests retained.
