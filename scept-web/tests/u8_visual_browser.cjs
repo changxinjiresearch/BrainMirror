@@ -95,8 +95,17 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.locator('#interventionJson').fill(JSON.stringify({
    region:{bounds:[[0,1],[0,1],[0,1],[0,2],[0,2]]},fill:0}));
   await page.locator('#run').click();
+  await page.waitForTimeout(1200);
+  console.log('U8 3D inference diagnostic:',await page.evaluate(()=>({
+   runStatus:document.querySelector('#runStatus').textContent,
+   runState:document.querySelector('#runStatus').dataset.state,
+   ready:SCEPT_UNIVERSAL.getSnapshot().ready,
+   hasAudit:SCEPT_UNIVERSAL.getSnapshot().hasExperiment,
+   scene:SCEPT_UNIVERSAL.getU8Snapshot().hasScene,
+   source:SCEPT_UNIVERSAL.getU8Snapshot().source
+  })));
   await page.waitForFunction(()=>SCEPT_UNIVERSAL.getU8Snapshot().hasScene||
-   document.querySelector('#runStatus').dataset.state==='error',null,{timeout:70000});
+   document.querySelector('#runStatus').dataset.state==='error',null,{timeout:25000});
   view=await snap();assert(view.hasScene,await page.locator('#runStatus').innerText());
   assert.equal(view.source,'u5');
   assert.equal(view.modelInput.layout,'NCDHW');
