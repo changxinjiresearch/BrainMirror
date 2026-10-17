@@ -1,0 +1,36 @@
+{
+  "schema": "scept.u11.m4.acceptance.v1",
+  "title": "SCEPT Research V1 M4 acceptance assessment",
+  "assessment": "M4_NOT_ACHIEVED",
+  "sourceProtocol": "docs/SCEPT_U11_PREREGISTRATION_V0_1.md",
+  "sourceStudy": "results/u11/registered-v0.1/summary.json",
+  "sample": {
+    "pretrainedRealTask": "MNIST-12 (ONNX Model Zoo)",
+    "dataset": "official MNIST 10000 test set",
+    "fixedN": 100,
+    "primaryCorrectN": 98,
+    "actualForwardCalls": 158020
+  },
+  "engineering": {
+    "independentActualReplay": "PASS_BYTE_FOR_BYTE_100_CASES",
+    "trueNuisanceMatchedControlAudit": "PASS_14676_CELLS_ZERO_VIOLATIONS",
+    "trueZeroDoseAudit": "PASS_4892_ROI_RECORDS",
+    "realModelSHA256": "5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd",
+    "officialTestImagesSHA256": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
+    "officialTestLabelsSHA256": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6"
+  },
+  "scientific": {
+    "resultAgainstRandom": "POSITIVE_ON_BOTH_PREDEFINED_AUC_METRICS",
+    "resultAgainstOcclusion": "INFERIOR_BOTH_WITH_HOLM_ADJUSTED_P_APPROX_0_003",
+    "resultAgainstRISELike": "INFERIOR_BOTH_WITH_HOLM_ADJUSTED_P_APPROX_0_003",
+    "nonMonotonicDoseChecks": 755,
+    "fullDoseMonotonicityGate": "NOT_GENERALLY_SATISFIED",
+    "nuisanceAblationBenefit": "NOT_SUPPORTED_ON_THIS_TASK",
+    "GradCAMBaseline": "NOT_YET_EVALUATED",
+    "integratedGradientsBaseline": "NOT_YET_EVALUATED",
+    "independentTaskFamilies": "NOT_YET_EVALUATED",
+    "anatomyCausalMedicalValidity": "NOT_ESTABLISHED"
+  },
+  "claim": "A formally defined algorithm has been objectively and reproducibly tested, including negative outcomes. Broad scientifically validated XAI Research V1 cannot be declared from these results.",
+  "nextGate": "Register separate v2 hypotheses, include true gradient baselines and another pretrained task/model, test on completely untouched data; preserve U10 v1 negative results unmodified."
+}

@@ -182,6 +182,13 @@
 <section class="workspace" id="u10Mechanism">
 <article class="panel">
 <h2>06 / U10 · SCEPT 原创解释机制：受控证据依赖</h2>
+<p class="muted" style="border-left:3px solid #cf9149;padding:8px 10px">
+  <strong>U11 真实科学验证状态（MNIST-12 / 原始测试集100例）：M4 尚未通过。</strong>
+  SCEPT 在预注册删除/插入 AUC 中优于随机排序，但显著落后于传统遮挡和 RISE-like 基线，且观察到剂量非单调结果。
+  完整阴性结果和真实模型复验均已保存在
+  <a href="https://github.com/changxinjiresearch/BrainMirror/blob/main/docs/SCEPT_U11_RESULTS_V0_1.md" target="_blank" rel="noopener noreferrer">U11 实验报告与结果</a>。
+  这是研究评估，不代表 U10 软件不能执行，也不代表具有已验证的医学因果解释能力。
+</p>
 <p class="muted">对冻结 ONNX 模型执行真实 A/B/C：A 为未修改原始输入；B 为共同背景扰动+目标 ROI 不同剂量遮挡；C 为相同背景扰动+匹配对照 ROI 同剂量遮挡。系统按预注册的强度、随机种子、数值对照、响应稳定性及剂量规则进行判别，不自动宣称医学因果性。</p>
 <label for="u10Protocol">科学实验预注册参数 JSON（张量坐标，手动提供真实 ROI，不能推断病灶）</label>
 <textarea id="u10Protocol" rows="16" spellcheck="false">{

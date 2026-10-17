@@ -1,0 +1,22 @@
+{
+  "schema": "scept.u11.matching-parity-audit.v1",
+  "test": "exact U10 target/control ROI mean/std matching after nuisance assignment",
+  "thresholds": {
+    "mean": 0.2,
+    "sd": 0.2
+  },
+  "seeds": [
+    109,
+    211,
+    307
+  ],
+  "n_images": 100,
+  "paired_cells_checked": 14676,
+  "violations": [],
+  "contrasts_checked": 4892,
+  "null_failures": [],
+  "anatomical_matching": "NOT_ESTABLISHED",
+  "n_violations": 0,
+  "n_null_failures": 0,
+  "status": "PASS"
+}
