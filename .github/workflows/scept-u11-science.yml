@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "scripts/u11_real_mnist_benchmark.py"
+      - "scripts/u11_make_research_figures.py"
       - "tests/test_u11_registered_real_benchmark.py"
       - "docs/SCEPT_U11_PREREGISTRATION_V0_1.md"
       - ".github/workflows/scept-u11-science.yml"
@@ -80,7 +81,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: CPU-only pinned packages
-        run: python -m pip install numpy==2.2.6 onnxruntime==1.23.2
+        run: python -m pip install numpy==2.2.6 onnxruntime==1.23.2 matplotlib==3.10.5
       - name: Execute fully preregistered authentic MNIST-12 100-case scientific run
         run: |
           python scripts/u11_real_mnist_benchmark.py \
@@ -104,6 +105,9 @@ jobs:
           assert len(r['statistics']['comparisons'])==6 if r['statistics']['n_primary']>0 else True
           print('PASSED main real scientific provenance/schema; quality:',r['quality']['quality_gate'])
           PY
+      - name: Render publication-quality plots FROM immutable original numeric study records
+        run: |
+          python scripts/u11_make_research_figures.py             --summary results/u11/main/summary.json             --cases results/u11/main/cases.json             --out results/u11/main/figures
       - name: Independently check every real U10 B/C matched control after exact seeded nuisance
         run: |
           python scripts/u11_protocol_audit.py             --cases results/u11/main/cases.json             --assets /tmp/scept-u11-original-sources             --out results/u11/main/u10_matching_parity.json
@@ -139,7 +143,8 @@ jobs:
           set -euo pipefail
           mkdir -p results/u11/registered-v0.1
           cp results/u11/main/summary.json              results/u11/main/cases.json              results/u11/main/cases.csv              results/u11/main/replay_integrity.json              results/u11/main/u10_matching_parity.json              results/u11/registered-v0.1/
-          (cd results/u11/registered-v0.1 && sha256sum *.json *.csv > FILE_HASHES.sha256)
+          cp -r results/u11/main/figures results/u11/registered-v0.1/figures
+          (cd results/u11/registered-v0.1 && find . -type f ! -name FILE_HASHES.sha256 -print0 | sort -z | xargs -0 sha256sum > FILE_HASHES.sha256)
           git config user.name "scept-research-bot"
           git config user.email "scept-research-bot@users.noreply.github.com"
           git add results/u11/registered-v0.1/
