@@ -25,3 +25,5 @@
 #generateProbe{width:100%;border-style:dashed;margin-top:12px;text-align:center}
 
 .graph3d-frame{background:linear-gradient(140deg,#0b2530,#06131c);border:1px solid #27545a;border-radius:12px;overflow:hidden;margin-bottom:12px}.graph3d-frame canvas{display:block;width:100%;height:auto;max-height:350px;touch-action:none;cursor:grab}.graph3d-frame canvas:active{cursor:grabbing}
+
+.vit-auto{background:linear-gradient(145deg,#153c44,#0b2532);border:1px solid #4a9d90;border-radius:12px;padding:16px;margin:16px 0}.vit-auto strong{color:#8cf3d0;font-size:11px;letter-spacing:1.1px}.vit-auto p{color:#bed7d8;font-size:12px;line-height:1.6;margin:10px 0 14px}.vit-auto #transformerStatus{font-size:11px;line-height:1.6}
