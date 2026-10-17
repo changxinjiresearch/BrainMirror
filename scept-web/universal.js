@@ -143,7 +143,7 @@ async function run(){
  }catch(e){note('runStatus','实际推理失败：'+e.message,'error');$('export').disabled=true}
  finally{$('run').disabled=false}
 }
-$('modelPreset').onchange=()=>{$('architectureProfile').value=$('modelPreset').value==='vit'?'vit-token-channel':$('modelPreset').value==='cnn'?'cnn-nhwc':'generic';$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
+$('modelPreset').onchange=()=>{$('architectureProfile').value=$('modelPreset').value==='vit'?'vit-token-channel':$('modelPreset').value==='cnn'?'generic':'generic';$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
 $('modelFile').disabled=true;
 $('inspect').onclick=inspectModel;$('load').onclick=attach;$('run').onclick=run;
 $('perturb').oninput=()=>{$('perturbLabel').textContent=(Number($('perturb').value)>=0?'+':'')+Number($('perturb').value).toFixed(2)};
