@@ -48,6 +48,8 @@ jobs:
           exit 1
       - name: Chrome CPU/WASM, MRI and audit end-to-end test
         run: node scept-web/tests/browser.cjs
+      - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
+        run: node scept-web/tests/v3_brain_mri.cjs
       - name: Chinese SCEPT simplified UI, ROI real ViT and responsive acceptance
         run: node scept-web/tests/chinese_studio.cjs
       - name: Verify deployed Chinese SCEPT studio on real Vercel preview
