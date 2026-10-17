@@ -10,7 +10,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    page.on('pageerror',e=>errors.push('JS '+e.message));
    const base=process.env.SCEPT_TEST_URL || 'http://127.0.0.1:8765';
    const auto=process.env.SCEPT_TEST_AUTOSTART==='1';
-   await page.goto(auto?base+'?run=transformer':base,{waitUntil:'domcontentloaded'});
+   await page.goto(auto?base+'/lab.html?run=transformer':base+'/lab.html',{waitUntil:'domcontentloaded'});
    if(!auto)await page.locator('#transformerDemo').click();
    await page.waitForFunction(()=>{
       const text=document.querySelector('#transformerStatus')?.textContent||'';
