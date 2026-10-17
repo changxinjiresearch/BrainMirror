@@ -1,7 +1,7 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SCEPT v3 · 脑 MRI 模型机制观测台</title><link rel="stylesheet" href="./v3.css"></head>
 <body><div class="app"><aside class="sidebar"><a class="brand" href="#top"><span class="mark">◇</span><span><strong>SCEPT<span class="accent">.</span></strong><small>NEURAL MECHANISM OBSERVATORY</small></span></a><span class="eyebrow">科研工作台</span><a class="side-link active" href="#workbench">◉ 机制观测</a><a class="side-link" href="#audit">▦ 实验记录</a><a class="side-link" href="#protocol">◎ 科学边界</a><div class="side-bottom"><span class="glow"></span> 真实计算 · 本地执行<br><small>不重新训练 · I-JEPA 未接入</small></div></aside>
 <main id="top"><header class="header"><div><span class="eyebrow">BRAINMIRROR / SCEPT V3</span><h1>让脑 MRI 与真实模型计算连接起来<span class="accent">.</span></h1><p>编辑真实 MRI 三维体数据，观察冻结神经网络多个隐藏层的实际计算差异。</p></div><span id="readyLabel" class="ready">正在初始化…</span></header>
-<div class="modebar"><div><b>当前计算模型：预训练视觉 Transformer</b><small>研究预览：模型不是 MRI 专用网络，当前只能证明真实计算响应，不是医学诊断或医学模型解释。</small></div><div class="mode-actions"><button id="runExperiment" class="primary" disabled>模型准备中…</button><span id="runProgress">获取真实 MRI 与预训练模型</span></div></div>
+<div class="modebar"><div class="mode-explainer"><label for="modelMode" class="mode-label">当前计算模型</label><select id="modelMode" aria-label="选择已训练模型"><option value="vit">视觉 Transformer · 五层真实观测（技术验证）</option><option value="mri_cnn">MRI 训练 EfficientNetB3 · 分类响应（研究模型）</option></select><small id="modelInfo">视觉 ViT 并非 MRI 专业模型；只用于证明多层可观察性，不构成医学解释。</small></div><div class="mode-actions"><button id="runExperiment" class="primary" disabled>模型准备中…</button><span id="runProgress">获取真实 MRI 与预训练模型</span></div></div>
 <div id="warning" class="warning">MRI 来自公开 MNI152 脑模板。模型使用公开预训练视觉 ViT，输入为从三维 MRI 提取的二维切片，当前未通过医学预处理一致性和临床任务有效性验证。</div>
 <section class="workspace" id="workbench">
 <article class="panel"><div class="panel-title"><span>01 / MRI INPUT</span><h2>三维脑 MRI · 编辑区域</h2><p>这是真实 MRI 衍生的脑模板，不是随机条纹。点击切片选中位置，在三维体数据中修改局部球形区域。</p></div>
@@ -26,4 +26,4 @@
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./v3_mri.js"></script>
-<script src="./v3_engine.js"></script></body></html>
+<script src="./v3_engine.js"></script><script src="./v3_mri_cnn.js"></script></body></html>
