@@ -50,6 +50,10 @@ jobs:
         run: node scept-web/tests/v31_token_mri.cjs
       - name: Verify additional real Query Key Patch Attention and Residual tensor probes
         run: node scept-web/tests/v31_extra_outputs.cjs
+      - name: Verify deployed SCEPT v3.1 preview by real remote Chromium visit
+        env:
+          SCEPT_V31_URL: https://brainmirror-observatory-434y4izbp-jayson-s-projects6.vercel.app/v3.html
+        run: node scept-web/tests/v31_token_mri.cjs
       - name: Discover additional exposed true ViT Q K and representation observation probes
         continue-on-error: true
         run: node scept-web/tests/v31_probe_discovery.cjs
