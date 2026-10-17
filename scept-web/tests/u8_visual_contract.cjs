@@ -60,7 +60,7 @@ assert.equal(capture.anatomicalStatus,'UNVERIFIED');
 assert.equal(capture.resampled,false);
 const sliceA=V.plane(capture,'axial',2);
 assert.equal(sliceA.rows,4);assert.equal(sliceA.cols,5);
-assert.equal(sliceA.delta[1*5+3],14.25-a[2*4*5+1*5+3]);
+assert(Math.abs(sliceA.delta[1*5+3]-(14.25-a[2*4*5+1*5+3]))<1e-6,'Float32 visual delta should match actual input to float32 tolerance');
 assert.equal(V.plane(capture,'coronal',1).delta[2*5+3],sliceA.delta[8]);
 assert.equal(V.plane(capture,'sagittal',3).delta[2*4+1],sliceA.delta[8]);
 assert.throws(()=>V.plane(capture,'axial',4),e=>e.code==='INVALID_SLICE');
