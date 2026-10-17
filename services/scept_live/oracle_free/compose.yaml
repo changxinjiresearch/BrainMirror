@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: ../../..
+      dockerfile: services/scept_live/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SCEPT_MODEL_CACHE=/var/cache/scept
+      - OMP_NUM_THREADS=2
+      - MKL_NUM_THREADS=2
+      - OPENBLAS_NUM_THREADS=2
+    volumes:
+      - model_cache:/var/cache/scept
+    mem_limit: 10g
+    cpus: 2
+    networks:
+      - private_compute
+    security_opt:
+      - no-new-privileges:true
+  https:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      - SCEPT_HOST=${SCEPT_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - private_compute
+    depends_on:
+      - api
+
+networks:
+  private_compute:
+    internal: false
+
+volumes:
+  model_cache:
+  caddy_data:
+  caddy_config:

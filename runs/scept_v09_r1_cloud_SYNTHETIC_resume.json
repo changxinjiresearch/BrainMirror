@@ -1,0 +1,14 @@
+{
+  "actual_patient_training": "NOT_PERFORMED",
+  "backup_generations": 2,
+  "best_model_verified": true,
+  "data": "synthetic_only_NO_BraTS_patient_NO_pretrained_model",
+  "independent_heldout_dice": "NOT_MEASURED",
+  "local_corruption_restored_from_sha256_verified_backup": true,
+  "restored_weight_tensors_bit_identical": true,
+  "resumed_steps": 8,
+  "schema": "scept/r1-synthetic-fault-drill/v1",
+  "stopped_steps": 3,
+  "uninterrupted_steps": 8,
+  "validation_history_identical": true
+}
