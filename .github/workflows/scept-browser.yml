@@ -48,6 +48,8 @@ jobs:
           exit 1
       - name: Verify SCEPT v3.1 actual Token/channel fine-grained 3D and input Patch end to end
         run: node scept-web/tests/v31_token_mri.cjs
+      - name: Verify additional real Query Key Patch Attention and Residual tensor probes
+        run: node scept-web/tests/v31_extra_outputs.cjs
       - name: Discover additional exposed true ViT Q K and representation observation probes
         continue-on-error: true
         run: node scept-web/tests/v31_probe_discovery.cjs
