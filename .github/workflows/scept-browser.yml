@@ -46,17 +46,18 @@ jobs:
           python -m http.server 8765 -d scept-web >/tmp/scept-http.log 2>&1 &
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && exit 0; sleep 1; done
           exit 1
+      - name: Verify SCEPT v3.1 actual Token/channel fine-grained 3D and input Patch end to end
+        run: node scept-web/tests/v31_token_mri.cjs
+      - name: Discover additional exposed true ViT Q K and representation observation probes
+        continue-on-error: true
+        run: node scept-web/tests/v31_probe_discovery.cjs
       - name: Chrome CPU/WASM, MRI and audit end-to-end test
         run: node scept-web/tests/browser.cjs
       - name: Verify genuine 3D ONNX topology navigation, orbit, zoom and per-layer dependency drilldown
         run: node scept-web/tests/v3_network3d.cjs
       - name: Verify genuine 3D A/B MRI activity, fixed scales, changed ROI and zero-delta controls
         run: node scept-web/tests/v3_activation_compare.cjs
-      - name: Verify SCEPT v3.1 actual Token/channel fine-grained 3D and input Patch end to end
-        run: node scept-web/tests/v31_token_mri.cjs
-      - name: Discover additional exposed true ViT Q K and representation observation probes
-        continue-on-error: true
-        run: node scept-web/tests/v31_probe_discovery.cjs
+
       - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
         run: node scept-web/tests/v3_brain_mri.cjs
       - name: Verify true MRI-trained EfficientNetB3 paired NIfTI ROI response in browser
