@@ -7,7 +7,7 @@
    All transforms use genuine 3D camera rotation/perspective, WebGL2 if available.
 */
 (function(){
-const canvas=document.getElementById('networkCanvas');if(!canvas)return;
+let canvas=document.getElementById('networkCanvas');if(!canvas)return;
 const $=id=>document.getElementById(id);
 const state={graph:null,mode:'overview',layer:6,selected:null,nodes:[],edges:[],allLayerCounts:[],
  yaw:-.3,pitch:.16,distance:15,backend:null,gl:null,ctx:null,observed:new Map(),probeNames:new Map(),
@@ -20,8 +20,11 @@ const decodeLayer=(name)=>{
 };
 function initialize(){
  try{
+  const probeCanvas=document.createElement('canvas');
+  const preflight=probeCanvas.getContext('webgl2',{alpha:false});
+  if(!preflight)throw Error('WebGL2 unavailable (software perspective fallback)');
   const gl=canvas.getContext('webgl2',{alpha:false,antialias:true,preserveDrawingBuffer:true});
-  if(!gl)throw Error('WebGL2 unavailable');
+  if(!gl)throw Error('WebGL2 unavailable on primary viewport');
   function shader(type,code){const s=gl.createShader(type);gl.shaderSource(s,code);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error('Shader '+gl.getShaderInfoLog(s));return s}
   const vertex=`#version 300 es
    precision highp float;
@@ -54,10 +57,20 @@ function initialize(){
   state.gl={gl,program,buffer,uniform:Object.fromEntries(['uYaw','uPitch','uDistance','uScale','uAspect','uPoint'].map(n=>[n,gl.getUniformLocation(program,n)]))};
   state.backend='webgl2';
  }catch(e){
-  // Software projection fallback keeps real 3D coordinates, depth and camera;
-  // no spurious scientific values are introduced when WebGL is unavailable.
-  try{state.ctx=canvas.getContext('2d');state.backend='perspective-fallback'}catch{}
-  if(!state.ctx){state.backend='unavailable';$('networkStats').textContent='当前浏览器无法创建三维渲染上下文';}
+  // WebGL and Canvas2D are mutually exclusive on the same canvas once chosen.
+  // If WebGL context/shader creation fails, replace the *unbound* canvas
+  // before initializing the fallback, then attach interaction handlers.
+  state.rendererError=String(e.message||e);
+  let ctx=null;
+  try{ctx=canvas.getContext('2d')}catch{}
+  if(!ctx){
+   const replacement=canvas.cloneNode(false);
+   canvas.parentNode.replaceChild(replacement,canvas);
+   canvas=replacement;
+   try{ctx=canvas.getContext('2d')}catch{}
+  }
+  state.ctx=ctx;
+  state.backend=ctx?'perspective-fallback':'unavailable';
  }
 }
 function layerOf(node,id){return state.layeringKind==='transformer'?decodeLayer(node.name):Math.min(11,Math.floor(id*12/Math.max(1,state.graphNodes)))}
@@ -235,6 +248,6 @@ function bind(){
 initialize();bind();paint();updateUI();
 window.SCEPT_NETWORK3D={
  setGraph,setObservations,highlightLayer:setLayer,enterLayer,overview,selectNode,
- getSnapshot:()=>({backend:state.backend,mode:state.mode,layer:state.layer,yaw:state.yaw,pitch:state.pitch,distance:state.distance,displayNodes:state.nodes.length,displayEdges:state.edges.length,totalNodes:state.graphNodes,totalEdges:state.graphEdges,edgesVerified:state.edges.every(e=>state.graph?.edges.some(real=>real.from===e.from&&real.to===e.to&&real.tensor===e.tensor)),observedProducers:state.probeNames.size,selected:state.selected,layoutSerial:state.layoutSerial,pickTarget:state.nodes.length?{id:state.nodes[Math.floor(state.nodes.length/2)].id,...screenPoint(state.nodes[Math.floor(state.nodes.length/2)].p)}:null})
+ getSnapshot:()=>({backend:state.backend,rendererError:state.rendererError||null,mode:state.mode,layer:state.layer,yaw:state.yaw,pitch:state.pitch,distance:state.distance,displayNodes:state.nodes.length,displayEdges:state.edges.length,totalNodes:state.graphNodes,totalEdges:state.graphEdges,edgesVerified:state.edges.every(e=>state.graph?.edges.some(real=>real.from===e.from&&real.to===e.to&&real.tensor===e.tensor)),observedProducers:state.probeNames.size,selected:state.selected,layoutSerial:state.layoutSerial,pickTarget:state.nodes.length?{id:state.nodes[Math.floor(state.nodes.length/2)].id,...screenPoint(state.nodes[Math.floor(state.nodes.length/2)].p)}:null})
 };
 })();
