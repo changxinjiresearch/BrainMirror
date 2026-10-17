@@ -65,7 +65,7 @@ try{
  assert.equal(zero.deltaScale,first.v.deltaScale,'0-delta test must not auto-calibrate');
  await page.locator('#responseDelta').click();
  const zeroDelta=await page.evaluate(()=>SCEPT_NETWORK3D.getSnapshot());
- assert(zeroDelta.measuredNodes.every(n=>Math.abs(n.deltaSize-15)<1e-8),'Measured node size should reflect true ZERO delta');
+ assert(zeroDelta.measuredNodes.every(n=>Math.abs(n.deltaSize-8)<1e-8),'Zero difference must render as a small neutral node, not fake activity');
  await page.locator('#responseCalibrate').click();
  const calibrated=await page.evaluate(()=>SCEPT_NETWORK3D.getSnapshot());
  assert(calibrated.deltaScale>0,'Zero-calibrated scale must remain numerically safe');
