@@ -220,7 +220,7 @@
    verdict:'not_evaluable',reason:'Zero-dose is an explicit null calibration cell, not an explanation',
    strength:0,scientificStatus:'NUMERIC_CONTROL_CALIBRATION_ONLY'};
   return{schema:'scept.u10.test.v1',test:'paired-specificity',
-   verdict:verdict(result.score>=minimum&&result.targetedEffect>0&&result.controlledMagnitude>0),
+   verdict:verdict(result.score>0&&result.score>=minimum&&result.targetedEffect>0&&result.controlledMagnitude>0),
    observed:result.score,threshold:minimum,controlEffect:result.matchedControlEffect,
    strength:result.strength,scientificStatus:'NUMERIC_PREDECLARED_CONTROL_ONLY'};
  }
@@ -267,7 +267,7 @@
    scores=max.map(m=>m.score);
   const medianControlled=median(max.map(m=>m.controlledMagnitude)),
    medianTarget=median(abs),medianSpecificity=median(scores),
-   positiveFraction=scores.filter(x=>x>=q.minSpecificity).length/scores.length,
+   positiveFraction=scores.filter(x=>x>0&&x>=q.minSpecificity).length/scores.length,
    medianSigned=median(controlled),effectSpread=Math.max(...controlled.map(x=>Math.abs(x-medianSigned))),
    direction=q.expectedSign===null?sign(medianSigned):q.expectedSign,
    signAgreement=controlled.filter(x=>sign(x)===direction).length/d.length;
@@ -284,7 +284,7 @@
   }
   const gates=[
    {name:'paired-control-specificity',value:medianSpecificity,threshold:q.minSpecificity,
-    verdict:verdict(medianSpecificity>=q.minSpecificity&&medianTarget>0)},
+    verdict:verdict(medianSpecificity>0&&medianSpecificity>=q.minSpecificity&&medianTarget>0)},
    {name:'controlled-intervention-effect',value:medianControlled,threshold:q.minTargetEffect,
     verdict:verdict(medianControlled>=q.minTargetEffect&&medianControlled>0)},
    {name:'replicate-specificity',value:positiveFraction,threshold:q.minPositiveFraction,
