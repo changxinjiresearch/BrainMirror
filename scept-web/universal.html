@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SCEPT Universal Core · 模型接入实验台 U0–U2</title>
+<title>SCEPT Universal Core · U3–U4 多模型观测</title>
 <link rel="stylesheet" href="./universal.css"></head>
 <body>
 <header><div class="logo">◇ SCEPT<span> / UNIVERSAL CORE</span></div><nav><a href="./v3.html">MRI 观测器 v3.1</a><a href="./index.html">原视觉演示</a></nav></header>
 <main>
-<section class="hero"><span class="pill">U0–U2 工程验证</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
+<section class="hero"><span class="pill">U3–U4 / M1 工程验收</span><h1>一个核心，接入不同的真实模型。</h1><p>模型与观察点由实际 ONNX 文件决定。文件在当前浏览器中进行 CPU 推理；本页面不训练模型、不猜测任务语义，也不把数值变化自动称为解释。</p></section>
 <section class="workspace">
 <article class="panel"><h2>01 / 导入冻结模型</h2>
 <label for="modelPreset">模型来源</label>
@@ -15,6 +15,15 @@
 <option value="local">上传本地 ONNX 模型</option>
 </select>
 <label for="modelFile" class="file-label">本地模型（选择“上传本地”时需要）<input id="modelFile" type="file" accept=".onnx,application/octet-stream"></label>
+<label for="architectureProfile">U4 模型观测适配器（明确声明轴语义；不猜测 Token/通道数）</label>
+<select id="architectureProfile">
+<option value="vit-token-channel">ViT / [batch, tokens, channels]</option>
+<option value="cnn-nchw">CNN / [batch, channels, height, width]</option>
+<option value="cnn-nhwc">CNN / [batch, height, width, channels]</option>
+<option value="generic">未知模型 / 只观测真实张量，不推断轴</option>
+<option value="legacy-vit-197x192">旧版专用 ViT / 严格 [1,197,192]（仅兼容层）</option>
+</select>
+<p class="muted">轴与模型结构由适配器显式提供；所有观测值均来自 ONNX Runtime 实际结果。无法确认时请选择「未知模型」。</p>
 <label for="probes">可选观测点：填写模型实际存在的中间张量名称，每行一个（最多 16 个）</label>
 <textarea id="probes" rows="3" placeholder="先点击检查模型，浏览公开的实际张量，再选择要导出的观察点"></textarea>
 <div class="buttons"><button id="inspect" class="primary">检查模型结构</button><button id="load" disabled>接入并验证模型</button></div>
@@ -38,15 +47,17 @@
 </section>
 <section class="explain"><h2>科学与架构边界</h2>
 <div class="bullets">
-<p><strong>已实现（U0–U2）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
-<p><strong>尚未完成（U3 之后）：</strong>通用医学数据预处理、任务解释目标、任意隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
+<p><strong>已实现（U0–U4）：</strong>统一模型适配器注册、能力声明、参数类型/维度校验、模型来源哈希、真实 ONNX 结构和中间张量检查、浏览器 CPU 前向推理以及数值对比。</p>
+<p><strong>仍未完成（U5 之后）：</strong>通用医学数据预处理、任务解释目标、任意隐藏状态干预、跨模型统一 Token 语义、因果解释与解释效果评价。</p>
 <p><strong>重要：</strong>导入新模型不等于自动获得可靠解释；模型必须可在当前 ONNX Runtime Web/WASM 执行。只对已在图元数据中声明的中间张量提供观测，不生成假值。</p>
 </div></section>
 </main>
-<footer>SCEPT Universal Core · U0–U2 开发预览 · 无 GPU 训练 · 浏览器本地执行</footer>
+<footer>SCEPT Universal Core · U3–U4 M1 开发预览 · 无 GPU 训练 · 浏览器本地执行</footer>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./core/scept_core.js"></script>
 <script src="./core/onnx_probes.js"></script>
 <script src="./core/onnx_adapter.js"></script>
+<script src="./core/scept_data_adapter.js"></script>
+<script src="./core/scept_observation.js"></script>
 <script src="./universal.js"></script></body></html>

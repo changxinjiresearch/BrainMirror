@@ -4,6 +4,10 @@
 const $=id=>document.getElementById(id),registry=SCEPT_CORE.createRegistry();
 const adapter=SCEPT_ONNX_ADAPTER.make({wasmPaths:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/'});
 registry.register('model',adapter);
+const dataAdapter=SCEPT_DATA_ADAPTER.make(SCEPT_CORE);
+registry.register('data',dataAdapter);
+const observationAdapter=SCEPT_OBSERVATION.make();
+registry.register('observation',observationAdapter);
 const PRESETS={
  vit:{id:'pretrained-vit-tiny',url:'https://huggingface.co/onnx-community/vit-tiny-patch16-224-ONNX/resolve/ebffd7b9c0c53b51bada44116abd8f01aed41be6/onnx/model.onnx',sha256:'32f1cf3b4868cc44757814cbf6237ae5a3658a45980bf0fe93914dca77b815e3'},
  cnn:{id:'mri-cnn-experimental',url:'https://huggingface.co/Udit013/brain-tumor-efficientnetb3/resolve/main/efficientnetb3.onnx',sha256:'320b1ef648f3da5216f6ee0374349324b3cb00a76bebf7dbd1c3796e6155991c'}
@@ -109,41 +113,30 @@ async function run(){
  $('run').disabled=true;
  try{
   note('runStatus','准备真实 ONNX 输入，运行冻结模型前向计算 A…');
-  const {feeds,source}=buildInputs(),edited={};for(const [name,t]of Object.entries(feeds))edited[name]={type:t.type,dims:t.dims.slice(),data:new t.data.constructor(t.data)};
-  const first=state.session.description.inputs[0],amount=Number($('perturb').value),out=edited[first.name];
-  const n=Math.max(1,Math.floor(out.data.length*.01));
-  if(amount!==0){
-   if(!['float32','float64'].includes(out.type))throw Error('演示强度干预只支持浮点输入；其他数据类型需要正式干预适配器');
-   for(let i=0;i<n;i++)out.data[i]+=amount;
-  }
-  const a=await state.session.run(feeds);
-  note('runStatus','正在运行同一冻结模型的第二次真实推理 B…');
+  const {feeds,source}=buildInputs();
+  const prepared=dataAdapter.prepare(state.session.description,feeds);
+  const amount=Number($('perturb').value);
+  const {edited,intervention}=dataAdapter.offset(prepared,state.session.description,{delta:amount});
+  const a=await state.session.run(prepared);
+  note('runStatus','正在使用相同核心接口运行第二次真实冻结模型推理 B…');
   const b=await state.session.run(edited);
-  const observations=[];
-  for(const meta of state.session.description.outputs){
-   const x=a[meta.name],y=b[meta.name];
-   if(!x||!y)throw Error('缺少真实模型输出 '+meta.name);
-   if(x.data.length!==y.data.length)throw Error('A/B 输出尺寸不一致');
-   let mean=0,max=0,changed=0;
-   const samples=[];
-   for(let i=0;i<x.data.length;i++){
-    const va=Number(x.data[i]),vb=Number(y.data[i]),delta=Math.abs(vb-va);
-    if(!Number.isFinite(delta))throw Error('模型返回非有限值 '+meta.name);
-    mean+=delta;max=Math.max(max,delta);if(delta>1e-7)changed++;
-    if(i<12)samples.push({index:i,A:va,B:vb,delta:vb-va});
-   }
-   observations.push({tensor:meta.name,type:x.type,shape:x.dims,source:state.loaded.probes.includes(meta.name)?'selected_real_intermediate':'actual_graph_output',
-    total:x.data.length,changed,mean_abs_delta:mean/x.data.length,max_abs_delta:max,first12:samples});
-  }
-  state.audit={schema:'scept.core.u2.paired_inference.v1',at:new Date().toISOString(),modelId:state.loaded.modelId,
-   originalModelSHA256:state.session.sha256,adapter:state.loaded.adapterId,inputs:state.session.description.inputs,
-   inputSource:source,intervention:{kind:'numeric-first-one-percent',amount,elementCount:n,semantics:'engineering test; not clinically meaningful'},
+  // U4: one architecture-independent observation API for ViT/CNN/local ONNX.
+  // Runtime tensor dimensions, not a baked-in [1,197,192], govern every metric.
+  const profileId=$('architectureProfile').value;
+  const observations=observationAdapter.observePair({
+   description:state.session.description,baseline:a,edited:b,
+   probes:state.loaded.probes||[],profileId,maxAxisUnits:4096
+  });
+  const n=intervention.elementCount;
+  state.audit={schema:'scept.core.u4.cross_architecture.v1',at:new Date().toISOString(),modelId:state.loaded.modelId,
+   originalModelSHA256:state.session.sha256,adapter:state.loaded.adapterId,dataAdapter:dataAdapter.id,observationAdapter:observationAdapter.id,architectureProfile:profileId,inputs:state.session.description.inputs,
+   inputSource:source,intervention,
    outputs:observations,limits:['No diagnosis','No validated explanation','No training','Only explicitly declared outputs']};
   const container=$('results');container.replaceChildren();
   for(const row of observations){
    const box=document.createElement('div');box.className='result';
    const title=document.createElement('b');title.textContent=row.tensor;
-   const details=document.createElement('small');details.textContent=row.source+' · ['+row.shape.join('×')+'] · 变化 '+row.changed+'/'+row.total+' · 平均 |Δ| '+row.mean_abs_delta.toPrecision(5)+' · 最大 |Δ| '+row.max_abs_delta.toPrecision(5);
+   const details=document.createElement('small');details.textContent=row.source+' · ['+row.shape.join('×')+'] · '+row.axes.map(a=>a.role+':'+a.size).join(' / ')+' · 变化 '+row.changed+'/'+row.total+' · 平均 |Δ| '+row.mean_abs_delta.toPrecision(5)+' · 最大 |Δ| '+row.max_abs_delta.toPrecision(5);
    const raw=document.createElement('code');raw.textContent='前 4 项：'+row.first12.slice(0,4).map(x=>x.A.toPrecision(4)+'→'+x.B.toPrecision(4)).join('，');
    box.append(title,details,raw);container.append(box);
   }
@@ -152,7 +145,7 @@ async function run(){
  }catch(e){note('runStatus','实际推理失败：'+e.message,'error');$('export').disabled=true}
  finally{$('run').disabled=false}
 }
-$('modelPreset').onchange=()=>{$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
+$('modelPreset').onchange=()=>{$('architectureProfile').value=$('modelPreset').value==='vit'?'vit-token-channel':$('modelPreset').value==='cnn'?'generic':'generic';$('modelFile').disabled=$('modelPreset').value!=='local';$('inspect').disabled=false;$('load').disabled=true;$('run').disabled=true};
 $('modelFile').disabled=true;
 $('inspect').onclick=inspectModel;$('load').onclick=attach;$('run').onclick=run;
 $('perturb').oninput=()=>{$('perturbLabel').textContent=(Number($('perturb').value)>=0?'+':'')+Number($('perturb').value).toFixed(2)};
@@ -162,5 +155,6 @@ $('export').onclick=()=>{
  const link=document.createElement('a');link.href=url;link.download='scept-u2-real-onnx-audit.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 };
 window.SCEPT_UNIVERSAL={registry,inspectModel,attach,run,getSnapshot:()=>({inspected:!!state.inspect,modelId:state.loaded?.modelId||null,ready:!!state.session,
- inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit};
+ inputNames:state.session?.description.inputs.map(x=>x.name)||[],outputNames:state.session?.description.outputs.map(x=>x.name)||[],probes:state.loaded?.probes||[],profile:$('architectureProfile').value,hasExperiment:!!state.audit,hash:state.hash}),getAudit:()=>state.audit,observePair:observationAdapter.observePair};
+
 })();
