@@ -4,7 +4,7 @@
 (function(){
 const $=id=>document.getElementById(id),cv=$('token3dCanvas'),ctx=cv.getContext('2d');
 const s={raw:null,data:null,kind:'operators',scope:'all',layer:6,selected:null,patch:null,patchMap:null,
- yaw:-.44,pitch:.25,dist:14,scaleA:null,scaleD:null,runRevision:null,version:0,mouse:null,channels:null};
+ yaw:-.82,pitch:.20,dist:14,scaleA:null,scaleD:null,colorLo:null,colorHi:null,runRevision:null,version:0,mouse:null,channels:null};
 const clamp=(n,a,b)=>Math.max(a,Math.min(n,b)),fmt=n=>Math.abs(n)<.0001&&n!==0?n.toExponential(3):n.toFixed(5);
 const mode=()=>SCEPT_NETWORK3D.getSnapshot().visualMode;
 function nodes(){
@@ -13,8 +13,8 @@ function nodes(){
  for(const l of s.data.layers){
   if(s.scope==='layer'&&l.layer!==s.layer)continue;
   for(const t of l.tokens)nodes.push({layer:l.layer,token:t.token,info:t,
-    pos:t.isCls?[(s.scope==='all'?l.layer-6:0)*1.25,2.8,0]:
-    [(s.scope==='all'?l.layer-6:0)*1.25,(t.row-6.5)*.38,(t.col-6.5)*.38]});
+    pos:t.isCls?[(s.scope==='all'?l.layer-6:0)*1.9,2.8,(s.scope==='all'?l.layer-6:0)*-.32]:
+    [(s.scope==='all'?l.layer-6:0)*1.9,(t.row-6.5)*.38,(t.col-6.5)*.38-(s.scope==='all'?l.layer-6:0)*.32]});
  }
  return nodes;
 }
@@ -25,12 +25,37 @@ function project(p,pane,count){
  return{x:pane*ww+ww*.5+x*k*ww*.47,y:hh*.5-y*k*hh*.47,depth:dep};
 }
 function displayValue(t,m){return m==='before'?t.before:m==='after'?t.after:t.rms}
+// One shared, robust A/B color domain derived ONLY from actual measured
+// original/modified token magnitudes on the first completed inference.
+function quantile(sorted,p){const v=(sorted.length-1)*p,i=Math.floor(v);return sorted[i]+(sorted[Math.min(sorted.length-1,i+1)]-sorted[i])*(v-i)}
+const COLOR_STOPS=[[.10,.24,.39],[.16,.54,.66],[.35,.77,.69],[.96,.76,.37],[.93,.43,.28]];
+function palette(v){
+ const t=clamp(v,0,1)*(COLOR_STOPS.length-1),i=Math.min(COLOR_STOPS.length-2,Math.floor(t)),f=t-i;
+ return 'rgb('+COLOR_STOPS[i].map((x,k)=>Math.round(255*(x+(COLOR_STOPS[i+1][k]-x)*f))).join(',')+')';
+}
 function style(t,m){
- const v=displayValue(t,m),scale=m==='delta'?s.scaleD:s.scaleA;
- const z=v/Math.max(1e-12,v+(scale||1)),zero=m==='delta'&&v<=1e-9;
- return {r:zero?2.8:3.5+8*z,
-  fill:zero?'#57737b':m==='delta'?'rgb('+Math.round(60+194*z)+','+Math.round(154+57*z)+','+Math.round(172-91*z)+')':
-  'rgb('+Math.round(60+120*z)+','+Math.round(125+112*z)+','+Math.round(151-63*z)+')'};
+ const v=displayValue(t,m),zero=m==='delta'&&v<=1e-9;
+ if(zero)return{r:1.8,fill:'#435d67',deltaOutline:0};
+ if(m==='delta'){
+   const z=v/(Math.max(1e-12,s.scaleD||1)+v);
+   return{r:2.1+3.2*z,fill:'rgb('+Math.round(60+194*z)+','+Math.round(154+57*z)+','+Math.round(172-91*z)+')',deltaOutline:0};
+ }
+ const span=Math.max(1e-12,(s.colorHi??1)-(s.colorLo??0));
+ const z=clamp((v-(s.colorLo??0))/span,0,1);
+ const q=t.rms/(Math.max(1e-12,s.scaleD||1)+t.rms);
+ // Do not artificially modify base activations. The B-only gold outline is
+ // explicitly the measured paired RMS delta, not B's activation magnitude.
+ return{r:2.3+1.0*z,fill:palette(z),deltaOutline:m==='after'&&t.rms>1e-7?q:0};
+}
+function pixelRadius(node,pane,count,desired){
+ // Hard cap to the distance between adjacent genuine spatial tokens.
+ // This prevents 196 discs blending into a solid plate at any zoom level.
+ const ref=project(node.pos,pane,count);
+ const y=project([node.pos[0],node.pos[1]+.38,node.pos[2]],pane,count);
+ const z=project([node.pos[0],node.pos[1],node.pos[2]+.38],pane,count);
+ const dy=Math.hypot(ref.x-y.x,ref.y-y.y),dz=Math.hypot(ref.x-z.x,ref.y-z.y);
+ const spacing=Math.min(dy,dz);
+ return clamp(Math.min(desired,spacing*.30),1.0,s.scope==='all'?3.0:3.6);
 }
 function render(){
  if(s.kind!=='tokens')return;
@@ -42,12 +67,18 @@ function render(){
   const m=modes[pane],width=w/modes.length;ctx.save();ctx.beginPath();ctx.rect(pane*width,0,width,h);ctx.clip();
   const drawn=arr.map(n=>({...n,p:project(n.pos,pane,modes.length)})).sort((a,b)=>a.p.depth-b.p.depth);
   for(const n of drawn){
-   const vis=style(n.info,m),active=s.selected?.layer===n.layer&&s.selected?.token===n.token,
+   const vis=style(n.info,m),radius=pixelRadius(n,pane,modes.length,vis.r),
+     active=s.selected?.layer===n.layer&&s.selected?.token===n.token,
      patchSelected=s.patch!==null&&n.token===s.patch+1;
-   if(patchSelected){ctx.strokeStyle='#87c4ff';ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(n.p.x,n.p.y,vis.r+5,0,Math.PI*2);ctx.stroke()}
-   if(active){ctx.strokeStyle='#ffb862';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(n.p.x,n.p.y,vis.r+3,0,Math.PI*2);ctx.stroke()}
-   ctx.fillStyle=vis.fill;ctx.beginPath();ctx.arc(n.p.x,n.p.y,vis.r,0,Math.PI*2);ctx.fill();
-   if(n.info.isCls){ctx.strokeStyle='#d9bbf8';ctx.lineWidth=1;ctx.stroke()}
+   if(vis.deltaOutline>.08){
+     ctx.strokeStyle='rgba(247,184,87,'+Math.min(.95,.18+vis.deltaOutline*1.4)+')';
+     ctx.lineWidth=.7+vis.deltaOutline*1.3;
+     ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius+1.3,0,Math.PI*2);ctx.stroke();
+   }
+   if(patchSelected){ctx.strokeStyle='#84c8ff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius+2.3,0,Math.PI*2);ctx.stroke()}
+   if(active){ctx.strokeStyle='#ffbb76';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius+3,0,Math.PI*2);ctx.stroke()}
+   ctx.fillStyle=vis.fill;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius,0,Math.PI*2);ctx.fill();
+   if(n.info.isCls){ctx.strokeStyle='#d9bbf8';ctx.lineWidth=.8;ctx.stroke()}
   }
   ctx.fillStyle='#97c3bd';ctx.font='12px sans-serif';
   ctx.fillText(m==='before'?'A · 原始真实激活':m==='after'?'B · 修改后真实激活':'真实逐 Token RMS 差异 Δ',pane*width+12,20);
@@ -58,7 +89,8 @@ function render(){
  const stale=s.runRevision!==null&&SCEPT_MRI.state.revision!==s.runRevision;
  $('tokenDepth').textContent=(s.scope==='all'?'五层概览':'第 '+s.layer+' 层')+' · '+arr.length+' 个真实 Token';
  $('token3dNote').textContent=(stale?'输入已修改，显示的是上一次计算结果；请重新计算。':'当前显示最近一次推理的真实张量数据。')+
- ' 蓝色轮廓：选中输入 Patch；黄色轮廓：选中 Token；没有绘制未经测量的注意力连接。';
+ (mode()==='delta'?' Token 颜色表示逐通道 RMS 差异。':' A/B 共用首次真实计算校准的颜色区间 ['+fmt(s.colorLo||0)+', '+fmt(s.colorHi||0)+']，B 中金色细环表示真实 RMS 差异；原始激活本身可能接近。')+
+ ' 节点半径限制为邻近 Token 屏幕距离的 30%，避免遮挡；没有绘制未经测量的注意力连接。';
 }
 function choose(layer,token){
  if(!s.data?.layers.some(l=>l.layer===layer)||!Number.isInteger(token)||token<0||token>=197)return false;
@@ -95,7 +127,12 @@ function show(k){
  $('tokenDetails').hidden=k!=='tokens'||!s.selected;
  for(const [id,val]of [['viewOperators','operators'],['viewTokens','tokens']]){
   $(id).classList.toggle('active',k===val);$(id).setAttribute('aria-pressed',String(k===val))}
- if(k==='tokens'){SCEPT_NETWORK3D.setVisualMode('delta');render()}
+ if(k==='tokens'){
+  // Favor a readable, inspectable single-layer grid rather than compressing
+  // all 985 token discs into narrow A/B panes on a Chromebook.
+  s.scope='layer';s.dist=10;
+  SCEPT_NETWORK3D.setVisualMode('delta');render();
+}
  return true;
 }
 function update(raw,mriRevision){
@@ -108,13 +145,16 @@ function update(raw,mriRevision){
 }
 function recalibrate(){
  if(!s.data)return;
- s.scaleA=Math.max(1e-12,...s.data.layers.flatMap(l=>l.tokens.flatMap(t=>[t.before,t.after])));
+ const values=s.data.layers.flatMap(l=>l.tokens.flatMap(t=>[t.before,t.after])).sort((a,b)=>a-b);
+ s.colorLo=quantile(values,.08);s.colorHi=quantile(values,.92);
+ if(s.colorHi-s.colorLo<1e-7){s.colorHi=s.colorLo+Math.max(1e-7,Math.abs(s.colorLo)*.1)}
+ s.scaleA=Math.max(1e-12,...values);
  s.scaleD=Math.max(1e-12,...s.data.layers.flatMap(l=>l.tokens.map(t=>t.rms)));
  render();
 }
-function clear(){s.data=null;s.raw=null;s.selected=null;s.scaleA=null;s.scaleD=null;s.kind='operators';$('viewTokens').disabled=true;show('operators')}
+function clear(){s.data=null;s.raw=null;s.selected=null;s.scaleA=null;s.scaleD=null;s.colorLo=null;s.colorHi=null;s.kind='operators';$('viewTokens').disabled=true;show('operators')}
 const get=()=>({kind:s.kind,scope:s.scope,mode:mode(),version:s.version,layer:s.layer,selected:s.selected,
- yaw:s.yaw,pitch:s.pitch,distance:s.dist,count:nodes().length,runRevision:s.runRevision,scaleA:s.scaleA,scaleD:s.scaleD,
+ yaw:s.yaw,pitch:s.pitch,distance:s.dist,count:nodes().length,runRevision:s.runRevision,scaleA:s.scaleA,scaleD:s.scaleD,colorLo:s.colorLo,colorHi:s.colorHi,
  layers:s.data?.layers.map(l=>({layer:l.layer,tokens:l.tokens.map(t=>({token:t.token,before:t.before,after:t.after,mae:t.mae,rms:t.rms,changed:t.changed}))}))||[]});
 $('viewTokens').disabled=true;
 $('viewTokens').onclick=()=>show('tokens');$('viewOperators').onclick=()=>show('operators');
@@ -123,7 +163,7 @@ $('tokenOverview').onclick=()=>{s.scope='all';s.dist=14;render()};
 $('tokenEnter').onclick=()=>{s.scope='layer';s.dist=10;render()};
 $('tokenZoomIn').onclick=()=>{s.dist=clamp(s.dist-1.1,4,36);render()};
 $('tokenZoomOut').onclick=()=>{s.dist=clamp(s.dist+1.1,4,36);render()};
-$('tokenReset').onclick=()=>{s.yaw=-.44;s.pitch=.25;s.dist=14;render()};
+$('tokenReset').onclick=()=>{s.yaw=-.82;s.pitch=.20;s.dist=s.scope==='layer'?10:14;render()};
 $('tokenChannelSelect').oninput=renderChannel;
 let mouse=null;
 cv.addEventListener('pointerdown',e=>{mouse={x:e.clientX,y:e.clientY,originX:e.clientX,originY:e.clientY,moved:false};cv.setPointerCapture(e.pointerId)});
