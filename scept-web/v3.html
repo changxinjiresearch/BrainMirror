@@ -35,7 +35,7 @@
   </div>
 </div>
 <div class="network-depth" id="networkDepth">真实 ONNX · 三维网络结构总览</div>
-<canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas>
+<div class="network-canvas-shell"><div id="networkPairLabels" class="network-pair-labels"><span>A · 修改前的真实激活</span><span>B · 修改后的真实激活</span></div><canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas></div>
 <div class="response-legend" id="responseLegend" aria-live="polite">
   <span><i class="swatch unobserved"></i> 未观测节点：仅显示算子结构</span>
   <span><i class="swatch observed"></i> 已采集张量的真实生产节点</span>
