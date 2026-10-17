@@ -20,8 +20,10 @@ try{
   assert((await page.evaluate(()=>SCEPT_UNIVERSAL.getSnapshot())).inspected,'Real model inspection failed: '+await page.locator('#modelStatus').innerText());
   if(item.probe)await page.locator('#probes').fill(item.probe);
   else await page.locator('#probes').fill('');
-  if(item.preset==='cnn')await page.locator('#shapeJson').fill(JSON.stringify({[item.inputName]:[1,256,256,3]}));
-  else await page.locator('#shapeJson').fill('');
+  // Explicitly resolve the ONNX dynamic batch dimension for each model.
+  // Neither the universal core nor an arbitrary model adapter should guess it.
+  const dims=item.preset==='cnn'?[1,256,256,3]:[1,3,224,224];
+  await page.locator('#shapeJson').fill(JSON.stringify({[item.inputName]:dims}));
   await page.locator('#load').click();
   await page.waitForFunction(()=>SCEPT_UNIVERSAL.getSnapshot().ready||document.querySelector('#modelStatus').dataset.state==='error',null,{timeout:160000});
   const loaded=await page.evaluate(()=>SCEPT_UNIVERSAL.getSnapshot());
