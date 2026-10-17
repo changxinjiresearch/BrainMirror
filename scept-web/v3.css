@@ -24,3 +24,11 @@
 .network-stats{padding:10px 13px;background:#102d38;border-top:1px solid #2b555a;color:#8cb8ba;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
 .network-node-details{white-space:pre-wrap;overflow-wrap:anywhere;background:#091f29;color:#b4d6d5;border-top:1px solid #25454f;padding:11px 13px;font-size:11px;line-height:1.7;max-height:170px;overflow:auto}
 @media(max-width:650px){.network-frame #networkCanvas{height:280px}.network-toolbar button{padding:7px 8px}.network-stats,.network-node-details{font-size:10px}}
+
+/* Prevent model picker long option labels from forcing the 390px viewport wider. */
+.modebar{min-width:0;max-width:100%}
+.modebar>*{min-width:0;max-width:100%}
+.mode-explainer{width:100%;grid-template-columns:minmax(0,1fr)}
+.mode-explainer>*,.mode-explainer select,.mode-explainer .mode-label{min-width:0;max-width:100%;box-sizing:border-box}
+.mode-explainer select{width:100%;inline-size:100%}
+.mode-explainer small{overflow-wrap:anywhere;white-space:normal}
