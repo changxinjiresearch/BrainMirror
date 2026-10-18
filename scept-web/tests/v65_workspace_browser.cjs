@@ -29,6 +29,47 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert.equal(snap.v65.runs.length,1,'One genuine forward must automatically append to journal');
   assert.equal(snap.v65.runs[0].source,'live_runtime');
   assert(snap.v65.runs[0].measuredUnits>=985);
+  // Restored science inspector: real layer select, real token select and all
+  // exact underlying channel values, not just coloured RMS bars.
+  const layerChooser=page.locator('#v6LayerSelect'),
+   tokenChooser=page.locator('#v6UnitSelect'),exact=page.locator('#v6ChannelExact');
+  assert((await layerChooser.locator('option').count())>=5,
+   'All true ViT measured layers must be selectable');
+  assert.match(await layerChooser.locator('option').first().innerText(),/层/);
+  await layerChooser.selectOption({index:1});
+  assert.equal(await tokenChooser.locator('option').count(),197,
+   'Layer selection must populate actual 197 tokens from real ViT');
+  await tokenChooser.selectOption('7');
+  const orig=await page.evaluate(()=>SCEPT_V6.getSelectedPattern());
+  assert.equal(orig.unit,7);
+  assert.equal(orig.values.length,192);
+  assert.equal(orig.provenance,'verified_same_forward_private_runtime_tensor');
+  assert.equal(await page.locator('#v6ChannelIndex').isEnabled(),true);
+  await page.locator('#v6ChannelIndex').fill('37');
+  await page.locator('#v6ChannelIndex').press('Tab');
+  const expected=orig.values[37].toPrecision(9);
+  assert((await exact.innerText()).includes(expected),
+   'Numeric readout must exactly match the retained real ONNX tensor');
+  await page.locator('#v6ValuesDetails summary').click();
+  assert.equal(await page.locator('#v6ValuePage').innerText(),'第 2 / 6 页 · 共 192 个实测数值');
+  assert((await page.locator('#v6ChannelRows').innerText()).includes(expected),
+   'Paged table must expose exact real float32 values');
+  await page.locator('#v6ValueNext').click();
+  assert.match(await page.locator('#v6ValuePage').innerText(),/第 3 \/ 6 页/);
+  await page.locator('#v6ValuePrev').click();
+  assert.match(await page.locator('#v6ValuePage').innerText(),/第 2 \/ 6 页/);
+  const prevId=await page.evaluate(()=>SCEPT_V6.getRecord().runId);
+  await layerChooser.selectOption({index:0});
+  const alternate=await page.evaluate(()=>SCEPT_V6.getSelectedPattern());
+  assert.notEqual(alternate.tensor,orig.tensor,'Selecting another actual layer must swap source tensor');
+  assert.equal(await tokenChooser.inputValue(),'0',
+   'Changing layers resets the unit to an actually present token');
+  assert.equal((await page.evaluate(()=>SCEPT_V6.getRecord().runId)),prevId,
+   'Reading/selecting layers must never trigger a new model forward');
+  await page.locator('#v6Metric').selectOption('update');
+  assert.equal(await page.locator('#v6ChannelIndex').isDisabled(),true,
+   'Update cannot fabricate per-channel differences when not implemented');
+  await page.locator('#v6Metric').selectOption('state');
   // NAF 3D orbit operates ONLY on the existing measured tensor units.
   // No mouse gesture can start a new inference or change the frozen record.
   const cloud=page.locator('#v6Cloud');
