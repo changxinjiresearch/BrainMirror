@@ -1,10 +1,43 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SCEPT V6 · Neural Activity Fingerprint</title><link rel="stylesheet" href="./v4.css"><link rel="stylesheet" href="./v5.css"><link rel="stylesheet" href="./v6.css"></head>
-<body class="v4 v5 v6"><div class="app"><aside class="sidebar"><a class="brand" href="#top"><span class="mark">◇</span><span><strong>SCEPT<span class="accent">.</span></strong><small>NEURAL MECHANISM OBSERVATORY</small></span></a><span class="eyebrow">OBSERVATORY V6</span><a class="side-link active" href="#workbench">◉ MRI 与三维观测</a><a class="side-link" href="./universal.html">⬡ 通用模型控制台</a><a class="side-link" href="#v6Studio">▦ 单次神经活动指纹 NAF</a><a class="side-link" href="./v5.html">↔ V5 A/B 与受控实验</a><a class="side-link" href="#audit">▦ 实验记录</a><a class="side-link" href="#protocol">◎ 科学边界</a><div class="side-bottom"><span class="glow"></span> 真实计算 · 本地执行<br><small>不重新训练 · I-JEPA 未接入</small></div></aside>
-<main id="top"><header class="header"><div><span class="eyebrow">SCEPT / UNIVERSAL NEURAL ACTIVITY OBSERVATORY V6</span><h1>一次运行，看见模型内部的真实活动<span class="accent">.</span></h1><p>不必修改图像，也不需要 A/B。单次推理即可获得独立 NAF 指纹、真实通道活动与可评价的计算更新。</p></div><span id="readyLabel" class="ready">正在初始化…</span></header>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SCEPT V6.5 · Universal Research Workspace</title><link rel="stylesheet" href="./v4.css"><link rel="stylesheet" href="./v5.css"><link rel="stylesheet" href="./v6.css"><link rel="stylesheet" href="./v65.css"></head>
+<body class="v4 v5 v6 v65"><div class="app"><aside class="sidebar"><a class="brand" href="#top"><span class="mark">◇</span><span><strong>SCEPT<span class="accent">.</span></strong><small>NEURAL MECHANISM OBSERVATORY</small></span></a><span class="eyebrow">UNIVERSAL WORKSPACE V6.5</span><a class="side-link active" href="#v65Workspace">◉ 通用研究工作台</a><a class="side-link" href="./universal.html">⬡ 通用模型控制台</a><a class="side-link" href="#v6Studio">▦ 独立 NAF 观测</a><a class="side-link" href="#v65Journal">▤ 运行记录与项目</a><a class="side-link" href="#v65ProtocolsSection">⊞ 实验协议与插件</a><a class="side-link" href="./v5.html">↔ V5 A/B 与受控实验</a><a class="side-link" href="#audit">▦ 实验记录</a><a class="side-link" href="#protocol">◎ 科学边界</a><div class="side-bottom"><span class="glow"></span> 真实计算 · 本地执行<br><small>不重新训练 · I-JEPA 未接入</small></div></aside>
+<main id="top"><header class="header"><div><span class="eyebrow">SCEPT / UNIVERSAL RESEARCH WORKSPACE V6.5</span><h1>先观察真实计算，再自由设计科研实验<span class="accent">.</span></h1><p>从一次真实模型运行开始：得到独立 NAF，保存研究记录，按需要选择比较、受控干预和其他科研协议。当前支持的模型和证据边界明确标示。</p></div><span id="readyLabel" class="ready">正在初始化…</span></header>
 <div class="modebar"><div class="mode-explainer"><label for="modelMode" class="mode-label">当前计算模型</label><select id="modelMode" aria-label="选择已训练模型"><option value="vit">视觉 Transformer · 五层真实观测（技术验证）</option><option value="mri_cnn">MRI 训练 EfficientNetB3 · 分类响应（研究模型）</option></select><small id="modelInfo">视觉 ViT 并非 MRI 专业模型；只用于证明多层可观察性，不构成医学解释。</small></div><div class="mode-actions"><button id="runExperiment" class="primary" disabled>原版 A/B 内部观测</button><span id="runProgress">获取真实 MRI 与预训练模型</span></div></div>
-<div id="warning" class="warning">MRI 来自公开 MNI152 脑模板。模型使用公开预训练视觉 ViT，输入为从三维 MRI 提取的二维切片，当前未通过医学预处理一致性和临床任务有效性验证。</div>
+<div id="warning" class="warning">当前单次运行已验收预训练 ViT 与 EfficientNet CNN；当前示例输入适配器是公开 MRI/NIfTI。ViT 并非医学诊断模型；CNN 作者披露数据泄漏。泛用 ONNX、自监督模型等需按实际适配能力在高级研究控制台使用，不能误认为已自动接入 V6 的单次 NAF。</div>
+<section class="v65-home" id="v65Workspace" aria-label="SCEPT V6.5 通用科研入口">
+ <div class="v65-intro">
+  <div><span class="v4-method">OBSERVE · ORGANISE · RESEARCH</span>
+   <h2>通用神经活动研究工作台</h2>
+   <p>一次真正的推理即生成 NAF，不预设需要两张输入或必须移除肿瘤。独立记录可导出；研究插件各自声明支持能力。</p>
+  </div>
+  <nav class="v65-quicknav" id="v65Nav" aria-label="工作区快速导航">
+   <a class="v65-chip" href="#v6Studio">① 运行 NAF</a>
+   <a class="v65-chip" href="#v65Journal">② 查看记录</a>
+   <a class="v65-chip" href="#v65ProtocolsSection">③ 研究工具</a>
+  </nav>
+ </div>
+ <div class="v65-setup" aria-label="已支持模型与数据来源">
+  <div class="v65-step"><strong>STEP 1 · 选择已适配的真实模型</strong>
+   <label for="v65Adapter">模型/后端适配能力</label>
+   <select id="v65Adapter"><option value="vit">ViT Tiny · 真实 Token/残差观测</option>
+    <option value="cnn">EfficientNetB3 · 真实 CNN Conv 通道观测</option>
+    <option value="generic">其他模型 · 打开高级 ONNX 控制台（尚未迁移单次接口）</option></select>
+   <p>上述两个预设使用已校验的真实预训练权重，并不会自动生成模型对 MRI 的临床解释。</p>
+   <div id="v65Generic" hidden><a href="./universal.html" class="v65-chip">打开高级 ONNX 模型导入与探针控制台 →</a></div>
+  </div>
+  <div class="v65-step"><strong>STEP 2 · 输入真实数据</strong>
+   <p>当前内置适配器：公开 MRI 模板或本地 NIfTI。无需标注肿瘤、不需要 B 或对照掩膜。</p>
+   <button id="v65OpenInput" type="button" class="secondary">查看当前 MRI 输入与导入</button>
+   <small>其他模态由相应模型/数据适配器负责；本页不伪称已支持所有任意文件。</small>
+  </div>
+  <div class="v65-step"><strong>STEP 3 · 执行一次真实模型运行</strong>
+   <p>点击下方 NAF 区域的「单次运行并观察」即可获得原始计算统计和逐通道数据。</p>
+   <a href="#v6Studio" class="v65-chip v65-primary">进入独立 NAF 观测 →</a>
+   <small>任何两次运行都各自有效。V6.4 的统一比较引擎尚未完成。</small>
+  </div>
+ </div>
+ </section>
 <section class="workspace" id="workbench">
-<article class="panel"><div class="panel-title"><span>01 / MRI INPUT</span><h2>三维脑 MRI · 编辑区域</h2><p>这是真实 MRI 衍生的脑模板，不是随机条纹。点击切片选中位置，在三维体数据中修改局部球形区域。</p></div>
+<article class="panel" id="v65Input"><div class="panel-title"><span>02 / CURRENT DATA ADAPTER · NIFTI</span><h2>真实输入数据 · MRI 示例适配器</h2><p>公开 MRI 脑模板或导入个人 NIfTI。单次 NAF 使用当前原始切片，不需要选择 ROI、扰动或第二张输入。</p></div>
 <div class="source"><strong id="mriSource">MNI152 模板</strong><small id="mriStatus">正在读取 NIfTI…</small></div>
 <div class="views">
  <div class="scan"><header>近似轴位 · 体素 i–j</header><canvas width="256" height="256" id="viewAxial"></canvas><input id="sliceK" type="range" min="0" max="1"></div>
@@ -23,7 +56,7 @@
 <div id="roiCoords" class="small">ROI 中心：</div><div class="buttons"><label class="secondary upload">导入自己的 NIfTI <input hidden id="mriFile" type="file" accept=".nii,.nii.gz"></label><button class="secondary" id="mriUndo">撤销强度修改</button><button class="secondary" id="reloadTemplate">恢复公开脑模板</button></div><p class="small" id="mriInfo">等待加载 MRI 数据</p>
 </article>
 <article class="panel"><div class="panel-title"><span>02 / INTERNAL RESPONSE</span><h2>真实神经网络响应</h2><p>同一个冻结模型运行两次。颜色表示真实观测张量的变化幅度；灰色表示该计算位置尚未开放观测点。</p></div><section id="v6Studio" class="v6-studio" aria-label="V6 真正独立的单次运行神经活动指纹">
- <div class="v6-head"><span class="v4-method">SCEPT V6 · OBSERVE ONCE · REAL MODEL STATE</span>
+ <div class="v6-head"><span class="v4-method">SCEPT V6.5 / CORE V6.3 · INDEPENDENT OBSERVATION</span>
    <h2>Neural Activity Fingerprint <span>NAF</span></h2>
    <p>一次输入、一次真正的模型前向计算，记录真实内部张量。无需创建 B，也不会把活动幅度冒充解释贡献。</p></div>
  <div class="v6-tools">
@@ -201,9 +234,41 @@
  <p>这些是实际模型计算张量，不是模拟节点。Attention Softmax 数值本身不等于解释证据；不同张量的量纲和维度也不能直接比较。</p>
 </details><div class="explain-box" id="interpretation">当前没有计算结果。改变 MRI 后点击「开始实验」，右侧将更新真实模型多层响应；不再仅显示一张固定网络图。</div>
 </article></section>
+<section class="v65-research" id="v65Journal" aria-label="可复核的研究运行记录">
+ <div class="v65-section-title"><span class="v4-method">SCIENTIFIC RUN JOURNAL</span><h2>运行历史与科研项目</h2>
+ <p>本次浏览器会话内最多保存32份独立的真实 NAF 摘要。支持研究笔记和 JSON 备份，绝不自动上传原始 MRI 或内部张量。关闭网页后未导出的记录无法恢复。</p></div>
+ <div class="v65-journal-actions">
+  <label>科研项目名称<input id="v65Project" type="text" value="SCEPT research session" maxlength="110"></label>
+  <button type="button" id="v65ExportAll" class="secondary">导出全部摘要 JSON</button>
+  <label class="v65-import">导入 SCEPT 工作区摘要 JSON<input id="v65Import" type="file" accept=".json,application/json"></label>
+  <button type="button" id="v65Clear" class="secondary">清空本次会话摘要</button>
+ </div>
+ <p id="v65RunCount">本次尚无 NAF</p>
+ <div class="v65-journal-grid">
+  <div id="v65Runs" class="v65-runs" aria-label="真实和外部未验证的记录列表"></div>
+  <div class="v65-detail-pane">
+   <h3>选中运行 <span id="v65SelectedId"></span></h3>
+   <pre id="v65Details">请先运行真实模型或导入已有摘要。</pre>
+   <label for="v65Note">研究记录备注（不会自动保存）</label>
+   <textarea id="v65Note" maxlength="500" rows="3" placeholder="研究目的、样本处理、后续实验问题"></textarea>
+   <div class="v65-actions">
+    <button type="button" id="v65SaveNote" class="secondary" disabled>保存备注到本次会话</button>
+    <button type="button" id="v65ExportSelected" class="secondary" disabled>导出选中记录</button>
+    <button type="button" id="v65Remove" class="secondary" disabled>移除记录</button>
+   </div>
+  </div>
+ </div>
+ <p id="v65Status" role="status" aria-live="polite">研究工作台加载中…</p>
+ </section>
+ <section class="v65-research" id="v65ProtocolsSection" aria-label="可扩展的科研协议与插件导航">
+ <div class="v65-section-title"><span class="v4-method">RESEARCH PROTOCOL CATALOG</span><h2>研究工具与实验协议</h2>
+  <p>观察方法与实验设计彻底分开：单次 NAF 可直接运行；NDF、CRC、ICM 和 U10 保留原来的真实研究入口。V6.4 尚未完成，因此这里不假装所有协议共享同一运行记录或已经实现自动编排。</p></div>
+ <div id="v65Protocols" class="v65-protocol-grid" aria-label="可打开的科研工具"></div>
+ <p class="v65-science">方法边界：内部数值与通道模式不等于目标输出重要性或因果解释；外部导入记录不能仅凭 JSON 被视为来源验证通过。U11/M4 科学有效性里程碑仍未达成。</p>
+ </section>
 <section class="cards" id="audit"><article><h3>实验记录</h3><p>保存模型、MRI 来源、ROI、预处理和每层数值变化的校验信息。</p><div id="records">尚无本次实验记录。</div></article><article id="protocol"><h3>证据等级与科学边界</h3><p>本阶段观测为真实预训练网络的张量变化（L1）；不同层的变化不自动等于因果解释。MRI 模型专属解释须在 MRI 训练权重、任务目标及预处理匹配后另外验收。</p><p>默认采用 MNI152 脑模板。编辑是探索性的强度干预，不代表生物学有效病灶模拟。</p></article></section>
 <details class="advanced"><summary>高级设置与科研数据 <span>模型适配 · 张量导出 · 科学审计 ↓</span></summary><div class="advance-content"><div class="info-grid"><div><small>预训练源模型</small><code id="sourceModelHash">正在核验</code></div><div><small>插装后的模型</small><code id="instrumentedHash">—</code></div><div><small>MRI 原始数据 SHA-256</small><code id="mriHash">—</code></div><div><small>输入及解释边界</small><code>二维 MRI 切片 → 非 MRI 专用 ViT（OOD）</code></div></div><div class="buttons"><button id="saveAudit" class="secondary" disabled>下载实验 JSON</button><button id="saveLayers" class="secondary" disabled>下载多层 CSV</button><a href="./lab.html" class="secondary" target="_blank" rel="noopener">完整 ONNX 适配器 / 实验室</a></div><p>兼容的 3D MRI 训练模型可以通过原有 ONNX 适配器导入；BraTS 专用模型、四模态配准与标准化和端到端三维推理必须另行测试才能标为医学有效。</p></div></details>
-<footer>SCEPT Observatory v6 · Real single-run NAF · V5 preserved / genuine pretrained tensor observation · research preview <span>I-JEPA remains excluded</span></footer></main></div>
+<footer>SCEPT Workspace v6.5 · Independent NAF / local research journal · V5 preserved / genuine pretrained tensor observation · research preview <span>I-JEPA remains excluded</span></footer></main></div>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script src="./onnx_inspector.js"></script>
 <script src="./v3_mri.js"></script>
@@ -223,4 +288,5 @@
 <script src="./core/scept_naf.js"></script><script src="./core/scept_naf_calibration.js"></script>
 <script src="./core/scept_v6_graph_probes.js"></script>
 <script src="./scept_v6_cnn.js"></script><script src="./scept_v6_ui.js"></script>
+<script src="./core/scept_workspace_journal.js"></script><script src="./scept_workspace_v65.js"></script>
 </body></html>
