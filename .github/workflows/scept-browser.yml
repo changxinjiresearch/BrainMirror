@@ -63,6 +63,9 @@ jobs:
           node --check scept-web/tests/u3_u4_contract.cjs
           node --check scept-web/tests/u4_m1_cross_architecture.cjs
           node --check scept-web/universal.js
+          node --check scept-web/scept_v4_ceds.js
+          node --check scept-web/tests/v4_ceds_contract.cjs
+          node --check scept-web/tests/v4_ceds_browser.cjs
           node --check scept-web/app.js
           node --check scept-web/mri.js
           node --check scept-web/fixtures.js
@@ -86,6 +89,8 @@ jobs:
         run: node scept-web/tests/u9_security_check.cjs
       - name: U10 scientific mechanism independent SDK + controlled signed contrast and stability/dose contracts
         run: node scept-web/tests/u10_mechanism_contract.cjs
+      - name: V4 CEDS scientific visual integrity and fail-closed P/Q selection contract
+        run: node scept-web/tests/v4_ceds_contract.cjs
       - name: Install CPU model testing tools
         run: python -m pip install onnx onnxruntime pytest numpy
       - name: Generate and validate two NEW ONNX model architectures for U2
@@ -159,6 +164,8 @@ jobs:
 
       - name: Verify SCEPT v3 real public MRI atlas and genuine ViT multi-layer mechanism response
         run: node scept-web/tests/v3_brain_mri.cjs
+      - name: V4 real MRI + frozen pretrained ViT, CEDS controlled P/Q triple forwards, seven gates and honest 3D Delta
+        run: node scept-web/tests/v4_ceds_browser.cjs
       - name: Verify true MRI-trained EfficientNetB3 paired NIfTI ROI response in browser
         run: node scept-web/tests/v3_mri_cnn.cjs
       - name: Probe MRI-trained EfficientNet B3 model browser feasibility (non-blocking research)

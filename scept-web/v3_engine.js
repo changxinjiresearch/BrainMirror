@@ -146,6 +146,13 @@ async function run(){
   try{localStorage.setItem('scept-v3-audit-list',JSON.stringify(st.history))}catch{}
   // Reject false token mappings if runtime dimensions do not match actual ONNX tensors.
   window.SCEPT_ACTIVITY3D.update(layers,st.results.mri.revision);
+  // The v4 observatory defaults to directly measured differences after real A/B inference.
+  // v3 behavior remains unchanged; no hidden activations or artificial edges are added.
+  if(document.body?.classList.contains('v4')){
+    document.getElementById('viewTokens')?.click();
+    document.getElementById('tokenOverview')?.click();
+    document.getElementById('responseDelta')?.click();
+  }
   window.SCEPT_PATCH?.refresh();
   drawAll();drawExtras();listHistory();$('saveAudit').disabled=false;$('saveLayers').disabled=false;
   $('runProgress').textContent='真实计算完成 · '+layers.length+' 个观测层可查看';
@@ -229,7 +236,10 @@ $('modelMode').onchange=()=>{
 };
 
 $('reloadTemplate').onclick=async()=>{await SCEPT_MRI.loadDefault();readyIfPossible()};
-window.SCEPT_V3={getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
+window.SCEPT_V3={getScientificContext:()=>st.session?{
+  session:st.session,sha256:st.modelSha,mriRevision:window.SCEPT_MRI?.state?.revision,
+  probes:st.probes.map(p=>({name:p.name,layer:p.layer}))
+}:null,getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
 listHistory();drawNetwork();drawResponse();init();
 let attempts=0;
 const check=setInterval(()=>{readyIfPossible();if(++attempts>240||readyIfPossible()){clearInterval(check)}},500);

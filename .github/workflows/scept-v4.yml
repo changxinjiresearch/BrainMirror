@@ -1,0 +1,46 @@
+name: SCEPT v4 CEDS real-browser gate
+on:
+  pull_request:
+    paths:
+      - "scept-web/**"
+      - ".github/workflows/scept-v4.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scept-web/**"
+      - ".github/workflows/scept-v4.yml"
+permissions:
+  contents: read
+jobs:
+  authentic-ceds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate v4 syntax and bounded evidence visual contracts
+        run: |
+          node --check scept-web/scept_v4_ceds.js
+          node scept-web/tests/v4_ceds_contract.cjs
+      - name: Install real Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run local static site
+        run: |
+          python -m http.server 8765 -d scept-web >/tmp/scept-v4-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/v4.html >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Prove authentic pretrained model, original MRI, Delta and 9 triple-inference CEDS
+        run: node scept-web/tests/v4_ceds_browser.cjs
+      - name: Archive only real browser evidence screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-v4-ceds-authentic-browser
+          path: /tmp/scept-v4-real-ceds.png
+          if-no-files-found: ignore

@@ -1,0 +1,47 @@
+@import url("./v3.css");
+/* v4 keeps the proven v3 MRI and true ONNX point-cloud engines. */
+body.v4{background:#06131d;color:#ecf5f6}
+.v4 .app{grid-template-columns:188px minmax(0,1fr)}
+.v4 .sidebar{background:#081d2a}
+.v4 .sidebar .brand{padding-bottom:13px}
+.v4 .sidebar .eyebrow{margin-bottom:0}
+.v4 .header{padding-bottom:17px}
+.v4 .header h1{font-size:clamp(24px,2.2vw,36px)}
+.v4 .modebar{margin:16px 0 10px}
+.v4 .workspace{grid-template-columns:minmax(330px,.83fr) minmax(0,1.44fr);align-items:start}
+.v4 .panel{background:linear-gradient(145deg,#0d2735,#091d2a)}
+.v4 .views .scan:nth-child(2),.v4 .views .scan:nth-child(3){display:none}
+.v4.show-planes .views .scan:nth-child(2),.v4.show-planes .views .scan:nth-child(3){display:flex}
+.v4 .views .scan canvas{max-width:100%}
+.v4 .panel-title h2{font-size:18px}
+.v4 .panel-title p{margin-bottom:11px}
+.v4-compact-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.v4-compact-actions button{padding:8px 11px;border:1px solid #2f6565;border-radius:8px;background:#153541;color:#c5e8e5;font-size:11px}
+.v4-ceds{border:1px solid #376e71;border-radius:14px;padding:17px;margin:9px 0 17px;background:linear-gradient(135deg,#0b2938,#092330);box-shadow:0 14px 35px #03101755}
+.v4-ceds-head{display:flex;justify-content:space-between;align-items:center;gap:13px;flex-wrap:wrap;margin-bottom:7px}
+.v4-ceds-head strong{color:#d1f9eb;font-size:16px;letter-spacing:.2px}
+.v4-method{color:#65d7c2;font-size:9px;letter-spacing:1.3px;text-transform:uppercase}
+.v4-ceds .secondary{font-size:11px}
+.v4-ceds button:focus-visible{outline:2px solid #67dbd5;outline-offset:3px}
+.v4-ceds canvas{display:block;width:100%;height:280px;border:1px solid #254b5c;border-radius:9px;background:#071923}
+.v4-evidence-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:11px 0}
+.v4-evidence-summary p{color:#a6ced0;margin:0;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.v4-evidence-summary small{color:#89adb7;display:block;font-size:10px;line-height:1.7}
+.v4Verdict,[data-verdict="criterion_met"]{color:#70e3bc}
+[data-verdict="criterion_not_met"],[data-status="error"]{color:#f5b47c!important}
+[data-verdict="not_evaluable"]{color:#e0c98c}
+.v4-gates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.v4-gate{border:1px solid #284b59;border-radius:7px;padding:9px 10px;background:#092230;display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:10px}
+.v4-gate span{color:#afcccf}
+.v4-gate strong{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.v4-ceds-status{min-height:22px;font-size:11px!important;color:#8bc5c2!important;line-height:1.6}
+.v4-disclaimer{font-size:10px!important;color:#8babb8;line-height:1.7}
+.v4-resultbar{margin-top:11px;padding:9px 12px;border:1px solid #36666c;border-radius:8px;background:#0b2831;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.v4-resultbar a{color:#74e0c6;text-decoration:underline;text-underline-offset:3px}
+.v4 .network-frame #networkCanvas{height:315px}
+.v4 .network-frame #token3dCanvas{max-height:320px}
+.v4 .patch-workbench{margin-top:10px}
+.v4 .advanced,.v4 .cards{font-size:12px}
+@media(max-width:1250px){.v4 .workspace{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:950px){.v4 .app{grid-template-columns:1fr}.v4 .sidebar{position:static;height:auto;display:block;padding:13px}.v4 .sidebar .brand{display:inline-flex}.v4 .sidebar .side-link{display:inline-block;font-size:11px;padding:9px}}
+@media(max-width:580px){.v4 .views{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-gates{grid-template-columns:1fr}.v4-ceds{padding:10px}.v4-ceds canvas{height:250px}.v4 .modebar{padding:12px}}
