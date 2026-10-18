@@ -29,6 +29,8 @@ jobs:
         run: |
           node --check scept-web/core/scept_workspace_journal.js
           node --check scept-web/scept_workspace_v65.js
+          node --check scept-web/core/scept_cloud_orbit.js
+          node scept-web/tests/v65_cloud_orbit_contract.cjs
           node --check scept-web/scept_v6_ui.js
           node scept-web/tests/v65_workspace_contract.cjs
           node scept-web/tests/v6_23_naf_contract.cjs

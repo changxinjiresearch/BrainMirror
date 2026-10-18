@@ -25,7 +25,13 @@
 .v6-modes label{display:flex;gap:5px;flex-direction:column;font-size:10px;color:#96c8ce}
 #v6Fingerprint,#v6Cloud,#v6Channels{display:block;width:100%;height:auto;border-radius:9px;background:#071723;max-width:100%}
 #v6Fingerprint{cursor:crosshair;min-height:120px}
-#v6Cloud{cursor:pointer}
+#v6Cloud{cursor:grab;touch-action:none;user-select:none;outline-offset:3px;overscroll-behavior:contain}
+#v6Cloud:active{cursor:grabbing}
+#v6Cloud:focus-visible{outline:2px solid #79e1c6}
+.v6-cloud-panel .v6-line{flex-wrap:wrap}
+.v6-cloud-toolbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.v6-cloud-toolbar button{font-size:11px;min-width:31px;min-height:31px;padding:5px 8px}
+.v6-cloud-panel p{line-height:1.75}
 .v6-legend{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:8px 0;color:#9cc6c9;font-size:10px}
 .v6-legend span{display:flex;align-items:center;gap:4px}
 .v6-twocol{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:15px 0}
