@@ -398,13 +398,19 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    for(const fn of runListeners){try{fn(complete)}catch(err){console.warn('V6.5 journal subscriber failed',err)}}
    reference=null;$('v6Scale').value='raw';
    stats.runs++;
-   $('v6Export').disabled=false;$('v6BuildReference').disabled=history.length<6;
+   $('v6Export').disabled=false;$('v6ExportFull').disabled=false;
+   $('v6BuildReference').disabled=history.length<6;
+   lastArchiveInfo=null;
+   archiveSay('可下载本次全部已捕获张量（'+next.listStored().length+' 个）。'+
+    (next.listStoredInputs().length?'已保留模型输入':'模型输入未保留')+
+    '；开始下一次运行之前请保存 ZIP。');
    renderFingerprint();
    show('v6ModelInfo',result.note+
      (mode()==='cnn'?' · 实际隐藏层：'+result.probes.filter(p=>p!=='dense_2').length:''));
    show('v6History',history.length+' 个独立 Run Record，最近：'+current.runId+
      '；旧运行的完整张量不再缓存在内存中，仅保留摘要。');
    say('NAF 已完成：仅执行了一次真正的模型前向推理；所有颜色来自真实内部数值。');
+   if($('v6AutoArchive').checked)await exportFull(true);
   }catch(e){say('NAF 不可评价：'+e.message,true)}
   finally{busy=false;$('v6Run').disabled=false}
  }
