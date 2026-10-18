@@ -7,7 +7,12 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  const $=id=>document.getElementById(id),O=root.SCEPT_OBSERVATION,R=root.SCEPT_RUN_RECORD,
  C=root.SCEPT_CAPTURE_ONCE,N=root.SCEPT_NAF,K=root.SCEPT_NAF_CALIBRATION;
  if(!$('v6Run')||!O||!R||!C||!N||!K)return;
- let current=null,capture=null,history=[],reference=null,selected=null,busy=false,angle=.48;
+ let current=null,capture=null,history=[],reference=null,selected=null,busy=false;
+ if(!root.SCEPT_CLOUD_ORBIT?.newCamera)throw Error('Real NAF 3D camera module not loaded');
+ const camera=root.SCEPT_CLOUD_ORBIT.newCamera({
+  redraw:()=>renderCloud(),
+  onTap:pos=>pickCloud(pos)
+ });
  const runListeners=new Set();
  const stats={runs:0};
  const fmt=x=>Number.isFinite(x)?Number(x).toPrecision(5):'—';
@@ -110,30 +115,49 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  }
  function renderCloud(){
   const cv=$('v6Cloud'),ctx=cv.getContext('2d'),dpr=Math.min(2,devicePixelRatio||1);
-  const w=Math.max(440,Math.round(cv.getBoundingClientRect().width||670)),h=250;
+  const w=Math.max(440,Math.round(cv.getBoundingClientRect().width||670)),h=300;
   cv.width=w*dpr;cv.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle='#061923';ctx.fillRect(0,0,w,h);
-  const gs=groups().filter(g=>g.status==='measured'&&g.units.length);if(!gs.length)return;
+  const gs=groups().filter(g=>g.status==='measured'&&g.units.length);
+  if(!gs.length){cv.__points=[];return}
   const points=[];
   gs.forEach((g,layer)=>{
-   // Geometric layout is explicitly illustrative, never a learned topology.
-   const shown=Math.min(g.units.length,400);
+   // Measured model units; their spatial arrangement here is a 3D VIEW ONLY.
+   // No model topology, anatomical coordinates or learned edges are invented.
+   const shown=Math.min(g.units.length,400),columns=20,rows=Math.ceil(shown/columns);
    for(let unit=0;unit<shown;unit++){
-    const u=g.units[unit],z=layer-(gs.length-1)/2,x0=(unit%20-9.5)*13,y0=(Math.floor(unit/20)-5)*11,
-      x1=x0*Math.cos(angle)-z*25*Math.sin(angle),
-      z1=x0*Math.sin(angle)+z*25*Math.cos(angle),scale=1/(1+z1/550),
-      x=w/2+x1*scale,y=h/2+(y0*scale),v=value(g,u),isSelected=selected?.tensor===g.tensor&&selected?.index===u.index;
-    points.push({x,y,r:isSelected?5:Math.max(1.4,2.1*scale),v,isSelected,tensor:g.tensor,index:u.index});
+    const u=g.units[unit],
+      x0=(unit%columns-(columns-1)/2)*14,
+      y0=(Math.floor(unit/columns)-(rows-1)/2)*14,
+      z0=(layer-(gs.length-1)/2)*44,
+      projected=camera.project(x0,y0,z0,w,h),
+      v=value(g,u),isSelected=selected?.tensor===g.tensor&&selected?.index===u.index;
+    points.push({...projected,r:isSelected?Math.min(8,Math.max(3.4,4.4*projected.scale)):
+      Math.min(5.5,Math.max(.85,1.85*projected.scale)),v,isSelected,
+      tensor:g.tensor,index:u.index});
    }
   });
-  points.sort((a,b)=>a.r-b.r);
+  // Painter's order: distant units first; click targets prefer visible ones.
+  points.sort((a,b)=>b.depth-a.depth);
   for(const p of points){
-   ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.isSelected?'#fff1a6':color(p.v);ctx.fill();
+   ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+   ctx.fillStyle=p.isSelected?'#fff1a6':color(p.v);ctx.fill();
    if(p.isSelected){ctx.strokeStyle='#fff1a6';ctx.lineWidth=1.5;ctx.stroke()}
   }
   ctx.font='11px system-ui';ctx.fillStyle='#a9cbd2';
-  ctx.fillText('真实计算位置 · 3D 排布仅为视图，点间没有虚构连线',8,h-10);
+  ctx.fillText('拖动旋转 · 滚轮缩放 · Shift/右键拖动平移 · 仅展示真实观测单位',8,h-10);
   cv.__points=points;
+ }
+ function pickCloud(pos){
+  const cv=$('v6Cloud'),pts=cv.__points||[];
+  // Click after a true pointer tap only, never after orbit/pan/zoom gestures.
+  // Front-most points win overlapping screen-space hit tests.
+  const nearest=pts.filter(p=>Math.hypot(p.x-pos.x,p.y-pos.y)<Math.max(8,p.r+5))
+    .sort((a,b)=>a.depth-b.depth)[0];
+  if(nearest){
+   selected={tensor:nearest.tensor,index:nearest.index};
+   renderDetail();renderCloud();
+  }
  }
  $('v6Fingerprint').onclick=e=>{
   const cv=e.currentTarget,l=cv.__layout;if(!l)return;
@@ -144,13 +168,12 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   if(unit<0||unit>=g.units.length)return;
   selected={tensor:g.tensor,index:unit};renderDetail();renderCloud();
  };
- $('v6Cloud').onclick=e=>{
-  const cv=e.currentTarget,b=cv.getBoundingClientRect(),x=(e.clientX-b.left)*cv.width/b.width/Math.min(2,devicePixelRatio||1),
-   y=(e.clientY-b.top)*cv.height/b.height/Math.min(2,devicePixelRatio||1);
-  const pts=cv.__points||[],p=pts.map(v=>({...v,dist:Math.hypot(v.x-x,v.y-y)})).sort((a,b)=>a.dist-b.dist)[0];
-  if(p&&p.dist<14){selected={tensor:p.tensor,index:p.index};renderDetail();renderCloud()}
- };
- $('v6Rotate').onclick=()=>{angle+=Math.PI/7;renderCloud()};
+ // Pointer captures are coordinated in a single camera; drag cannot select.
+ camera.bind($('v6Cloud'));
+ $('v6Rotate').onclick=()=>camera.nudgeYaw(Math.PI/7);
+ $('v6ZoomIn').onclick=()=>camera.zoomBy(1.25);
+ $('v6ZoomOut').onclick=()=>camera.zoomBy(.8);
+ $('v6Reset').onclick=()=>camera.reset();
  function fingerprintFrom(cap,profile,probes,updates=[]){return N.create(cap,{profile,probes,updates})}
  async function captureViT(){
   if(!root.SCEPT_V3?.getSnapshot()?.ready||!root.SCEPT_MRI.state.loaded)
@@ -263,6 +286,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    updates:current?.updates.map(g=>({status:g.status,units:g.units.length,reason:g.reason||null})),
    architecture:current?.profile,runId:current?.runId,recordCount:history.length}),
   getNaf:()=>current,getReference:()=>reference,getRecord:()=>capture?.exportRecord()||null,
+  getCloudView:()=>camera.snapshot(),
   onRunCapture:(fn)=>{if(typeof fn!=='function')throw Error('run listener must be a function');
    runListeners.add(fn);return()=>runListeners.delete(fn)},
   runOnce:run};
