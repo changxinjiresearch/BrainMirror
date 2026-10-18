@@ -124,7 +124,7 @@
   }
   return measured;
  }
- function make(){return Object.freeze({id:'runtime-axis-v2',kind:'observation',
+ function make(){return Object.freeze({id:'runtime-axis-v1',kind:'observation',
   capabilities:['observations.output','observations.intermediate'],observePair,observeOnce})}
  return Object.freeze({VERSION:'1.1.0-u4-v6-single',profiles,selectProfile,observeTensor,observePair,observeOnce,make});
 });
