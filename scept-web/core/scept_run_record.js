@@ -35,7 +35,8 @@
        (typeof meta.shape[i]!=='number'||d===meta.shape[i])))
     fail('TENSOR_SIGNATURE_MISMATCH','actual runtime tensor contradicts '+meta.name);
   const n=t.dims.reduce((a,b)=>a*b,1);
-  if(!Number.isSafeInteger(n)||n>maxElements||!t.data||!ArrayBuffer.isView(t.data)||
+  if(!Number.isSafeInteger(n)||n>maxElements)fail('RESOURCE_LIMIT','Actual tensor exceeds allowed element limit '+meta.name);
+  if(!t.data||!ArrayBuffer.isView(t.data)||
      t.data.length!==n||t.type!==meta.type||!ArrayBuffer.isView(t.data)||t.data instanceof DataView)
     fail('TENSOR_SIGNATURE_MISMATCH','actual tensor dtype/elements invalid '+meta.name);
   for(let i=0;i<t.data.length;i++){
