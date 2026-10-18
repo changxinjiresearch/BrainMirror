@@ -229,7 +229,10 @@ $('modelMode').onchange=()=>{
 };
 
 $('reloadTemplate').onclick=async()=>{await SCEPT_MRI.loadDefault();readyIfPossible()};
-window.SCEPT_V3={getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
+window.SCEPT_V3={getScientificContext:()=>st.session?{
+  session:st.session,sha256:st.modelSha,mriRevision:window.SCEPT_MRI?.state?.revision,
+  probes:st.probes.map(p=>({name:p.name,layer:p.layer}))
+}:null,getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
 listHistory();drawNetwork();drawResponse();init();
 let attempts=0;
 const check=setInterval(()=>{readyIfPossible();if(++attempts>240||readyIfPossible()){clearInterval(check)}},500);
