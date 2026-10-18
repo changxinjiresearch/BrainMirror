@@ -1,0 +1,49 @@
+name: SCEPT V6.0-V6.1 single-run evidence core
+on:
+  pull_request:
+    paths:
+      - "scept-web/core/scept_observation.js"
+      - "scept-web/core/scept_run_record.js"
+      - "scept-web/core/scept_capture_once.js"
+      - "scept-web/tests/v6_01_*"
+      - ".github/workflows/scept-v6-01.yml"
+      - "docs/SCEPT_V6_0_V6_1_SINGLE_RUN_SCIENTIFIC_CONTRACT.md"
+  push:
+    branches: [main]
+    paths:
+      - "scept-web/core/scept_observation.js"
+      - "scept-web/core/scept_run_record.js"
+      - "scept-web/core/scept_capture_once.js"
+      - "scept-web/tests/v6_01_*"
+      - ".github/workflows/scept-v6-01.yml"
+permissions:
+  contents: read
+jobs:
+  independent-naf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Core syntax and fail-closed contract
+        run: |
+          node --check scept-web/core/scept_run_record.js
+          node --check scept-web/core/scept_capture_once.js
+          node --check scept-web/core/scept_observation.js
+          node --check scept-web/tests/v6_01_single_run_contract.cjs
+          node scept-web/tests/v6_01_single_run_contract.cjs
+      - name: Install real browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Serve existing stable V5 + new V6 core
+        run: |
+          python -m http.server 8765 -d scept-web >/tmp/scept-v6-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/v5.html >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Prove single frozen ONNX forward, 985 real hidden Token states, no A/B
+        run: node scept-web/tests/v6_01_single_run_browser.cjs
