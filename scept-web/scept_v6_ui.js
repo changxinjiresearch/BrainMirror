@@ -436,6 +436,29 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    say('已生成同模型经验参考（'+reference.nSamples+' 次真实运行）；并非独立患者参考或医学异常值。');
   }catch(e){reference=null;say('参考校准不可评价：'+e.message,true)}
  };
+ async function exportFull(auto=false){
+  if(archiving)return;
+  if(!capture||!current){archiveSay('请先运行一次真实观测。',true);return}
+  archiving=true;$('v6ExportFull').disabled=true;
+  try{
+   archiveSay('校验真实张量并创建 ZIP 中…');
+   const result=await archiveEngine.build({
+    capture,naf:current,reference,
+    includeInputs:$('v6RetainInput').checked,tensorSha:C.tensorSha
+   });
+   const url=URL.createObjectURL(result.blob),a=document.createElement('a');
+   a.href=url;a.download=result.suggestedFilename;document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),10000);
+   lastArchiveInfo={runId:current.runId,bytes:result.size,outputs:result.outputTensorCount,
+    inputs:result.includesInputs,files:result.fileCount};
+   archiveSay((auto?'自动下载已开始：':'下载已开始：')+
+    result.outputTensorCount+' 个实际测量输出张量；大小 '+
+    (result.size/1048576).toFixed(2)+' MiB；'+
+    (result.includesInputs?'包含实际模型输入。':'不包含模型输入。'));
+  }catch(e){archiveSay('完整归档失败：'+e.message,true)}
+  finally{archiving=false;$('v6ExportFull').disabled=false}
+ }
+ $('v6ExportFull').onclick=()=>exportFull(false);
  $('v6Export').onclick=()=>{
   if(!capture||!current)return;
   const out={record:capture.exportRecord(),naf:current,
@@ -453,6 +476,9 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   getSelectedPattern:()=>{const g=currentGroup();return capture&&selected&&g?.view==='state'?
    N.getPattern(capture,selected.tensor,selected.index,current.profile,{maxValues:65536}):null},
   getCloudView:()=>camera.snapshot(),
+  getArchiveStatus:()=>lastArchiveInfo,
+  buildFullArchive:()=>archiveEngine.build({capture,naf:current,reference,
+   includeInputs:$('v6RetainInput').checked,tensorSha:C.tensorSha}),
   onRunCapture:(fn)=>{if(typeof fn!=='function')throw Error('run listener must be a function');
    runListeners.add(fn);return()=>runListeners.delete(fn)},
   runOnce:run};
