@@ -1,0 +1,225 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SCEPT V6 · Neural Activity Fingerprint</title><link rel="stylesheet" href="./v4.css"><link rel="stylesheet" href="./v5.css"><link rel="stylesheet" href="./v6.css"></head>
+<body class="v4 v5 v6"><div class="app"><aside class="sidebar"><a class="brand" href="#top"><span class="mark">◇</span><span><strong>SCEPT<span class="accent">.</span></strong><small>NEURAL MECHANISM OBSERVATORY</small></span></a><span class="eyebrow">OBSERVATORY V6</span><a class="side-link active" href="#workbench">◉ MRI 与三维观测</a><a class="side-link" href="./universal.html">⬡ 通用模型控制台</a><a class="side-link" href="#v6Studio">▦ 单次神经活动指纹 NAF</a><a class="side-link" href="./v5.html">↔ V5 A/B 与受控实验</a><a class="side-link" href="#audit">▦ 实验记录</a><a class="side-link" href="#protocol">◎ 科学边界</a><div class="side-bottom"><span class="glow"></span> 真实计算 · 本地执行<br><small>不重新训练 · I-JEPA 未接入</small></div></aside>
+<main id="top"><header class="header"><div><span class="eyebrow">SCEPT / UNIVERSAL NEURAL ACTIVITY OBSERVATORY V6</span><h1>一次运行，看见模型内部的真实活动<span class="accent">.</span></h1><p>不必修改图像，也不需要 A/B。单次推理即可获得独立 NAF 指纹、真实通道活动与可评价的计算更新。</p></div><span id="readyLabel" class="ready">正在初始化…</span></header>
+<div class="modebar"><div class="mode-explainer"><label for="modelMode" class="mode-label">当前计算模型</label><select id="modelMode" aria-label="选择已训练模型"><option value="vit">视觉 Transformer · 五层真实观测（技术验证）</option><option value="mri_cnn">MRI 训练 EfficientNetB3 · 分类响应（研究模型）</option></select><small id="modelInfo">视觉 ViT 并非 MRI 专业模型；只用于证明多层可观察性，不构成医学解释。</small></div><div class="mode-actions"><button id="runExperiment" class="primary" disabled>原版 A/B 内部观测</button><span id="runProgress">获取真实 MRI 与预训练模型</span></div></div>
+<div id="warning" class="warning">MRI 来自公开 MNI152 脑模板。模型使用公开预训练视觉 ViT，输入为从三维 MRI 提取的二维切片，当前未通过医学预处理一致性和临床任务有效性验证。</div>
+<section class="workspace" id="workbench">
+<article class="panel"><div class="panel-title"><span>01 / MRI INPUT</span><h2>三维脑 MRI · 编辑区域</h2><p>这是真实 MRI 衍生的脑模板，不是随机条纹。点击切片选中位置，在三维体数据中修改局部球形区域。</p></div>
+<div class="source"><strong id="mriSource">MNI152 模板</strong><small id="mriStatus">正在读取 NIfTI…</small></div>
+<div class="views">
+ <div class="scan"><header>近似轴位 · 体素 i–j</header><canvas width="256" height="256" id="viewAxial"></canvas><input id="sliceK" type="range" min="0" max="1"></div>
+ <div class="scan"><header>近似冠状位 · 体素 i–k</header><canvas width="256" height="256" id="viewCoronal"></canvas><input id="sliceJ" type="range" min="0" max="1"></div>
+ <div class="scan"><header>近似矢状位 · 体素 j–k</header><canvas width="256" height="256" id="viewSagittal"></canvas><input id="sliceI" type="range" min="0" max="1"></div>
+ <div class="scan"><header>三维体素点云 · 拖动旋转</header><canvas width="256" height="256" id="view3d"></canvas><small>点云不是已验证的解剖脑表面</small></div>
+</div>
+<div class="v4-compact-actions"><button type="button" id="v4ShowPlanes">显示 / 收起全部 MRI 视图</button><span class="small">默认突出轴位与三维脑体素视图</span></div><section class="patch-workbench" aria-label="MRI 实际模型输入和 Patch 映射">
+ <div class="patch-heading"><b>实际送入模型的二维切片 · Patch 联动</b><span id="patchStatus">等待真实输入</span></div>
+ <div class="patch-content">
+  <div class="patch-preview"><canvas id="patchInputCanvas" width="224" height="224" title="点击图像块，可观察相应 Token。显示真实模型输入及改动范围" tabindex="0" aria-label="224×224 实际 ViT 输入与 14×14 Patch 网格"></canvas></div>
+  <div class="patch-side"><div id="patchCounts">待运行</div><p>绿色边框表示模型实际收到变化的 Patch，不是 MRI 屏幕上的任意标记。点选一个 Patch，可在右侧定位对应 Token。</p><div id="patchSelection">尚未选中 Patch</div><button type="button" id="patchClear" class="secondary">取消 Patch 选择</button></div>
+ </div>
+</section>
+<div class="roi-editor"><div class="field"><div class="fieldhead"><label for="mriRadius">球形 ROI 半径</label><output id="mriRadiusValue">10 体素</output></div><input type="range" id="mriRadius" min="2" max="30" value="10"></div><div class="field"><div class="fieldhead"><label for="mriAmount">强度变化</label><output id="mriAmountValue">+0.15</output></div><input type="range" id="mriAmount" min="-0.75" max="0.75" step=".05" value=".15"></div></div>
+<div id="roiCoords" class="small">ROI 中心：</div><div class="buttons"><label class="secondary upload">导入自己的 NIfTI <input hidden id="mriFile" type="file" accept=".nii,.nii.gz"></label><button class="secondary" id="mriUndo">撤销强度修改</button><button class="secondary" id="reloadTemplate">恢复公开脑模板</button></div><p class="small" id="mriInfo">等待加载 MRI 数据</p>
+</article>
+<article class="panel"><div class="panel-title"><span>02 / INTERNAL RESPONSE</span><h2>真实神经网络响应</h2><p>同一个冻结模型运行两次。颜色表示真实观测张量的变化幅度；灰色表示该计算位置尚未开放观测点。</p></div><section id="v6Studio" class="v6-studio" aria-label="V6 真正独立的单次运行神经活动指纹">
+ <div class="v6-head"><span class="v4-method">SCEPT V6 · OBSERVE ONCE · REAL MODEL STATE</span>
+   <h2>Neural Activity Fingerprint <span>NAF</span></h2>
+   <p>一次输入、一次真正的模型前向计算，记录真实内部张量。无需创建 B，也不会把活动幅度冒充解释贡献。</p></div>
+ <div class="v6-tools">
+  <label>观察模型<select id="v6Model">
+   <option value="vit">真实预训练 ViT · Token 内部活动</option>
+   <option value="cnn">真实预训练 EfficientNetB3 · CNN 通道/输出</option>
+  </select></label>
+  <button type="button" id="v6Run" class="primary">▶ 单次运行并观察</button>
+  <button type="button" id="v6Export" class="secondary" disabled>导出 Run Record + NAF</button>
+ </div>
+ <div class="v6-summary" id="v6Counts">尚未运行：不显示虚构的指纹或计算单元。</div>
+ <div class="v6-modes">
+  <label>观测维度<select id="v6Metric">
+   <option value="state">Activity State · 单次状态 RMS</option>
+   <option value="update">Computation Update · 单次模块更新</option>
+   <option value="pattern">Representation Pattern · 通道数值</option>
+  </select></label>
+  <label>色标<select id="v6Scale">
+   <option value="raw">RAW · 固定物理数值界限</option>
+   <option value="reference">经验参考校准 · 必须先创建</option>
+  </select></label>
+  <label>RAW 固定上限<input id="v6RawMax" type="number" min="0.000001" step="0.1" value="2"></label>
+ </div>
+ <canvas id="v6Fingerprint" width="920" height="230" tabindex="0" aria-label="只有真实单次运行数据才会填色的神经活动指纹"></canvas>
+ <div class="v6-legend"><span><i class="v5-swatch v5-low"></i>数值较小</span>
+  <span><i class="v5-swatch v5-mid"></i>数值中等</span><span><i class="v5-swatch v5-high"></i>数值较大</span>
+  <span>固定 RAW 色标，非统计显著性</span></div>
+ <div class="v6-twocol">
+  <article><div class="v6-line"><h3>真实计算位置 · 三维观测</h3><button type="button" class="secondary" id="v6Rotate">旋转</button></div>
+   <canvas id="v6Cloud" width="700" height="255" aria-label="实际已观测计算位置的三维排列，位置不代表真实网络拓扑"></canvas>
+   <p>点对应真实计算位置，颜色来自单次实测活动；三维位置仅为排布，不虚构节点之间的连接。</p></article>
+  <article><h3>选中的真实 Token / 通道</h3><p id="v6Selected">点击上方指纹中的一个真实单位。</p>
+   <canvas id="v6Channels" width="700" height="178" aria-label="实际通道或空间特征值的正负分布"></canvas>
+   <p id="v6PatternNote">尚未选择真实观测单元。</p></article>
+ </div>
+ <details class="v6-reference"><summary>V6.3 · 参考校准与运行历史</summary>
+  <p>至少五次真实、不同输入、相同模型及预处理的 NAF 才能构造经验参考。
+   当前仅提供「当前浏览器数据系列」校准，不等于独立患者或临床正常分布。</p>
+  <button type="button" id="v6BuildReference" class="secondary" disabled>利用本次会话的独立 NAF 创建经验参考</button>
+  <p id="v6History">尚无独立 NAF。</p>
+ </details>
+ <p id="v6ModelInfo" class="v6-note">ViT 是通用自然图像预训练模型，不是医学诊断模型。</p>
+ <p id="v6Status" role="status" aria-live="polite">等待真实模型与 MRI。</p>
+ <p class="v6-disclaimer">NAF 状态数值 ≠ 模型解释/因果作用/计算量。没有真实同空间模块输入/输出时「计算更新」不可评价；没有足够真实参考时校准不可评价。U11 M4 尚未达成。</p>
+ </section>
+<section id="v5Evidence" class="v5-studio" aria-label="SCEPT V5 真实神经差异指纹">
+  <div class="v5-heading"><div><span class="v4-method">SCEPT V5 / TRUE NEURAL COUNTERFACTUAL MEASUREMENTS</span><h2>Neural Difference Fingerprint <span>NDF</span></h2><p>只使用同一个冻结模型对真实 A/B 输入推理所得的原始内部张量。不把亮度变化等同于因果贡献。</p></div>
+    <button type="button" class="secondary" id="v5Export" disabled>导出真实 NDF / CRC 证据</button></div>
+  <div class="v5-modes">
+    <article><span class="v5-num">01 · 快速观察</span><h3>同一个 MRI 区域的强度修改</h3>
+      <p>使用左侧已经选择的黄色 ROI 和强度滑块。生成真实 A/B 模型活动差异，<strong>不称为移除肿瘤</strong>。</p>
+      <button type="button" id="v5Observe" class="primary">运行 NDF 强度实验</button></article>
+    <article><span class="v5-num">02 · 反事实研究</span><h3>原始 MRI 与去肿瘤反事实 B</h3>
+      <p>先在左侧导入原始 A，再在此上传预先生成的 B 及真实病灶掩膜。仅检查几何对应；无法自动证明修复在医学上合理。</p>
+      <label for="v5BFiles">反事实 B（.nii/.nii.gz，允许多个）</label><input id="v5BFiles" type="file" accept=".nii,.nii.gz" multiple>
+      <label for="v5Mask">对应 A 的病灶分割掩膜（必需）</label><input id="v5Mask" type="file" accept=".nii,.nii.gz">
+      <button type="button" id="v5PairRun" class="primary">比较真实 A / B</button>
+      <p id="v5MaskInfo" class="small">未导入掩膜和反事实 B。</p>
+    </article>
+  </div>
+  <div class="v5-output">
+    <div class="v5-output-head"><h3>03 · 真实内部响应变化指纹</h3><span>层 × 真实 Token · 点击定位三维点云</span></div>
+    <canvas id="v5Fingerprint" width="960" height="320" tabindex="0" aria-label="实际 ONNX 模型内部张量 A/B 差异指纹；未运行时无数据"></canvas>
+    <div class="v5-legend"><span><i class="v5-swatch v5-low"></i>较低</span><span><i class="v5-swatch v5-mid"></i>较高</span><span><i class="v5-swatch v5-high"></i>更高</span><span>仅本次视觉增强，原始值见详情</span></div>
+    <p id="v5NdfInfo">尚无真实 NDF 观测。</p><p id="v5Selection" class="v5-detail"></p>
+    <p id="v5NdfConclusion">请先执行真实 A/B 推理。</p>
+  </div>
+  <div class="v5-evidence-grid">
+    <article><h3>04 · CRC：反事实响应一致性</h3><p>同一真实 A、至少三个不同的实际 B 反事实输入。计算层内 Top-K 重合与激活响应排序相关；不是独立患者统计。</p>
+      <button type="button" id="v5CrcRun" class="secondary" disabled>计算实际 CRC</button><p id="v5Crc">尚未评价。</p></article>
+    <article><h3>05 · ICM：内部干预贡献</h3><p>必须先有经过核验的激活替换 ONNX，才能进行真正的内部干预。<strong>这里不会把 NDF 的亮点假装成因果贡献。</strong></p>
+      <p id="v5Icm">尚未评价：运行真实配对 A/B 并加载可替换 ONNX 才能执行。</p>
+    <details class="v5-patching"><summary>研究者模式 · 执行真实 ICM 内部激活替换</summary>
+      <p>使用 scripts/scept_build_icm_patch_model.py 基于当前**同一冻结 ONNX**和所选内部层生成带真实 Where 替换操作的模型；不具备模型则维持不可评价。</p>
+      <button type="button" id="v5DownloadModel" class="secondary">下载当前实际运行的、SHA 已验证的 ViT ONNX</button>
+      <label for="v5PatchFile">加载真实 patchable ONNX</label><input id="v5PatchFile" type="file" accept=".onnx">
+      <label for="v5OriginalHash">原始（插装前后需对应）模型 SHA-256</label><input id="v5OriginalHash" type="text" placeholder="原始 ONNX SHA-256，64 位十六进制">
+      <label for="v5TargetIndex">目标 logit 索引</label><input id="v5TargetIndex" type="number" min="0" step="1" value="0">
+      <button type="button" id="v5PatchRun" class="secondary" disabled>运行真实双向激活替换</button>
+      <p id="v5PatchInfo">需要 NDF 中的 Token 选择、真实 patchable ONNX、来源校验与 no-op 对比。</p>
+    </details>
+    <a class="secondary" href="https://github.com/changxinjiresearch/BrainMirror/blob/main/scripts/scept_build_icm_patch_model.py">ONNX 改写器源码</a></article>
+  </div>
+  <p id="v5Status" class="v4-ceds-status" role="status" aria-live="polite">等待真实冻结模型与 MRI 加载。</p>
+  <p class="v4-disclaimer">当前默认 ViT 在自然图片上预训练，并不适合做医学临床推断。几何相同的两份 NIfTI 也不能自动证明病灶反事实正确。NDF ≠ CRC ≠ ICM；U11 M4 仍未通过。</p>
+</section>
+<details class="v5-legacy"><summary>旧版 U10 / CEDS 受控输入证据实验（高级研究）</summary>
+<section id="v4Evidence" class="v4-ceds" aria-label="SCEPT U10 实际受控证据依赖谱">
+  <div class="v4-ceds-head">
+    <div><span class="v4-method">SCEPT U10 · SCIENTIFIC SIGNATURE</span>
+      <br><strong>CEDS / 受控证据依赖谱</strong></div>
+    <button type="button" id="v4RunEvidence" class="primary">② 检验 SCEPT 解释</button>
+  </div>
+  <p class="v4-disclaimer">同一冻结模型、相同强度的目标 P / 匹配对照 Q 干预；实际 ONNX A/B/C 三次推理。显示独立扰动种子范围，不伪造连续变化。</p>
+  <canvas id="v4Signature" width="820" height="280" role="img" aria-label="受控目标与对照的实际输出响应谱；没有实验时为空白"></canvas>
+  <div class="v4-evidence-summary">
+    <p id="v4Verdict">尚未检验</p>
+    <small id="v4Target">目标输出由模型真实 logits 确定；不是 MRI 诊断类别</small>
+    <small id="v4Roi">P / Q 尚未生成；实验仅对实际模型输入中有变化的区域开放</small>
+    <small id="v4Metrics">等待原始 U10 数据</small>
+    <p id="v4Current">满剂量目标 / 对照响应：尚未测量</p>
+    <div id="v4Gates" class="v4-gates" aria-label="U10 七项预注册科学判别门槛"></div>
+    <details class="v4-probes"><summary>查看 U10 实验中模型内部实际变化（P / Q）</summary>
+      <p class="v4-disclaimer">下面是受控实验满剂量、各独立种子下真正导出的中间层平均 |Δ|，与普通 MRI A/B 三维点云不是同一实验。没有测量输出则不展示。</p>
+      <div id="v4LayerEvidence" class="v4-gates"></div>
+    </details>
+  </div>
+  <div class="v4-resultbar">
+    <button type="button" class="secondary" id="v4ExportEvidence" disabled>导出真实解释与可核查证据 JSON</button>
+    <a href="https://github.com/changxinjiresearch/BrainMirror/blob/main/docs/SCEPT_U11_RESULTS_V0_1.md" target="_blank" rel="noopener noreferrer">U11 原始科学结果 ↗</a>
+    <small>研究里程碑 M4：尚未通过</small>
+  </div>
+  <p id="v4Status" class="v4-ceds-status" role="status" aria-live="polite">等待 MRI / 模型</p>
+  <p class="v4-disclaimer">本模式的 P/Q 只经过模型输入数值匹配，不是医学解剖匹配。普通 MRI A/B 活动图与 U10 的受控 A/B/C 实验不能混同。该 ViT 并非 MRI 训练模型。</p>
+</section></details>
+<div class="network-frame">
+<div class="network-view-tabs" role="group" aria-label="选择实际模型结构或内部 Token 响应">
+<button type="button" id="viewOperators" class="active" aria-pressed="true">真实算子结构</button>
+<button type="button" id="viewTokens" aria-pressed="false">Token 三维响应 · 985</button>
+</div>
+<div class="network-toolbar" role="toolbar" aria-label="三维计算网络操作">
+  <button id="networkOverview" type="button">结构总览</button>
+  <button id="networkEnter" type="button" disabled>进入选中层</button>
+  <button id="networkZoomIn" type="button" aria-label="放大三维网络">＋</button>
+  <button id="networkZoomOut" type="button" aria-label="缩小三维网络">－</button>
+  <button id="networkReset" type="button">重置视角</button>
+</div>
+<div class="response-controls" aria-label="内部激活三维对比模式">
+  <div class="response-tabs" role="group" aria-label="选择激活显示方式">
+    <button id="responseCompare" type="button" class="active" aria-pressed="true">A/B 并排对比</button>
+    <button id="responseDelta" type="button" aria-pressed="false">差异 Δ</button>
+    <button id="responseBefore" type="button" aria-pressed="false">原始 A</button>
+    <button id="responseAfter" type="button" aria-pressed="false">修改后 B</button>
+  </div>
+  <div class="response-scale"><span id="responseScaleLabel">真实观测点：等待首次计算</span>
+    <button type="button" id="responseCalibrate" title="锁定本次实际观测范围，供后续重新计算在同一刻度下比较">设定对比色标</button>
+  </div>
+</div>
+<div class="network-depth" id="networkDepth">真实 ONNX · 三维网络结构总览</div>
+<div id="operator3dShell" class="network-canvas-shell"><div id="networkPairLabels" class="network-pair-labels"><span>A · 修改前的真实激活</span><span>B · 修改后的真实激活</span></div><canvas id="networkCanvas" width="960" height="460" tabindex="0" aria-label="可旋转缩放的真实 ONNX 三维计算图，单击节点查看属性，进入所选层查看内部计算依赖"></canvas></div>
+<div id="token3dShell" class="token3d-shell" hidden>
+ <div class="token-toolbar">
+   <button id="tokenOverview" type="button">全部 5 层</button>
+   <button id="tokenEnter" type="button">进入当前层</button>
+   <button id="tokenZoomIn" type="button">放大＋</button>
+   <button id="tokenZoomOut" type="button">缩小－</button>
+   <button id="tokenReset" type="button">重置视角</button>
+   <span id="tokenDepth">5 层 · 985 个真实 Token</span>
+ </div>
+ <canvas id="token3dCanvas" width="960" height="460" tabindex="0" aria-label="可旋转的 Token 真实激活三维观测场景。单击 Token 查看 192 个实际特征通道"></canvas>
+ <div id="token3dNote" class="token3d-note">真实 Token，不是 ONNX 算子。没有测量到注意力权重时，不绘制 Token 间连接。</div>
+</div>
+<div class="response-legend" id="responseLegend" aria-live="polite">
+  <span><i class="swatch unobserved"></i> 算子视图灰色表示未观测；Token 视图所有活动值均来自真实张量</span>
+  <span><i class="swatch observed"></i> 已采集张量的真实生产节点</span>
+  <span id="responseLegendDetail">颜色/大小仅由该节点实际观测张量的数据决定；无数据不着色。</span>
+</div>
+<div class="network-footer"><span>拖动旋转 · 滚轮缩放 · 单击选中 · 双击进入层 · Esc 返回</span><span id="networkState">等待计算</span></div>
+<div id="networkStats" class="network-stats" role="status">正在读取 ONNX 实际算子和连接</div>
+<div id="networkNodeDetails" class="network-node-details" aria-live="polite">单击一个真实算子节点，查看其输入、输出和数据依赖关系。</div>
+<div id="tokenDetails" class="token-details" hidden>
+ <div class="token-header"><strong id="tokenTitle">Token 通道详细数据</strong><span id="tokenStats">—</span></div>
+ <canvas id="tokenChannelCanvas" width="960" height="250" aria-label="真实 192 通道原始激活与逐通道差异"></canvas>
+ <label class="token-slider">检查通道 <input id="tokenChannelSelect" type="range" min="0" max="191" value="0"><output id="tokenChannelValue">0</output></label>
+ <div id="tokenChannelInfo">请选择一个实际 Token。</div>
+ <div class="token-note">CLS Token 无空间坐标。Token/通道是真实张量坐标，不是额外编造的 ONNX 算子或注意力连线。</div>
+</div>
+</div>
+<div class="metric-row"><div><small>已观测中间层</small><strong id="metricLayers">—</strong></div><div><small>发生变化的数值</small><strong id="metricChanged">—</strong></div><div><small>当前层平均 |Δ|</small><strong id="metricMean">—</strong></div></div>
+<div class="layer-heading"><h3>多层内部激活差异</h3><label>查看层 <select id="layerSelect"><option>等待模型加载</option></select></label></div><div id="layerTable" class="layer-table"><div class="empty">运行实验后显示多个真实 Transformer 隐藏层的响应。</div></div>
+<div class="plotframe"><canvas id="responseChart" width="800" height="185"></canvas></div>
+<details class="extra-observations">
+ <summary>扩展真实观测点 · Patch Embedding / Query / Key / Attention / Residual <span id="extraProbeStatus">等待实际模型返回</span></summary>
+ <div id="extraProbeList">等待模型运行后核对原始 ONNX 输出。</div>
+ <p>这些是实际模型计算张量，不是模拟节点。Attention Softmax 数值本身不等于解释证据；不同张量的量纲和维度也不能直接比较。</p>
+</details><div class="explain-box" id="interpretation">当前没有计算结果。改变 MRI 后点击「开始实验」，右侧将更新真实模型多层响应；不再仅显示一张固定网络图。</div>
+</article></section>
+<section class="cards" id="audit"><article><h3>实验记录</h3><p>保存模型、MRI 来源、ROI、预处理和每层数值变化的校验信息。</p><div id="records">尚无本次实验记录。</div></article><article id="protocol"><h3>证据等级与科学边界</h3><p>本阶段观测为真实预训练网络的张量变化（L1）；不同层的变化不自动等于因果解释。MRI 模型专属解释须在 MRI 训练权重、任务目标及预处理匹配后另外验收。</p><p>默认采用 MNI152 脑模板。编辑是探索性的强度干预，不代表生物学有效病灶模拟。</p></article></section>
+<details class="advanced"><summary>高级设置与科研数据 <span>模型适配 · 张量导出 · 科学审计 ↓</span></summary><div class="advance-content"><div class="info-grid"><div><small>预训练源模型</small><code id="sourceModelHash">正在核验</code></div><div><small>插装后的模型</small><code id="instrumentedHash">—</code></div><div><small>MRI 原始数据 SHA-256</small><code id="mriHash">—</code></div><div><small>输入及解释边界</small><code>二维 MRI 切片 → 非 MRI 专用 ViT（OOD）</code></div></div><div class="buttons"><button id="saveAudit" class="secondary" disabled>下载实验 JSON</button><button id="saveLayers" class="secondary" disabled>下载多层 CSV</button><a href="./lab.html" class="secondary" target="_blank" rel="noopener">完整 ONNX 适配器 / 实验室</a></div><p>兼容的 3D MRI 训练模型可以通过原有 ONNX 适配器导入；BraTS 专用模型、四模态配准与标准化和端到端三维推理必须另行测试才能标为医学有效。</p></div></details>
+<footer>SCEPT Observatory v6 · Real single-run NAF · V5 preserved / genuine pretrained tensor observation · research preview <span>I-JEPA remains excluded</span></footer></main></div>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script src="./onnx_inspector.js"></script>
+<script src="./v3_mri.js"></script>
+<script src="./scept_tensor_adapter.js"></script><script src="./scept_patch_mapper.js"></script><script src="./v3_network3d.js"></script><script src="./scept_activity3d.js"></script><script src="./v3_engine.js"></script><script src="./v3_mri_cnn.js"></script>
+<script src="./core/scept_core.js"></script>
+<script src="./core/scept_data_adapter.js"></script>
+<script src="./core/scept_intervention.js"></script>
+<script src="./core/scept_scheduler.js"></script>
+<script src="./core/scept_observation.js"></script>
+<script src="./core/scept_xai.js"></script>
+<script src="./core/scept_sdk.js"></script>
+<script src="./plugins/u10_evidential_dependence.js"></script>
+<script src="./scept_v4_ceds.js"></script>
+<script src="./scept_v5_science.js"></script><script src="./scept_v5_ui.js"></script>
+<script src="./core/onnx_probes.js"></script>
+<script src="./core/scept_run_record.js"></script><script src="./core/scept_capture_once.js"></script>
+<script src="./core/scept_naf.js"></script><script src="./core/scept_naf_calibration.js"></script>
+<script src="./scept_v6_cnn.js"></script><script src="./scept_v6_ui.js"></script>
+</body></html>
