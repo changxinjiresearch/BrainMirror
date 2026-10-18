@@ -57,6 +57,10 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   // A generic model option may NOT falsely use the dedicated pretrained ViT runtime.
   await page.locator('#v65Adapter').selectOption('generic');
   assert.equal(await page.locator('#v65Generic').isVisible(),true);
+  assert.equal(await page.locator('#v6Run').isDisabled(),true,'Generic ONNX must never silently execute pinned ViT');
+  await page.locator('#v65Adapter').selectOption('vit');
+  assert.equal(await page.locator('#v6Run').isEnabled(),true,'Real ViT mode restores actual NAF button');
+  await page.locator('#v65Adapter').selectOption('generic');
   assert.match(await page.locator('#v65Generic a').getAttribute('href'),/universal\.html/);
   assert.equal(errors.length,0,errors.join(' | '));
   await page.screenshot({path:'/tmp/scept-v65-workspace-actual.png',fullPage:true});
