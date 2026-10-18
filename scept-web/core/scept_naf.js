@@ -14,10 +14,12 @@
    return {status:'not_observed',tensor:probe,reason:obs?.reason||'probe_not_measured',units:[]};
   const a=obs.activity,role=profile==='vit-token-channel'?'token':
     profile==='cnn-nchw'||profile==='cnn-nhwc'?'channel':null;
-  const rows=a.axisSummaries[role];
-  if(!role||!Array.isArray(rows)||!rows.length) return{status:'unsupported',tensor:probe,
+  const assignedRole=role&&Array.isArray(a.axisSummaries[role])?role:
+    (Array.isArray(a.axisSummaries.feature)?'feature':null);
+  const rows=a.axisSummaries[assignedRole];
+  if(!assignedRole||!Array.isArray(rows)||!rows.length) return{status:'unsupported',tensor:probe,
     reason:'no_native_units_for_profile_or_resource_cap',units:[]};
-  return{status:'measured',tensor:probe,architecture:a.architecture,profile,role,
+  return{status:'measured',tensor:probe,architecture:a.architecture,profile,role:assignedRole,
     shape:a.shape,units:rows.map(u=>({index:u.index,rms:u.rms,mean:u.mean,
      positiveFraction:u.positiveFraction,negativeFraction:u.negativeFraction,
      count:u.count})),scientificMeaning:'numeric internal state magnitude, not importance'};
@@ -25,6 +27,10 @@
  function getPattern(cap,probe,index,profile,{maxValues=65536}={}){
   assertCapture(cap);
   const t=cap.getTensor(probe);if(!t)issue('UNOBSERVED','Raw tensor not retained: '+probe);
+  if(t.dims.length===2&&t.dims[0]===1&&Number.isInteger(index)&&index>=0&&index<t.dims[1])
+   return{schema:'scept.naf.pattern.v1',tensor:probe,profile,unit:index,shape:t.dims.slice(),
+    coordinates:{feature:index},values:[Number(t.data[index])],
+    provenance:'verified_same_forward_real_output_only',interpretation:'model output feature, NOT internal hidden unit'};
   if(!Number.isInteger(index)||index<0)issue('BAD_UNIT','Unit must be an integer');
   let stride,start,coordinates;
   if(profile==='vit-token-channel'){
