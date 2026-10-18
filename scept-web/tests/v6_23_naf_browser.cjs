@@ -49,10 +49,20 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
    el.value=String(next);el.dispatchEvent(new Event('input',{bubbles:true}));
   });
   await page.locator('#v6Metric').selectOption('state');
+  await page.locator('#v6RetainInput').check();
+  await page.locator('#v6AutoArchive').check();
+  const zipDownload=page.waitForEvent('download',{timeout:60000});
   await page.locator('#v6Run').click();
+  const zipFile=await zipDownload;
+  assert.match(zipFile.suggestedFilename(),/full-observation\.zip$/);
+  await zipFile.saveAs('/tmp/scept-real-vit-with-input.zip');
+  await page.locator('#v6AutoArchive').uncheck();
   await page.waitForFunction(()=>SCEPT_V6.getSnapshot().runCount>=2||
    document.querySelector('#v6Status').dataset.error==='true',null,{timeout:150000});
   const second=await page.evaluate(()=>({snap:SCEPT_V6.getSnapshot(),record:SCEPT_V6.getRecord()}));
+  const archive=await page.evaluate(()=>SCEPT_V6.getArchiveStatus());
+  assert.equal(archive.inputs,true,'Automatic archive must include only explicitly retained real model input');
+  assert(archive.outputs>=6,'Every captured real ONNX output must be included');
   assert.equal(second.snap.runCount,2,
    'Second true independent NAF failure: '+await page.locator('#v6Status').innerText());
   assert.notEqual(second.snap.runId,first.snap.runId);
