@@ -206,7 +206,7 @@
           }});
         const manifest=root.SCEPT_U10_MECHANISM.plan({...PROTOCOL,
           targetMask:p,controlMask:q,inputName:input,shape:dims,
-          targetTensor:logits.name,targetIndex,modelSha256:ctx.sha256,profileId:'vit-token-channel'});
+          targetTensor:logits.name,targetIndex,modelSha256:ctx.sha256,profileId:'generic'});
         manifest.observation.tensors=[logits.name,...ctx.probes.map(t=>t.name).filter(n=>n!==logits.name)].slice(0,8);
         engine.registerExperiment(manifest);
         await engine.prepare(manifest.id,{feeds:{[input]:{type:'float32',dims,data:baseline}}});
