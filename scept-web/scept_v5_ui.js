@@ -165,6 +165,13 @@ $('v5Export').onclick=()=>{
 };
 // Runtime-gated actual ONNX activation patching. Nothing is colored as
 // an ICM result until a patched graph completes all A/B/no-op/bidirectional forwards.
+$('v5DownloadModel').onclick=()=>{
+ try{
+  const sha=root.SCEPT_V3.downloadInstrumented();
+  $('v5OriginalHash').value=sha;
+  $('v5PatchInfo').textContent='当前真实模型已下载，原始 SHA 自动填写。将它交给本地 Python 改写器生成对应层的 patchable ONNX。';
+ }catch(ex){$('v5PatchInfo').textContent='无法导出：'+ex.message}
+};
 $('v5PatchFile').onchange=async e=>{
  patch=null;$('v5PatchRun').disabled=true;
  try{
