@@ -38,6 +38,9 @@ jobs:
           test -f scept-web/universal.html
           test -f scept-web/v4.html
           test -f scept-web/v5.html
+          test -f scept-web/v6.html
+          test -f scept-web/core/scept_workspace_journal.js
+          test -f scept-web/scept_workspace_v65.js
           test -f scept-web/scept_v5_science.js
           test -f scept-web/scept_v5_ui.js
           test -f scept-web/scept_v4_ceds.js
@@ -56,10 +59,11 @@ jobs:
           from pathlib import Path
           root=Path("scept-web")
           landing='''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-          <meta http-equiv="refresh" content="0;url=./v5.html">
-          <title>SCEPT V5 - Neural Fingerprint</title></head><body><main>
-          <h1>SCEPT V5 / Neural Difference Fingerprint</h1>
-          <p><a href="./v5.html">Open SCEPT V5 Counterfactual Neural Observatory</a></p>
+          <meta http-equiv="refresh" content="0;url=./v6.html">
+          <title>SCEPT V6.5 - Universal Research Workspace</title></head><body><main>
+          <h1>SCEPT V6.5 / Universal Research Workspace</h1>
+          <p><a href="./v6.html">Open SCEPT V6.5 Universal Research Workspace</a></p>
+          <p><a href="./v5.html">Previous V5 MRI A/B Counterfactual Observatory</a></p>
           <p><a href="./v4.html">Previous v4 CEDS observatory</a></p>
           <p><a href="./universal.html">Universal Core advanced research console</a></p>
           <p><a href="./legacy-studio.html">Legacy Transformer demonstration</a></p>
@@ -84,10 +88,10 @@ jobs:
           set -euo pipefail
           curl --fail --location --retry 4 --retry-delay 2 --max-time 30 \
             --output "$RUNNER_TEMP/scept-public-universal.html" \
-            "${PAGE_URL%/}/v5.html"
-          grep --fixed-strings --quiet 'scept_v5_science.js' "$RUNNER_TEMP/scept-public-universal.html"
-          grep --fixed-strings --quiet 'v5Fingerprint' "$RUNNER_TEMP/scept-public-universal.html"
-          echo "PASS actual public V5 NDF MRI / 3D site downloaded entirely and verified"
+            "${PAGE_URL%/}/v6.html"
+          grep --fixed-strings --quiet 'scept_workspace_v65.js' "$RUNNER_TEMP/scept-public-universal.html"
+          grep --fixed-strings --quiet 'v65Workspace' "$RUNNER_TEMP/scept-public-universal.html"
+          echo "PASS actual public V6.5 researcher workspace downloaded entirely and verified"
 
   verify-public-on-workflow-fix:
     if: github.event_name == 'push'

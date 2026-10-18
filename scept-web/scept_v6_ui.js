@@ -8,6 +8,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  C=root.SCEPT_CAPTURE_ONCE,N=root.SCEPT_NAF,K=root.SCEPT_NAF_CALIBRATION;
  if(!$('v6Run')||!O||!R||!C||!N||!K)return;
  let current=null,capture=null,history=[],reference=null,selected=null,busy=false,angle=.48;
+ const runListeners=new Set();
  const stats={runs:0};
  const fmt=x=>Number.isFinite(x)?Number(x).toPrecision(5):'—';
  const say=(s,error=false)=>{const e=$('v6Status');e.textContent=s;e.dataset.error=String(error)};
@@ -212,6 +213,8 @@ root.document.addEventListener('DOMContentLoaded',()=>{
     next=result.cap,fingerprint=fingerprintFrom(next,result.profile,result.probes,result.updates);
    if(capture)capture.release();capture=next;current=fingerprint;selected=null;
    history.push(fingerprint);if(history.length>32)history.shift();
+   const complete={record:next.exportRecord(),naf:JSON.parse(JSON.stringify(fingerprint))};
+   for(const fn of runListeners){try{fn(complete)}catch(err){console.warn('V6.5 journal subscriber failed',err)}}
    reference=null;$('v6Scale').value='raw';
    stats.runs++;
    $('v6Export').disabled=false;$('v6BuildReference').disabled=history.length<6;
@@ -260,6 +263,8 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    updates:current?.updates.map(g=>({status:g.status,units:g.units.length,reason:g.reason||null})),
    architecture:current?.profile,runId:current?.runId,recordCount:history.length}),
   getNaf:()=>current,getReference:()=>reference,getRecord:()=>capture?.exportRecord()||null,
+  onRunCapture:(fn)=>{if(typeof fn!=='function')throw Error('run listener must be a function');
+   runListeners.add(fn);return()=>runListeners.delete(fn)},
   runOnce:run};
  say('准备就绪：等待实际预训练模型与 MRI。基础 NAF 只需要一次运行。');
 });
