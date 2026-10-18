@@ -4,7 +4,7 @@
 root.document.addEventListener('DOMContentLoaded',()=>{
 const $=id=>document.getElementById(id),S=root.SCEPT_V5_SCIENCE;
 if(!$('v5Observe')||!S)return;
-let current=null,all=[],mask=null,busy=false,activeRevision=null;
+let current=null,all=[],mask=null,busy=false,activeRevision=null,selected=null,patch=null,paired=null;
 const fmt=x=>Number.isFinite(x)?x.toPrecision(5):'—';
 const info=(x,error=false)=>{ $('v5Status').textContent=x;$('v5Status').dataset.error=String(error) };
 const hash=async x=>{
@@ -73,7 +73,8 @@ $('v5Fingerprint').addEventListener('click',e=>{
  if(layer<0||layer>=g.rows.length)return;
  const r=g.rows[layer],unit=Math.floor((x-g.left)/(g.right-g.left)*r.units);
  if(unit<0||unit>=r.units)return;
- const v=r.values[unit];
+ const v=r.values[unit];selected={name:r.name,layer:r.layer,unit};
+ $('v5PatchRun').disabled=!(paired&&patch);
  $('v5Selection').textContent='真实 '+r.name+' · Token/通道 '+unit+
  ' · RMS '+fmt(v.rms)+' · MAE '+fmt(v.mae)+
  ' · A |激活| '+fmt(v.meanAbsA)+' · B |激活| '+fmt(v.meanAbsB);
@@ -85,7 +86,7 @@ async function runNumeric(){
  await root.SCEPT_V3.run();
  const a=root.SCEPT_V3.getAudit();
  if(!a||a.at===before||a.mri.revision!==root.SCEPT_MRI.state.revision)throw Error('没有完成本次真实 A/B 推理');
- all=[];mask=null;activeRevision=a.mri.revision;
+ all=[];mask=null;paired=null;selected=null;root.SCEPT_V5_CRC=null;activeRevision=a.mri.revision;
  return S.ndf({modelSha256:a.model_sha256,baselineHash:a.baseline_input_sha256,
  counterfactualHash:a.intervened_input_sha256,profile:'vit-token-channel',
  label:'exploratory-intensity-edit-not-lesion-removal',
@@ -108,6 +109,7 @@ async function runPair(){
  const X=root.SCEPT_MRI.makeSlice(false,2),ax=await hash(X);
  info('真实 ONNX：正在执行原始 MRI A');
  const A=await predict(X,ctx),records=[],fingerprints=new Set();
+ let firstB=null,firstInput=null;
  for(let i=0;i<vols.length;i++){
   const b=root.SCEPT_MRI.makeSlice(false,2,vols[i].v.values),bh=await hash(b);
   if(fingerprints.has(bh))throw Error('重复的反事实模型输入，拒绝伪重复');
@@ -116,11 +118,14 @@ async function runPair(){
   const rec=S.ndf({modelSha256:ctx.sha256,baselineHash:ax,counterfactualHash:bh,
    profile:'vit-token-channel',label:'uploaded-mri-counterfactual-not-validated-pathology',
    layers:ctx.probes.map(p=>({name:p.name,layer:p.layer,a:A[p.name],b:B[p.name]}))});
-  if(!i)show3d(records,ctx,A,B);
+  if(!i){show3d(records,ctx,A,B);firstB=B;firstInput=b;}
   records.push(rec);
  }
  if(root.SCEPT_MRI.state.revision!==mri.revision)throw Error('运行期间 MRI 或层面已变更；拒绝混淆不同实验');
- all=records;mask={filename:maskFile.name,maskSha256:await hash(M.values),count,
+ all=records;root.SCEPT_V5_CRC=null;selected=null;
+ paired={inputA:X,inputB:firstInput,outputA:A,outputB:firstB,originalHash:ax,modelSha256:ctx.sha256,
+  probeShapes:ctx.probes.map(p=>({name:p.name,shape:[...A[p.name].dims]})),revision:mri.revision};
+ mask={filename:maskFile.name,maskSha256:await hash(M.values),count,
   warnings:['NIfTI几何通过不代表伪健康组织合理','本 ViT 不是临床医学模型',
   '肿瘤和修复伪影尚未通过病理特异性控制实验']};
  activeRevision=mri.revision;
@@ -152,16 +157,78 @@ $('v5CrcRun').onclick=()=>{
 $('v5Export').onclick=()=>{
  if(!current)return;
  const data={schema:'scept.v5.evidence.v1',ndf:current,crc:root.SCEPT_V5_CRC||null,
-  provenance:mask,scientificClaims:{clinical:'NOT_ESTABLISHED',causal:'NOT_ESTABLISHED',
+  provenance:mask,icm:paired?.icm||null,scientificClaims:{clinical:'NOT_ESTABLISHED',causal:'NOT_ESTABLISHED',
    pathology_specificity:'NOT_ESTABLISHED',m4:'NOT_ACHIEVED'}};
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),
  link=document.createElement('a');link.href=url;link.download='scept-v5-genuine-neural-fingerprint.json';link.click();
  setTimeout(()=>URL.revokeObjectURL(url),1500);
 };
-$('v5Icm').textContent='内部激活替换须使用真实改写后的可执行 ONNX，当前页面不提供假设性贡献热图。';
+// Runtime-gated actual ONNX activation patching. Nothing is colored as
+// an ICM result until a patched graph completes all A/B/no-op/bidirectional forwards.
+$('v5PatchFile').onchange=async e=>{
+ patch=null;$('v5PatchRun').disabled=true;
+ try{
+  const f=e.target.files[0];if(!f||f.size>120000000)throw Error('真实 ONNX 必须小于120MB');
+  const bytes=new Uint8Array(await f.arrayBuffer()),fingerprint=await hash(bytes);
+  const session=await root.ort.InferenceSession.create(bytes,{executionProviders:['wasm']});
+  for(const name of ['pixel_values','scept_patch_override','scept_patch_mask'])
+   if(!session.inputNames.includes(name))throw Error('缺少真实 ONNX 中间替换输入：'+name);
+  if(!session.outputNames.includes('logits'))throw Error('真实替换模型没有目标 logits 输出');
+  patch={session,sha:fingerprint};
+  $('v5PatchInfo').textContent='真正的可执行 patchable ONNX 已加载，SHA '+fingerprint.slice(0,16)+
+   '…。需继续验证原始来源、内部张量形状及不替换时的模型输出等价性。';
+  $('v5PatchRun').disabled=!(paired&&selected);
+ }catch(ex){$('v5PatchInfo').textContent='ICM 不可评价：'+ex.message}
+};
+$('v5PatchRun').onclick=async()=>{
+ if(busy)return;busy=true;$('v5PatchRun').disabled=true;
+ try{
+  if(!paired||!selected||!patch)throw Error('必须先运行真实配对 A/B、点击一个 NDF Token、导入兼容的可执行 patchable ONNX');
+  if(root.SCEPT_MRI.state.revision!==paired.revision)throw Error('MRI 已改变，必须重新运行实验');
+  const original=$('v5OriginalHash').value.trim().toLowerCase();
+  if(!/^[0-9a-f]{64}$/.test(original)||original!==paired.modelSha256.toLowerCase())
+   throw Error('原始模型 SHA-256 必须与真实 ViT 插装模型完全一致');
+  const layer=paired.probeShapes.find(p=>p.name===selected.name);
+  if(!layer||layer.shape.length!==3||layer.shape[0]!==1)throw Error('选定的真实 ONNX 层不具备可定位的 Token×通道形状');
+  const A=paired.outputA[selected.name],B=paired.outputB[selected.name];
+  if(!A||!B||A.data.length!==B.data.length)throw Error('A/B 中间张量不一致');
+  const channels=layer.shape[2],n=A.data.length,start=selected.unit*channels;
+  if(start<0||start+channels>n)throw Error('选中 Token 超出真实张量形状');
+  const noMask=new Uint8Array(n),yesMask=new Uint8Array(n);yesMask.fill(1,start,start+channels);
+  const inference=async(input,replacement,m)=>{
+   const out=await patch.session.run({
+    pixel_values:new root.ort.Tensor('float32',input,[1,3,224,224]),
+    scept_patch_override:new root.ort.Tensor('float32',replacement,layer.shape),
+    scept_patch_mask:new root.ort.Tensor('bool',m,layer.shape)
+   });
+   if(!out.logits?.data)throw Error('真实激活替换模型未生成 logits');
+   return out.logits.data;
+  };
+  const index=Number($('v5TargetIndex').value),sA=paired.outputA.logits?.data[index],
+        sB=paired.outputB.logits?.data[index];
+  if(!Number.isInteger(index)||!Number.isFinite(sA)||!Number.isFinite(sB))
+   throw Error('目标 logit 不存在或不是有限数值');
+  info('ICM：正在核验不替换时，与原模型在 A/B 两种输入上的数值一致性…');
+  const offA=(await inference(paired.inputA,A.data,noMask))[index];
+  const offB=(await inference(paired.inputB,B.data,noMask))[index];
+  info('ICM：正在执行内部 A→B / B→A 的两次真实替换推理…');
+  const patchedAB=(await inference(paired.inputB,A.data,yesMask))[index];
+  const patchedBA=(await inference(paired.inputA,B.data,yesMask))[index];
+  const result=S.icm({modelSha256:paired.modelSha256,layerName:selected.name,unit:selected.unit,
+   sA,sB,offA,offB,sPatchedAB:patchedAB,sPatchedBA:patchedBA,
+   nonceSource:'real-onnx-patch-runtime',tolerance:1e-3});
+  $('v5Icm').textContent=result.verdict==='measured'?
+   '真实 ICM：A→B 输出恢复比 '+fmt(result.recoveryFraction)+'，B→A 反向贡献 '+fmt(result.reverseFraction)+
+   '（这不是概率、独立贡献百分比或医学因果证明）':
+   'ICM 不可评价：'+result.reason;
+  paired.icm=result;info('真实 ICM 完成：无替换数值一致性通过、双向内部真实计算完成。');
+ }catch(ex){$('v5Icm').textContent='ICM 不可评价：'+ex.message;info('ICM 未通过：'+ex.message,true)}
+ finally{busy=false;$('v5PatchRun').disabled=!(paired&&selected&&patch)}
+};
+$('v5Icm').textContent='ICM 尚未评价：须加载真实改写的 ONNX 并通过原模型无替换一致性检验。';
 $('v5Selection').textContent='点击真实差异指纹某一格，三维点云将定位到该层和 Token。';
 info('就绪后点击「NDF 强度实验」，或上传真实 MRI B 与病灶掩膜运行配对实验。');
-root.SCEPT_V5={getSnapshot:()=>({hasNdf:!!current,hasCrc:!!root.SCEPT_V5_CRC,
+root.SCEPT_V5={getSnapshot:()=>({hasNdf:!!current,hasCrc:!!root.SCEPT_V5_CRC,hasIcm:!!paired?.icm,
   measuredRealizations:all.length,modelSha256:current?.modelSha256,mode:current?.label}),
  getNdf:()=>current};
 });
