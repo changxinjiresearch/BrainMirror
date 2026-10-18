@@ -37,8 +37,13 @@ function style(t,m){
  const v=displayValue(t,m),zero=m==='delta'&&v<=1e-9;
  if(zero)return{r:1.8,fill:'#435d67',deltaOutline:0};
  if(m==='delta'){
-   const z=v/(Math.max(1e-12,s.scaleD||1)+v);
-   return{r:2.1+3.2*z,fill:'rgb('+Math.round(60+194*z)+','+Math.round(154+57*z)+','+Math.round(172-91*z)+')',deltaOutline:0};
+   // v4: visibility-only contrast, with raw RMS preserved in drill-down.
+   // The logarithmic domain is labelled as per-run, never cross-run quantitative scaling.
+   const v4=document.body?.classList.contains('v4');
+   const relative=v/Math.max(1e-12,s.scaleD||1);
+   const z=v4?Math.log1p(20*Math.min(1,relative))/Math.log(21):
+     v/(Math.max(1e-12,s.scaleD||1)+v);
+   return{r:2.1+3.2*z,fill:'rgb('+Math.round(60+194*z)+','+Math.round(154+57*z)+','+Math.round(172-91*z)+')',deltaOutline:0,opacity:v4?.16+.84*z:1};
  }
  const span=Math.max(1e-12,(s.colorHi??1)-(s.colorLo??0));
  const z=clamp((v-(s.colorLo??0))/span,0,1);
@@ -77,7 +82,7 @@ function render(){
    }
    if(patchSelected){ctx.strokeStyle='#84c8ff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius+2.3,0,Math.PI*2);ctx.stroke()}
    if(active){ctx.strokeStyle='#ffbb76';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius+3,0,Math.PI*2);ctx.stroke()}
-   ctx.fillStyle=vis.fill;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=vis.fill;ctx.globalAlpha=vis.opacity??1;ctx.beginPath();ctx.arc(n.p.x,n.p.y,radius,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
    if(n.info.isCls){ctx.strokeStyle='#d9bbf8';ctx.lineWidth=.8;ctx.stroke()}
   }
   ctx.fillStyle='#97c3bd';ctx.font='12px sans-serif';
@@ -100,7 +105,7 @@ function render(){
  $('tokenDepth').textContent=(s.scope==='all'?'五层概览':'第 '+s.layer+' 层')+' · '+arr.length+' 个真实 Token';
  $('networkDepth').textContent=(s.scope==='all'?'五层真实 Token 活动概览':'第 '+s.layer+' 层 · 真实 Token 响应')+' · '+(mode()==='compare'?'同步 A/B':mode()==='delta'?'真实差异 Δ':mode()==='before'?'原始 A':'修改后 B');
  $('token3dNote').textContent=(stale?'输入已修改，显示的是上一次计算结果；请重新计算。':'当前显示最近一次推理的真实张量数据。')+
- (mode()==='delta'?' Token 颜色表示逐通道 RMS 差异。':' A/B 共用首次真实计算校准的颜色区间 ['+fmt(s.colorLo||0)+', '+fmt(s.colorHi||0)+']，B 中金色细环表示真实 RMS 差异；原始激活本身可能接近。')+
+ (mode()==='delta'?' Token 颜色表示真实逐通道 RMS 差异；v4 仅对本次测量使用对数视觉增强，数值不变且不同实验需看原始值。':' A/B 共用首次真实计算校准的颜色区间 ['+fmt(s.colorLo||0)+', '+fmt(s.colorHi||0)+']，B 中金色细环表示真实 RMS 差异；原始激活本身可能接近。')+
  ' 节点半径限制为邻近 Token 屏幕距离的 30%，避免遮挡；没有绘制未经测量的注意力连接。';
 }
 function choose(layer,token){
