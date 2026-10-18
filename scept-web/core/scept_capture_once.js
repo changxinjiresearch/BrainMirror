@@ -52,7 +52,7 @@
    fail('INVALID_DEPENDENCY','Real U4 observeOnce and V6 Run Record contract required');
   async function captureOnce({session,feeds,modelId,probes,profileId='generic',
      preprocessing,runtime,limits={maxTensorElements:8_000_000,maxCaptureBytes:32_000_000,
-       maxAxisUnits:2048},retainTensors=true}={}){
+       maxAxisUnits:2048},retainTensors=true,retainInputs=false}={}){
    if(typeof session?.run!=='function'||!/^[a-f0-9]{64}$/i.test(session?.sha256||'')||
      !session.description?.inputs||!session.description?.outputs)
     fail('INVALID_SESSION','Verified model hash, real execution session and complete ONNX signatures required');
@@ -67,6 +67,10 @@
     fail('INVALID_LIMIT','Positive bounded tensor, byte and axis limits required');
    const desc=session.description;
    sameInputSignature(desc,feeds,contract,limits);
+   const storedInputs=new Map();
+   if(retainInputs)for(const m of desc.inputs){const t=feeds[m.name];
+    storedInputs.set(m.name,{type:t.type,dims:t.dims.slice(),data:new t.data.constructor(t.data)});
+   }
    const inputHashes={};
    for(const m of desc.inputs)inputHashes[m.name]=await tensorSha(feeds[m.name]);
    const preprocessHash=await digest(utf8.encode(stable(preprocessing)));
@@ -113,13 +117,19 @@
     record:JSON.parse(json),
     exportRecord:()=>JSON.parse(json),
     listStored:()=>released?[]:[...raw.keys()],
+    listStoredInputs:()=>released?[]:[...storedInputs.keys()],
+    getInputTensor:(name)=>{
+     if(released)fail('RELEASED','Retained tensors have been cleared');
+     const v=storedInputs.get(name);if(!v)return null;
+     return {type:v.type,dims:v.dims.slice(),data:new v.data.constructor(v.data)};
+    },
     getTensor:(name)=>{
      if(released)fail('RELEASED','Retained tensors have been cleared');
      const v=raw.get(name);
      if(!v)return null;
      return {type:v.type,dims:v.dims.slice(),data:new v.data.constructor(v.data)};
     },
-    release:()=>{raw.clear();released=true},
+    release:()=>{raw.clear();storedInputs.clear();released=true},
     isReleased:()=>released
    });
   }

@@ -32,6 +32,11 @@ jobs:
           node --check scept-web/core/scept_cloud_orbit.js
           node scept-web/tests/v65_cloud_orbit_contract.cjs
           node --check scept-web/scept_v6_ui.js
+          node --check scept-web/core/scept_full_archive.js
+          node --check scept-web/core/scept_capture_once.js
+          node --check scept-web/tests/v65_full_archive_contract.cjs
+          node scept-web/tests/v65_full_archive_contract.cjs
+          python scept-web/tests/verify_full_archive.py /tmp/scept-full-archive-contract.zip
           node scept-web/tests/v65_workspace_contract.cjs
           node scept-web/tests/v6_23_naf_contract.cjs
       - name: Install genuine Chromium
@@ -47,6 +52,10 @@ jobs:
         run: node scept-web/tests/v65_workspace_browser.cjs
       - name: Preserve V6.2 and V6.3 measured observation behavior
         run: node scept-web/tests/v6_23_naf_browser.cjs
+      - name: Independent real ViT ZIP integrity verification
+        run: |
+          python scept-web/tests/verify_full_archive.py /tmp/scept-real-vit-full-observation.zip
+          python scept-web/tests/verify_full_archive.py /tmp/scept-real-vit-with-input.zip
       - name: Public-release visual acceptance screenshot
         if: always()
         uses: actions/upload-artifact@v4

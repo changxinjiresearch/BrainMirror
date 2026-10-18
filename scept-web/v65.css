@@ -89,3 +89,15 @@
 .v65 .v6-value-pager button{font-size:11px;padding:7px 10px}
 .v65 #v6ValuePage{font-size:10px;color:#acd3cd}
 @media(max-width:530px){.v65 .v6-inspector-controls{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Full scientific observation archive: deliberate per-run selection, never hidden raw upload. */
+.v65 .v6-archive-options{border:1px solid #326770;background:#0b2a38;padding:12px;
+ border-radius:9px;margin:2px 0 13px;display:flex;flex-direction:column;gap:9px}
+.v65 .v6-archive-options label{display:flex;align-items:flex-start;gap:9px;
+ color:#c6e8df;font-size:11px;line-height:1.7;cursor:pointer}
+.v65 .v6-archive-options input[type=checkbox]{accent-color:#57ceb3;margin-top:3px;
+ width:15px;height:15px;flex-shrink:0}
+.v65 #v6ArchiveStatus{font-size:11px;line-height:1.7;color:#a6e4d5;overflow-wrap:anywhere}
+.v65 #v6ArchiveStatus[data-error=true]{color:#f5b081}
+.v65 #v6ExportFull{border:1px solid #78d9b8;min-height:36px}

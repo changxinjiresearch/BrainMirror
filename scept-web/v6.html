@@ -65,7 +65,13 @@
    <option value="cnn">真实预训练 EfficientNetB3 · CNN 通道/输出</option>
   </select></label>
   <button type="button" id="v6Run" class="primary">▶ 单次运行并观察</button>
-  <button type="button" id="v6Export" class="secondary" disabled>导出 Run Record + NAF</button>
+  <button type="button" id="v6Export" class="secondary" disabled>导出摘要 JSON</button>
+  <button type="button" id="v6ExportFull" class="primary" disabled>下载本次完整实测数据 ZIP</button>
+ </div>
+ <div class="v6-archive-options" role="group" aria-label="完整科研归档选项">
+  <label><input type="checkbox" id="v6RetainInput"> 本次运行同时保留并归档真实模型输入张量（必须运行前勾选；可能含个人 MRI 数据）</label>
+  <label><input type="checkbox" id="v6AutoArchive"> 每次运行完成自动下载完整观测 ZIP（浏览器可能询问多文件下载权限）</label>
+  <div id="v6ArchiveStatus" role="status" aria-live="polite">未开始归档：完整 ZIP 包含本次所有已捕获的输出张量、精确通道数值、NAF 和校验清单；不包含未采集层或模型权重。默认不保存原始 MRI 输入。</div>
  </div>
  <div class="v6-summary" id="v6Counts">尚未运行：不显示虚构的指纹或计算单元。</div>
  <div class="v6-modes">
@@ -305,6 +311,6 @@
 <script src="./core/scept_run_record.js"></script><script src="./core/scept_capture_once.js"></script>
 <script src="./core/scept_naf.js"></script><script src="./core/scept_naf_calibration.js"></script>
 <script src="./core/scept_v6_graph_probes.js"></script>
-<script src="./scept_v6_cnn.js"></script><script src="./core/scept_cloud_orbit.js"></script><script src="./scept_v6_ui.js"></script>
+<script src="./scept_v6_cnn.js"></script><script src="./core/scept_cloud_orbit.js"></script><script src="./core/scept_full_archive.js"></script><script src="./scept_v6_ui.js"></script>
 <script src="./core/scept_workspace_journal.js"></script><script src="./scept_workspace_v65.js"></script>
 </body></html>

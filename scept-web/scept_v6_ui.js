@@ -10,6 +10,9 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  let current=null,capture=null,history=[],reference=null,selected=null,busy=false;
  let selectedFeatureIndex=0,valuePage=0,detailValues=null;
  if(!root.SCEPT_CLOUD_ORBIT?.newCamera)throw Error('Real NAF 3D camera module not loaded');
+ const archiveEngine=root.SCEPT_FULL_ARCHIVE;
+ let archiving=false,lastArchiveInfo=null;
+ const archiveSay=(v,error=false)=>{const e=$('v6ArchiveStatus');e.textContent=v;e.dataset.error=String(error)};
  const camera=root.SCEPT_CLOUD_ORBIT.newCamera({
   redraw:()=>renderCloud(),
   onTap:pos=>pickCloud(pos)
@@ -355,6 +358,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   const cap=await engine.captureOnce({session,
    feeds:{pixel_values:{type:'float32',dims:[1,3,224,224],data:X}},
    modelId:'public-sha-verified-ViT-Tiny-ImageNet',
+   retainInputs:$('v6RetainInput').checked,
    profileId:'vit-token-channel',probes:names,
    preprocessing:{id:'scept-mri-v3-native-axial',config:{input:'native-current-MRI-axial-slice',
      channelMode:'grayscale-replicated-3',inputSize:224,normalizer:'v3-mri-fixed-source-quantiles'}},
@@ -374,6 +378,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   const cap=await engine.captureOnce({session:ctx,
    feeds:{input:{type:'float32',dims:[1,256,256,3],data:X}},
    modelId:'Udit013-EfficientNetB3-brain-tumor-leakage-reported',
+   retainInputs:$('v6RetainInput').checked,
    probes,profileId:ctx.profile,
    preprocessing:{id:'scept-mri-v3-cnn-native-axial',config:{
       inputSize:256,channelMode:'NHWC-RGB-gray-duplicate',normalizer:'v3-mri-cnn-source-quantiles'}},
@@ -382,7 +387,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    note:'MRI CNN 作者报告数据泄漏；本次仅观测模型内部张量/输出，不是临床诊断'};
  }
  async function run(){
-  if(busy)return;busy=true;$('v6Run').disabled=true;
+  if(busy||archiving)return;busy=true;$('v6Run').disabled=true;
   try{
    say('正在执行单次真实模型前向传播（无 A/B 比较）…');
    const result=mode()==='vit'?await captureViT():await captureCNN(),
@@ -393,13 +398,19 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    for(const fn of runListeners){try{fn(complete)}catch(err){console.warn('V6.5 journal subscriber failed',err)}}
    reference=null;$('v6Scale').value='raw';
    stats.runs++;
-   $('v6Export').disabled=false;$('v6BuildReference').disabled=history.length<6;
+   $('v6Export').disabled=false;$('v6ExportFull').disabled=false;
+   $('v6BuildReference').disabled=history.length<6;
+   lastArchiveInfo=null;
+   archiveSay('可下载本次全部已捕获张量（'+next.listStored().length+' 个）。'+
+    (next.listStoredInputs().length?'已保留模型输入':'模型输入未保留')+
+    '；开始下一次运行之前请保存 ZIP。');
    renderFingerprint();
    show('v6ModelInfo',result.note+
      (mode()==='cnn'?' · 实际隐藏层：'+result.probes.filter(p=>p!=='dense_2').length:''));
    show('v6History',history.length+' 个独立 Run Record，最近：'+current.runId+
      '；旧运行的完整张量不再缓存在内存中，仅保留摘要。');
    say('NAF 已完成：仅执行了一次真正的模型前向推理；所有颜色来自真实内部数值。');
+   if($('v6AutoArchive').checked)await exportFull(true);
   }catch(e){say('NAF 不可评价：'+e.message,true)}
   finally{busy=false;$('v6Run').disabled=false}
  }
@@ -425,6 +436,30 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    say('已生成同模型经验参考（'+reference.nSamples+' 次真实运行）；并非独立患者参考或医学异常值。');
   }catch(e){reference=null;say('参考校准不可评价：'+e.message,true)}
  };
+ async function exportFull(auto=false){
+  if(archiving)return;
+  if(!capture||!current){archiveSay('请先运行一次真实观测。',true);return}
+  const wasRunDisabled=$('v6Run').disabled;
+  archiving=true;$('v6Run').disabled=true;$('v6ExportFull').disabled=true;
+  try{
+   archiveSay('校验真实张量并创建 ZIP 中…');
+   const result=await archiveEngine.build({
+    capture,naf:current,reference,
+    includeInputs:$('v6RetainInput').checked,tensorSha:C.tensorSha
+   });
+   const url=URL.createObjectURL(result.blob),a=document.createElement('a');
+   a.href=url;a.download=result.suggestedFilename;document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),10000);
+   lastArchiveInfo={runId:current.runId,bytes:result.size,outputs:result.outputTensorCount,
+    inputs:result.includesInputs,files:result.fileCount};
+   archiveSay((auto?'自动下载已开始：':'下载已开始：')+
+    result.outputTensorCount+' 个实际测量输出张量；大小 '+
+    (result.size/1048576).toFixed(2)+' MiB；'+
+    (result.includesInputs?'包含实际模型输入。':'不包含模型输入。'));
+  }catch(e){archiveSay('完整归档失败：'+e.message,true)}
+  finally{archiving=false;$('v6ExportFull').disabled=false;$('v6Run').disabled=wasRunDisabled}
+ }
+ $('v6ExportFull').onclick=()=>exportFull(false);
  $('v6Export').onclick=()=>{
   if(!capture||!current)return;
   const out={record:capture.exportRecord(),naf:current,
@@ -442,6 +477,9 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   getSelectedPattern:()=>{const g=currentGroup();return capture&&selected&&g?.view==='state'?
    N.getPattern(capture,selected.tensor,selected.index,current.profile,{maxValues:65536}):null},
   getCloudView:()=>camera.snapshot(),
+  getArchiveStatus:()=>lastArchiveInfo,
+  buildFullArchive:()=>archiveEngine.build({capture,naf:current,reference,
+   includeInputs:$('v6RetainInput').checked,tensorSha:C.tensorSha}),
   onRunCapture:(fn)=>{if(typeof fn!=='function')throw Error('run listener must be a function');
    runListeners.add(fn);return()=>runListeners.delete(fn)},
   runOnce:run};
