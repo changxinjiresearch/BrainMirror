@@ -29,6 +29,48 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert.equal(snap.v65.runs.length,1,'One genuine forward must automatically append to journal');
   assert.equal(snap.v65.runs[0].source,'live_runtime');
   assert(snap.v65.runs[0].measuredUnits>=985);
+  // NAF 3D orbit operates ONLY on the existing measured tensor units.
+  // No mouse gesture can start a new inference or change the frozen record.
+  const cloud=page.locator('#v6Cloud');
+  await cloud.scrollIntoViewIfNeeded();
+  const box=await cloud.boundingBox();
+  assert(box&&box.width>300&&box.height>120,'Real 3D viewport must be visible');
+  const before=await page.evaluate(()=>({view:SCEPT_V6.getCloudView(),
+    run:SCEPT_V6.getSnapshot().runCount,
+    record:SCEPT_V6.getRecord().runId,
+    selected:document.getElementById('v6Selected').textContent}));
+  const origin={x:box.x+box.width*.48,y:box.y+box.height*.55};
+  await page.mouse.move(origin.x,origin.y);
+  await page.mouse.down();
+  await page.mouse.move(origin.x+85,origin.y+42,{steps:8});
+  await page.mouse.up();
+  const moved=await page.evaluate(()=>({view:SCEPT_V6.getCloudView(),
+    run:SCEPT_V6.getSnapshot().runCount,record:SCEPT_V6.getRecord().runId,
+    selected:document.getElementById('v6Selected').textContent}));
+  assert.notEqual(moved.view.yaw,before.view.yaw,'Horizontal drag must orbit');
+  assert.notEqual(moved.view.pitch,before.view.pitch,'Vertical drag must orbit');
+  assert.equal(moved.selected,before.selected,'Drag must not select a fake NAF node');
+  assert.equal(moved.run,before.run,'Orbit cannot rerun the neural network');
+  assert.equal(moved.record,before.record,'Orbit cannot change provenance');
+  await page.mouse.wheel(0,-310);
+  const wheel=await page.evaluate(()=>SCEPT_V6.getCloudView());
+  assert(wheel.zoom>moved.view.zoom,'Wheel over cloud must zoom in');
+  await page.mouse.down({button:'right'});
+  await page.mouse.move(origin.x+137,origin.y+63,{steps:6});
+  await page.mouse.up({button:'right'});
+  const panned=await page.evaluate(()=>SCEPT_V6.getCloudView());
+  assert.notEqual(panned.panX,wheel.panX,'Right button drag must pan');
+  await page.locator('#v6ZoomOut').click();
+  const minus=await page.evaluate(()=>SCEPT_V6.getCloudView().zoom);
+  assert(minus<panned.zoom,'Zoom-out button must function');
+  await page.locator('#v6ZoomIn').click();
+  assert((await page.evaluate(()=>SCEPT_V6.getCloudView().zoom))>minus,'Zoom-in button must function');
+  await page.locator('#v6Reset').click();
+  assert.deepEqual(await page.evaluate(()=>SCEPT_V6.getCloudView()),
+    {yaw:0.48,pitch:0.28,zoom:1.35,panX:0,panY:0},
+    'Reset must restore original angle, zoom and pan');
+  assert.equal((await page.evaluate(()=>SCEPT_V6.getSnapshot().runCount)),1,
+    'Camera changes must never invoke another session.run');
   await page.locator('#v65Note').fill('User-defined research note; no output importance claim');
   await page.locator('#v65SaveNote').click();
   assert.match(await page.locator('#v65Status').innerText(),/笔记/);
