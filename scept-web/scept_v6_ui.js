@@ -387,7 +387,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    note:'MRI CNN 作者报告数据泄漏；本次仅观测模型内部张量/输出，不是临床诊断'};
  }
  async function run(){
-  if(busy)return;busy=true;$('v6Run').disabled=true;
+  if(busy||archiving)return;busy=true;$('v6Run').disabled=true;
   try{
    say('正在执行单次真实模型前向传播（无 A/B 比较）…');
    const result=mode()==='vit'?await captureViT():await captureCNN(),
@@ -439,7 +439,8 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  async function exportFull(auto=false){
   if(archiving)return;
   if(!capture||!current){archiveSay('请先运行一次真实观测。',true);return}
-  archiving=true;$('v6ExportFull').disabled=true;
+  const wasRunDisabled=$('v6Run').disabled;
+  archiving=true;$('v6Run').disabled=true;$('v6ExportFull').disabled=true;
   try{
    archiveSay('校验真实张量并创建 ZIP 中…');
    const result=await archiveEngine.build({
@@ -456,7 +457,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
     (result.size/1048576).toFixed(2)+' MiB；'+
     (result.includesInputs?'包含实际模型输入。':'不包含模型输入。'));
   }catch(e){archiveSay('完整归档失败：'+e.message,true)}
-  finally{archiving=false;$('v6ExportFull').disabled=false}
+  finally{archiving=false;$('v6ExportFull').disabled=false;$('v6Run').disabled=wasRunDisabled}
  }
  $('v6ExportFull').onclick=()=>exportFull(false);
  $('v6Export').onclick=()=>{
