@@ -7,7 +7,7 @@ const h=x=>String(x).repeat(64);
 function sample(seed,shift){
  const a=new Float32Array(1*5*3),b=new Float32Array(a.length);
  for(let u=0;u<5;u++)for(let j=0;j<3;j++){
-  const k=u*3+j;a[k]=u/10+j/100;b[k]=a[k]+(u===2?.5:u/40)*shift+seed*.001*u;
+  const k=u*3+j;a[k]=u/10+j/100;b[k]=a[k]+(u===2?.5:u/40)*shift+seed.charCodeAt(0)*.00001*u;
  }
  return S.ndf({modelSha256:h('a'),baselineHash:h('b'),counterfactualHash:h(seed),
   layers:[{name:'true_hidden',layer:6,a:{dims:[1,5,3],data:a},b:{dims:[1,5,3],data:b}}]});
