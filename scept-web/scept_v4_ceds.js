@@ -194,10 +194,24 @@
         root.SCEPT_XAI.registerBuiltins(registry,root.SCEPT_CORE);
         root.SCEPT_U10_MECHANISM.install({sdk:root.SCEPT_SDK,registry,core:root.SCEPT_CORE});
         const observation=root.SCEPT_OBSERVATION.make();
-        const session={sha256:ctx.sha256,manifest:{modelId:'v4-pretrained-vit',probes:ctx.probes.map(t=>t.name)},
-          description:{inputs:[{name:input,type:'float32',shape:dims}],outputs,
+        // Deliberately export only original logits and three actual exposed hidden layers.
+        // All other authentic v3 Token probes remain available in the separate full 3D viewer.
+        // This respects U7's 300 KB fail-closed evidence envelope without weakening safety limits.
+        const studyNames=[logits.name,...ctx.probes.map(p=>p.name).filter(n=>n!==logits.name).slice(0,3)];
+        const studyOutputs=outputs.filter(o=>studyNames.includes(o.name));
+        if(studyOutputs.length<2)throw Error('当前模型没有足够的真实可观测内部层');
+        const boundedForward=async feeds=>{
+          const full=await forward(feeds),selected={};
+          for(const o of studyOutputs){
+            if(!full[o.name])throw Error('实际模型未导出预注册输出 '+o.name);
+            selected[o.name]=full[o.name];
+          }
+          return selected;
+        };
+        const session={sha256:ctx.sha256,manifest:{modelId:'v4-pretrained-vit',probes:studyOutputs.map(t=>t.name)},
+          description:{inputs:[{name:input,type:'float32',shape:dims}],outputs:studyOutputs,
             capabilities:['inference','observations.output','observations.intermediate']},
-          run:forward};
+          run:boundedForward};
         engine=root.SCEPT_XAI.make({registry,session,interventionEngine:intervention,
           observationAdapter:observation,dataAdapter:data,core:root.SCEPT_CORE,
           schedulerFactory:root.SCEPT_SCHEDULER,onProgress:s=>{
@@ -207,7 +221,7 @@
         const manifest=root.SCEPT_U10_MECHANISM.plan({...PROTOCOL,
           targetMask:p,controlMask:q,inputName:input,shape:dims,
           targetTensor:logits.name,targetIndex,modelSha256:ctx.sha256,profileId:'generic'});
-        manifest.observation.tensors=[logits.name,...ctx.probes.map(t=>t.name).filter(n=>n!==logits.name)].slice(0,8);
+        manifest.observation.tensors=studyOutputs.map(t=>t.name);
         engine.registerExperiment(manifest);
         await engine.prepare(manifest.id,{feeds:{[input]:{type:'float32',dims,data:baseline}}});
         const raw=await engine.run();
