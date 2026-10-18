@@ -44,6 +44,46 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert.equal(orig.unit,7);
   assert.equal(orig.values.length,192);
   assert.equal(orig.provenance,'verified_same_forward_private_runtime_tensor');
+  // True full scientific archive: actual ONNX float32 tensor for layer 4,
+  // Token 7 / channel 0 must match the original retained runtime array.
+  assert.equal(await page.locator('#v6ExportFull').isEnabled(),true);
+  const actualArchive=await page.evaluate(async()=>{
+   const out=await SCEPT_V6.buildFullArchive();
+   const bytes=new Uint8Array(await out.blob.arrayBuffer()),dv=new DataView(bytes.buffer);
+   let offset=0,tensor=null;
+   const name=new TextDecoder(),wanted=SCEPT_V6.getSelectedPattern().tensor;
+   while(offset+30<bytes.length&&dv.getUint32(offset,true)===0x04034b50){
+    const len=dv.getUint32(offset+18,true),
+      titleLen=dv.getUint16(offset+26,true),
+      extraLen=dv.getUint16(offset+28,true),
+      path=name.decode(bytes.subarray(offset+30,offset+30+titleLen));
+    const begin=offset+30+titleLen+extraLen;
+    const entry=out.manifest.files.find(v=>v.path===path);
+    if(entry?.tensorName===wanted){
+     tensor={length:len,channel0:dv.getFloat32(begin+7*192*4,true),name:entry.tensorName};
+    }
+    offset=begin+len;
+   }
+   return{modelRun:SCEPT_V6.getRecord().runId,shape:SCEPT_V6.getSelectedPattern().shape,
+    outputCount:out.outputTensorCount,all:out.manifest.captureScope.allDeclaredRuntimeOutputs,
+    includedInput:out.manifest.captureScope.inputsIncluded,files:out.fileCount,
+    actualSourceValue:SCEPT_V6.getSelectedPattern().values[0],tensor,
+    archiveBytes:out.size};
+  });
+  assert(actualArchive.tensor,'Selected true ONNX ViT hidden output must exist in ZIP');
+  assert.equal(actualArchive.tensor.channel0,actualArchive.actualSourceValue,
+   'Archive float32 bytes must equal actual measured Token 7/channel 0');
+  assert(actualArchive.tensor.length>=197*192*4);
+  assert.equal(actualArchive.includedInput,false,'Private model feed must be opt-in');
+  assert.equal(actualArchive.all,true);
+  const fullDownload=page.waitForEvent('download',{timeout:45000});
+  await page.locator('#v6ExportFull').click();
+  const downloaded=await fullDownload;
+  assert.match(downloaded.suggestedFilename(),/full-observation\.zip$/);
+  await downloaded.saveAs('/tmp/scept-real-vit-full-observation.zip');
+  assert.equal((await page.evaluate(()=>SCEPT_V6.getSnapshot().runCount)),1,
+   'Exporting ZIP may not re-run the model');
+
   assert.equal(await page.locator('#v6ChannelIndex').isEnabled(),true);
   await page.locator('#v6ChannelIndex').fill('37');
   await page.locator('#v6ChannelIndex').press('Tab');
