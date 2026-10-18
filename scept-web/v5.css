@@ -1,0 +1,34 @@
+/* SCEPT V5 NDF is the primary visual, v4 CEDS remains functional in details. */
+.v5 .header h1{font-size:clamp(26px,2.45vw,38px)}
+.v5-studio{background:linear-gradient(135deg,#102c37,#071c29);border:1px solid #397276;border-radius:13px;padding:17px;margin-bottom:18px;min-width:0}
+.v5-heading{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.v5-heading h2{font-size:20px;margin:5px 0;color:#e1faf1}
+.v5-heading h2 span{font-size:12px;color:#85d5c6}
+.v5-heading p,.v5-modes p,.v5-evidence-grid p,.v5-output p{font-size:11px;color:#98c2c3;line-height:1.7}
+.v5-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.v5-modes article,.v5-evidence-grid article{border:1px solid #2b525b;background:#0a2632;border-radius:10px;padding:13px;min-width:0}
+.v5-modes h3,.v5-evidence-grid h3{font-size:13px;margin:6px 0;color:#e6f6f0}
+.v5-num{font-size:9px;font-weight:700;color:#71ceb8;letter-spacing:1px}
+.v5-modes button{font-size:11px;padding:10px;width:100%;margin-top:7px}
+.v5-modes input[type=file]{display:block;width:100%;max-width:100%;background:#0a1e2b;border:1px solid #2a5763;padding:7px 6px;border-radius:7px;color:#accbc9;font-size:10px;margin:5px 0 11px}
+.v5-modes label{display:block;font-size:11px;color:#d0e6df}
+.v5-output{border-radius:10px;border:1px solid #377074;padding:12px;background:#061c28;min-width:0}
+.v5-output-head{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.v5-output-head h3{font-size:15px;margin:1px 0 10px;color:#d8f8ef}
+.v5-output-head span{font-size:10px;color:#84b7bb}
+.v5-output canvas{width:100%;display:block;height:auto;min-height:150px;max-width:100%;background:#071923;border-radius:7px;cursor:crosshair}
+.v5-output canvas:focus-visible{outline:2px solid #74d7c4}
+.v5-legend{display:flex;flex-wrap:wrap;gap:12px;margin:9px 0;color:#91afb3;font-size:10px}
+.v5-legend span{display:flex;align-items:center;gap:4px}
+.v5-swatch{display:inline-block;width:9px;height:9px;border-radius:2px}
+.v5-low{background:#263c49}.v5-mid{background:#62cdbd}.v5-high{background:#edaa65}
+.v5-detail{border-left:2px solid #75d9be;background:#12323a;padding:8px;overflow-wrap:anywhere}
+.v5-evidence-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:11px 0}
+.v5-evidence-grid .secondary{padding:9px;font-size:10px;text-align:center}
+.v5-legacy{border:1px solid #264d57;border-radius:9px;margin-bottom:12px}
+.v5-legacy>summary{padding:12px;background:#102936;border-radius:9px;color:#a0d1c7;cursor:pointer;font-size:12px}
+.v5-legacy .v4-ceds{border:0;margin:0}
+#v5Status[data-error=true]{color:#f2b380!important}
+@media(max-width:1550px){.v5-modes,.v5-evidence-grid{grid-template-columns:1fr}}
+@media(max-width:1250px){.v5-modes,.v5-evidence-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:660px){.v5-modes,.v5-evidence-grid{grid-template-columns:1fr}.v5-studio{padding:10px}.v5-heading h2{font-size:17px}}

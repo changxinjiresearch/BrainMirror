@@ -7,7 +7,7 @@ const DEFAULT_URL='https://niivue.github.io/niivue-demo-images/mni152.nii.gz';
 const $=id=>document.getElementById(id);
 const s={volume:null,edited:null,baseline:null,offset:null,dimensions:null,center:[0,0,0],slice:[0,0,0],radius:10,amount:.15,limits:[0,1],name:null,affine:null,spacing:null,source:null,revision:0,rotation:.6,tilt:.35,cloud:[],wait:null};
 const index=(x,y,z)=>x+s.dimensions[0]*(y+s.dimensions[1]*z);
-async function decodeFile(buffer,name){
+async function decodeFile(buffer,name,options={}){
  if(/\.gz$/i.test(name)){
   if(!('DecompressionStream' in window))throw Error('此浏览器不支持 gzip 解压，请导入 .nii 文件');
   buffer=await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
@@ -41,10 +41,10 @@ async function decodeFile(buffer,name){
  for(let i=0;i<len;i+=step)samples.push(values[i]);
  samples.sort((a,b)=>a-b);
  const lo=samples[Math.floor(samples.length*.02)],hi=samples[Math.floor(samples.length*.98)];
- if(hi<=lo)throw Error('MRI 强度范围异常');
+ if(hi<=lo&&!options.allowFlat)throw Error('MRI 强度范围异常');
  const sform=h.getInt16(254,le),qform=h.getInt16(252,le);
  const affine=sform>0?[0,1,2].map(r=>Array.from({length:4},(_,c)=>h.getFloat32(280+16*r+4*c,le))):null;
- return{values,dimensions,spacing,limits:[lo,hi],affine,orient:sform>0?'sform':qform>0?'qform':'未知'};
+ return{values,dimensions,spacing,limits:hi>lo?[lo,hi]:[min,max>min?max:min+1],affine,orient:sform>0?'sform':qform>0?'qform':'未知'};
 }
 const sample=(v,lo,hi)=>Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
 function voxelValue(x,y,z,edited){const d=s.dimensions;if(!d)return 0;return(edited?s.edited:s.baseline)[index(Math.min(d[0]-1,Math.max(0,x)),Math.min(d[1]-1,Math.max(0,y)),Math.min(d[2]-1,Math.max(0,z)))]}
@@ -162,7 +162,8 @@ let drag=null;const c=$('view3d');
 c.onpointerdown=e=>{drag=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId)};
 c.onpointermove=e=>{if(!drag)return;s.rotation+=(e.clientX-drag[0])*.01;s.tilt+=(e.clientY-drag[1])*.01;drag=[e.clientX,e.clientY];drawCloud()};
 c.onpointerup=()=>drag=null;
-function sampleSlice(edited=true,axis=2){
+function sampleSlice(edited=true,axis=2,overrideVolume=null){
+ if(overrideVolume&&(!(overrideVolume instanceof Float32Array)||overrideVolume.length!==s.baseline?.length))throw Error('外部反事实体素大小或类型不一致');
  if(!s.dimensions)throw Error('MRI 未加载');
  const d=s.dimensions,a=s.slice[axis],lo=s.limits[0],hi=s.limits[1],out=new Float32Array(3*224*224);
  const select=(u,v)=>{
@@ -170,7 +171,7 @@ function sampleSlice(edited=true,axis=2){
   return axis===2?[x,Math.round(v*(d[1]-1)/223),z]:axis===1?[x,y,Math.round(v*(d[2]-1)/223)]:[x,Math.round(u*(d[1]-1)/223),z];
  };
  for(let v=0;v<224;v++)for(let u=0;u<224;u++){
-  const p=select(u,v),val=sample(voxelValue(...p,edited),lo,hi),i=v*224+u;
+  const p=select(u,v),voxel=overrideVolume?overrideVolume[index(...p)]:voxelValue(...p,edited),val=sample(voxel,lo,hi),i=v*224+u;
   out[i]=out[224*224+i]=out[2*224*224+i]=val;
  }
  return out;

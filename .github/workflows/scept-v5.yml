@@ -1,0 +1,60 @@
+name: SCEPT V5 Counterfactual Fingerprint Acceptance
+on:
+  pull_request:
+    paths:
+      - "scept-web/**"
+      - "scripts/scept_build_icm_patch_model.py"
+      - ".github/workflows/scept-v5.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scept-web/**"
+      - "scripts/scept_build_icm_patch_model.py"
+      - ".github/workflows/scept-v5.yml"
+permissions:
+  contents: read
+jobs:
+  v5-science:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fail-closed pure science contracts
+        run: |
+          node --check scept-web/scept_v5_science.js
+          node --check scept-web/scept_v5_ui.js
+          node --check scept-web/v3_mri.js
+          node --check scept-web/v3_engine.js
+          node scept-web/tests/v5_science_contract.cjs
+      - name: True CPU ONNX graph rewrite and bidirectional patch replay
+        run: |
+          python -m pip install onnx onnxruntime numpy
+          python -m unittest discover -s scept-web/tests -p 'test_v5_icm_patch.py' -v
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Local static site
+        run: |
+          python -m http.server 8765 -d scept-web >/tmp/scept-v5-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/v5.html >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Real pretrained ViT and original MRI fingerprint with 985 genuine Token cells
+        run: node scept-web/tests/v5_fingerprint_browser.cjs
+      - name: Verify real NIfTI A and 3 B paired mask and actual ViT CRC model execution
+        run: node scept-web/tests/v5_paired_mri_browser.cjs
+      - name: Store actual browser NDF screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-v5-authentic-ndf
+          path: /tmp/scept-v5-real-ndf.png
+          if-no-files-found: ignore
