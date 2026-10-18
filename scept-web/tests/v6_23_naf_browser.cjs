@@ -32,7 +32,9 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert.equal(await page.locator('#v6BuildReference').isEnabled(),false);
   // Actual in-run residual update only where both real model tensors are exported.
   assert(first.snap.updates.length>=1);
-  assert(first.snap.updates[0].status==='measured'||first.snap.updates[0].status==='not_evaluable');
+  assert.equal(first.snap.updates[0].status,'measured',
+    'Real same-forward residual L5→L6 must be measured on pinned ViT; cannot silently count not-evaluable as complete');
+  assert(first.snap.updates[0].units===197,'Real residual update must cover actual 197 Tokens');
   await page.locator('#v6Metric').selectOption('update');
   assert.match(await page.locator('#v6Counts').innerText(),/单次运行/);
   await page.locator('#v6Metric').selectOption('pattern');
@@ -56,16 +58,37 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert.notEqual(second.snap.runId,first.snap.runId);
   assert.notEqual(second.record.provenance.inputs.pixel_values,first.record.provenance.inputs.pixel_values);
   assert(!first.snap.hasReference&&!second.snap.hasReference);
+  // Repeatedly trigger independent REAL model forwards on 4 other authentic
+  // slices; the reference must EXCLUDE the current run and share frozen SHA.
+  for(let seq=3;seq<=6;seq++){
+   await page.locator('#sliceK').evaluate(el=>{
+    const next=Math.max(Number(el.min),Math.min(Number(el.max),Number(el.value)+3));
+    el.value=String(next);el.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+   await page.locator('#v6Run').click();
+   await page.waitForFunction(n=>SCEPT_V6.getSnapshot().runCount>=n||
+    document.querySelector('#v6Status').dataset.error==='true',seq,{timeout:150000});
+   assert.equal((await page.evaluate(()=>SCEPT_V6.getSnapshot())).runCount,seq,
+     'Independent real reference run '+seq+' failed: '+await page.locator('#v6Status').innerText());
+  }
+  assert.equal(await page.locator('#v6BuildReference').isEnabled(),true);
+  await page.locator('#v6BuildReference').click();
+  assert.equal(await page.locator('#v6Scale').inputValue(),'reference',
+    'Actual empirical reference must be accepted only after 5 external genuine runs');
+  const r=await page.evaluate(()=>({snap:SCEPT_V6.getSnapshot(),reference:SCEPT_V6.getReference()}));
+  assert.equal(r.reference.nSamples,5);
+  assert.equal(r.reference.kind,'within-volume');
+  assert.equal(r.snap.hasReference,true);
   await page.screenshot({path:'/tmp/scept-v6-actual-naf.png',fullPage:true});
   // CNN is an independently pretrained Keras/EfficientNet ONNX architecture,
   // not the synthetic Conv software fixture used in early U2 engineering tests.
   await page.locator('#v6Model').selectOption('cnn');
   await page.locator('#v6Run').click();
-  await page.waitForFunction(()=>SCEPT_V6.getSnapshot().runCount>=3||
+  await page.waitForFunction(()=>SCEPT_V6.getSnapshot().runCount>=7||
    document.querySelector('#v6Status').dataset.error==='true',null,{timeout:250000});
   const third=await page.evaluate(()=>({snap:SCEPT_V6.getSnapshot(),cnn:SCEPT_V6_CNN.getSnapshot(),
    record:SCEPT_V6.getRecord()}));
-  assert.equal(third.snap.runCount,3,
+  assert.equal(third.snap.runCount,7,
     'Genuine CNN capture failed: '+await page.locator('#v6Status').innerText());
   assert(['cnn-nhwc','cnn-nchw'].includes(third.snap.architecture));
   assert(third.snap.groups.some(g=>g.units>0),'CNN must expose actual channel or final output feature units');
