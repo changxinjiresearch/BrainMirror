@@ -48,7 +48,16 @@
     <article><h3>04 · CRC：反事实响应一致性</h3><p>同一真实 A、至少三个不同的实际 B 反事实输入。计算层内 Top-K 重合与激活响应排序相关；不是独立患者统计。</p>
       <button type="button" id="v5CrcRun" class="secondary" disabled>计算实际 CRC</button><p id="v5Crc">尚未评价。</p></article>
     <article><h3>05 · ICM：内部干预贡献</h3><p>必须先有经过核验的激活替换 ONNX，才能进行真正的内部干预。<strong>这里不会把 NDF 的亮点假装成因果贡献。</strong></p>
-      <p id="v5Icm">尚未评价。ICM 独立科学引擎另行验收。</p><a class="secondary" href="https://github.com/changxinjiresearch/BrainMirror/tree/main/scripts">查看离线可执行模型准备工具</a></article>
+      <p id="v5Icm">尚未评价：运行真实配对 A/B 并加载可替换 ONNX 才能执行。</p>
+    <details class="v5-patching"><summary>研究者模式 · 执行真实 ICM 内部激活替换</summary>
+      <p>使用 scripts/scept_build_icm_patch_model.py 基于当前**同一冻结 ONNX**和所选内部层生成带真实 Where 替换操作的模型；不具备模型则维持不可评价。</p>
+      <label for="v5PatchFile">加载真实 patchable ONNX</label><input id="v5PatchFile" type="file" accept=".onnx">
+      <label for="v5OriginalHash">原始（插装前后需对应）模型 SHA-256</label><input id="v5OriginalHash" type="text" placeholder="原始 ONNX SHA-256，64 位十六进制">
+      <label for="v5TargetIndex">目标 logit 索引</label><input id="v5TargetIndex" type="number" min="0" step="1" value="0">
+      <button type="button" id="v5PatchRun" class="secondary" disabled>运行真实双向激活替换</button>
+      <p id="v5PatchInfo">需要 NDF 中的 Token 选择、真实 patchable ONNX、来源校验与 no-op 对比。</p>
+    </details>
+    <a class="secondary" href="https://github.com/changxinjiresearch/BrainMirror/blob/main/scripts/scept_build_icm_patch_model.py">ONNX 改写器源码</a></article>
   </div>
   <p id="v5Status" class="v4-ceds-status" role="status" aria-live="polite">等待真实冻结模型与 MRI 加载。</p>
   <p class="v4-disclaimer">当前默认 ViT 在自然图片上预训练，并不适合做医学临床推断。几何相同的两份 NIfTI 也不能自动证明病灶反事实正确。NDF ≠ CRC ≠ ICM；U11 M4 仍未通过。</p>
