@@ -1,0 +1,54 @@
+name: SCEPT V6.5 Universal Research Workspace
+on:
+  pull_request:
+    paths:
+      - "scept-web/**"
+      - ".github/workflows/scept-v65.yml"
+      - ".github/workflows/scept-pages.yml"
+      - "docs/SCEPT_V6_5_WORKSPACE_RELEASE.md"
+  push:
+    branches: [main]
+    paths:
+      - "scept-web/**"
+      - ".github/workflows/scept-v65.yml"
+      - ".github/workflows/scept-pages.yml"
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Fail-closed local-only journal scientific contract
+        run: |
+          node --check scept-web/core/scept_workspace_journal.js
+          node --check scept-web/scept_workspace_v65.js
+          node --check scept-web/scept_v6_ui.js
+          node scept-web/tests/v65_workspace_contract.cjs
+          node scept-web/tests/v6_23_naf_contract.cjs
+      - name: Install genuine Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Serve actual static project
+        run: |
+          python -m http.server 8765 -d scept-web >/tmp/scept-v65-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/v6.html >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Browser actual ViT NAF, historical journal, import/export and routes
+        run: node scept-web/tests/v65_workspace_browser.cjs
+      - name: Preserve V6.2 and V6.3 measured observation behavior
+        run: node scept-web/tests/v6_23_naf_browser.cjs
+      - name: Public-release visual acceptance screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-v65-real-research-workspace
+          path: /tmp/scept-v65-workspace-actual.png
+          if-no-files-found: ignore
