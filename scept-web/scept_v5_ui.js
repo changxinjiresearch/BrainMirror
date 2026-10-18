@@ -107,11 +107,30 @@ async function runPair(){
  const vols=[];for(const f of bFiles){const v=await parse(f);geom(mri,v);vols.push({name:f.name,v})}
  const ctx=choose();if(!ctx?.session)throw Error('真实 ONNX 模型尚未加载');
  const X=root.SCEPT_MRI.makeSlice(false,2),ax=await hash(X);
+ // Reject whole-image intensity changes masquerading as local lesion removal.
+ // Nearest-neighbor model input mapping must overlap the supplied true voxel mask.
+ const sliceMask=new Uint8Array(224*224);
+ for(let y=0;y<224;y++)for(let x=0;x<224;x++){
+   const ix=Math.round(x*(nx-1)/223),iy=Math.round(y*(ny-1)/223);
+   if(M.values[offset+ix+nx*iy]>.5)sliceMask[y*224+x]=1;
+ }
+ if(!sliceMask.some(Boolean))throw Error('病灶掩膜未映射到真实 224×224 模型输入像素');
+ const qcChanges=(B)=>{
+  let inside=0,outside=0;for(let p=0;p<224*224;p++){
+   if(Math.abs(B[p]-X[p])>1e-5){sliceMask[p]?inside++:outside++}
+  }
+  if(!inside)throw Error('反事实 B 没有修改病灶掩膜覆盖的真实模型输入像素');
+  if(outside>Math.max(80,Math.round(inside*.2)))
+   throw Error('反事实 B 在病灶掩膜外发生大量像素变化：'+outside+' vs '+inside+
+     '；无法把全图编辑解释为病灶移除');
+  return{changedInside:inside,changedOutside:outside};
+ };
  info('真实 ONNX：正在执行原始 MRI A');
  const A=await predict(X,ctx),records=[],fingerprints=new Set();
  let firstB=null,firstInput=null;
  for(let i=0;i<vols.length;i++){
-  const b=root.SCEPT_MRI.makeSlice(false,2,vols[i].v.values),bh=await hash(b);
+  const b=root.SCEPT_MRI.makeSlice(false,2,vols[i].v.values),quality=qcChanges(b),bh=await hash(b);
+  if(i===0)$('v5MaskInfo').textContent='反事实像素变更：掩膜内 '+quality.changedInside+'，掩膜外 '+quality.changedOutside+'（形状与掩膜边界质控通过，不代表组织修复生物学合理）。';
   if(fingerprints.has(bh))throw Error('重复的反事实模型输入，拒绝伪重复');
   fingerprints.add(bh);info('真实 ONNX：反事实 B '+(i+1)+'/'+vols.length);
   const B=await predict(b,ctx);
