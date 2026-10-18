@@ -27,6 +27,7 @@ jobs:
         run: |
           node --check scept-web/core/scept_naf.js
           node --check scept-web/core/scept_naf_calibration.js
+          node --check scept-web/core/scept_v6_graph_probes.js
           node --check scept-web/scept_v6_cnn.js
           node --check scept-web/scept_v6_ui.js
           node --check scept-web/v3_engine.js
