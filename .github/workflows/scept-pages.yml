@@ -36,6 +36,8 @@ jobs:
         shell: bash
         run: |
           test -f scept-web/universal.html
+          test -f scept-web/v4.html
+          test -f scept-web/scept_v4_ceds.js
           test -f scept-web/core/scept_sdk.js
           test -f scept-web/core/scept_audit.js
           test -f scept-web/scept_m3_console.js
@@ -51,10 +53,11 @@ jobs:
           from pathlib import Path
           root=Path("scept-web")
           landing='''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-          <meta http-equiv="refresh" content="0;url=./universal.html">
-          <title>SCEPT Universal Core V1</title></head><body><main>
-          <h1>SCEPT Universal Core V1</h1>
-          <p><a href="./universal.html">Open Universal Core V1 research workbench</a></p>
+          <meta http-equiv="refresh" content="0;url=./v4.html">
+          <title>SCEPT Observatory v4 - CEDS</title></head><body><main>
+          <h1>SCEPT Observatory v4 / CEDS</h1>
+          <p><a href="./v4.html">Open SCEPT v4 3D MRI and CEDS Observatory</a></p>
+          <p><a href="./universal.html">Universal Core advanced research console</a></p>
           <p><a href="./legacy-studio.html">Legacy Transformer demonstration</a></p>
           </main></body></html>'''
           (root/"index.html").write_text(landing,encoding="utf-8")
@@ -77,9 +80,10 @@ jobs:
           set -euo pipefail
           curl --fail --location --retry 4 --retry-delay 2 --max-time 30 \
             --output "$RUNNER_TEMP/scept-public-universal.html" \
-            "${PAGE_URL%/}/universal.html"
-          grep --fixed-strings --quiet 'SCEPT Universal Core' "$RUNNER_TEMP/scept-public-universal.html"
-          echo "PASS actual public Universal Core page downloaded entirely and title matched"
+            "${PAGE_URL%/}/v4.html"
+          grep --fixed-strings --quiet 'SCEPT U10' "$RUNNER_TEMP/scept-public-universal.html"
+          grep --fixed-strings --quiet 'v4Signature' "$RUNNER_TEMP/scept-public-universal.html"
+          echo "PASS actual public v4 MRI / CEDS site downloaded entirely and verified"
 
   verify-public-on-workflow-fix:
     if: github.event_name == 'push'
