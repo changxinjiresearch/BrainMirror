@@ -15,6 +15,7 @@ const EXTRA_PROBES=[
  {kind:'query',label:'Query 线性乘积（未加偏置） · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/query/MatMul_output_0'},
  {kind:'key',label:'Key 线性乘积（未加偏置） · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/key/MatMul_output_0'},
  {kind:'attention',label:'Attention Softmax · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/Softmax_output_0'},
+ {kind:'residual-previous',label:'Residual Stream · 第 5 层（L6 输入）',layer:5,name:'/vit/encoder/layer.5/output/Add_output_0'},
  {kind:'residual',label:'Residual Add · 第 6 层',layer:6,name:'/vit/encoder/layer.6/output/Add_output_0'}
 ];
 const st={session:null,graph:null,modelSha:null,instrumentedModel:null,sourceHash:SOURCE_HASH,probes:[],extraProbes:[],results:null,selected:6,history:[],loading:true,running:false,failed:null};
@@ -248,7 +249,9 @@ window.SCEPT_V3={downloadInstrumented:()=>{
  return st.modelSha;
 },getScientificContext:()=>st.session?{
   session:st.session,sha256:st.modelSha,mriRevision:window.SCEPT_MRI?.state?.revision,
-  probes:st.probes.map(p=>({name:p.name,layer:p.layer}))
+  probes:st.probes.map(p=>({name:p.name,layer:p.layer})),
+  extraProbes:st.extraProbes.map(p=>({name:p.name,layer:p.layer,kind:p.kind})),
+  graph:st.graph
 }:null,getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
 listHistory();drawNetwork();drawResponse();init();
 let attempts=0;
