@@ -130,13 +130,16 @@
   const adapter=$('v65Adapter');
   adapter.onchange=()=>{
    if(adapter.value==='generic'){status('任意 ONNX 目前需要使用已存在的高级研究控制台；V6.4 单次记录统一尚未完成。');
+    $('v6Run').disabled=true;
     const a=$('v65Generic');a.hidden=false;
    }else{
     $('v65Generic').hidden=true;$('v6Model').value=adapter.value;
+    $('v6Run').disabled=false;
     status('已选择真实模型适配器 '+adapter.value+'；下方运行 NAF 不要求 A/B。');
    }
   };
-  $('v6Model').addEventListener('change',()=>{if(adapter.value!=='generic')adapter.value=$('v6Model').value});
+  $('v6Model').addEventListener('change',()=>{adapter.value=$('v6Model').value;
+   $('v65Generic').hidden=true;$('v6Run').disabled=false;});
   root.SCEPT_V65={getSnapshot:()=>({runs:journal.list(),project:journal.projectName(),
    selected,protocolCount:catalog.length,unifiedComparisonReady:false}),
    getManifest:()=>journal.list().length?journal.exportManifest():null};
