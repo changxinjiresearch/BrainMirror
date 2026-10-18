@@ -1,0 +1,54 @@
+name: SCEPT V6.2–V6.3 genuine NAF and calibration
+on:
+  pull_request:
+    paths:
+      - "scept-web/**"
+      - ".github/workflows/scept-v6-23.yml"
+      - "docs/SCEPT_V6_2_V6_3_NAF_IMPLEMENTATION.md"
+  push:
+    branches: [main]
+    paths:
+      - "scept-web/**"
+      - ".github/workflows/scept-v6-23.yml"
+permissions:
+  contents: read
+jobs:
+  real-naf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Strict state, update, CNN spatial and calibration contracts
+        run: |
+          node --check scept-web/core/scept_naf.js
+          node --check scept-web/core/scept_naf_calibration.js
+          node --check scept-web/scept_v6_cnn.js
+          node --check scept-web/scept_v6_ui.js
+          node --check scept-web/v3_engine.js
+          node scept-web/tests/v6_23_naf_contract.cjs
+          node scept-web/tests/v6_01_single_run_contract.cjs
+      - name: Install actual Chromium and WebAssembly execution
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Launch unchanged static hosting
+        run: |
+          python -m http.server 8765 -d scept-web >/tmp/scept-v6-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/v6.html >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Real pinned ViT and pretrained EfficientNetB3 on actual MRI NAF
+        run: node scept-web/tests/v6_23_naf_browser.cjs
+      - name: V5 pairing backward compatibility
+        run: node scept-web/tests/v5_fingerprint_browser.cjs
+      - name: Actual NAF screenshot artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scept-v6-real-naf
+          path: /tmp/scept-v6-actual-naf.png
+          if-no-files-found: ignore
