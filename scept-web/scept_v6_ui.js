@@ -182,10 +182,10 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    preprocessing:{id:'scept-mri-v3-native-axial',config:{input:'native-current-MRI-axial-slice',
      channelMode:'grayscale-replicated-3',inputSize:224,normalizer:'v3-mri-fixed-source-quantiles'}},
    runtime:{engine:'onnxruntime-web',version:'1.20.1',provider:'wasm'}});
-  const updates=valid?[{inputTensor:from,outputTensor:to,graph,
+  const updates=[{inputTensor:from,outputTensor:to,graph,
    coordinateSemantics:'same-residual-stream',
    declaredBy:'pinned-vit-tiny-transformer-adapter-layer5-to-layer6',
-   verifiedIdentity:true}]:[];
+   verifiedIdentity:valid}];
   return{cap,profile:'vit-token-channel',probes:names,updates,
     note:'ViT 预训练于普通图片；MRI 输入仅用于模型内部数值观测，不是临床模型'};
  }
@@ -214,7 +214,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    history.push(fingerprint);if(history.length>32)history.shift();
    reference=null;$('v6Scale').value='raw';
    stats.runs++;
-   $('v6Export').disabled=false;$('v6BuildReference').disabled=history.length<5;
+   $('v6Export').disabled=false;$('v6BuildReference').disabled=history.length<6;
    renderFingerprint();
    show('v6ModelInfo',result.note+
      (mode()==='cnn'?' · 实际隐藏层：'+result.probes.filter(p=>p!=='dense_2').length:''));
@@ -235,7 +235,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  $('v6BuildReference').onclick=()=>{
   try{
    if(!current)throw Error('先采集真实 NAF');
-   const candidates=history.filter(x=>x.profile===current.profile&&
+   const candidates=history.filter(x=>x.runId!==current.runId&&x.profile===current.profile&&
       x.provenance.model.sha256===current.provenance.model.sha256&&
       x.provenance.preprocessing.sha256===current.provenance.preprocessing.sha256);
    reference=K.buildReference(candidates,{
