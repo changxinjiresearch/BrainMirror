@@ -439,6 +439,8 @@ root.document.addEventListener('DOMContentLoaded',()=>{
    updates:current?.updates.map(g=>({status:g.status,units:g.units.length,reason:g.reason||null})),
    architecture:current?.profile,runId:current?.runId,recordCount:history.length}),
   getNaf:()=>current,getReference:()=>reference,getRecord:()=>capture?.exportRecord()||null,
+  getSelectedPattern:()=>{const g=currentGroup();return capture&&selected&&g?.view==='state'?
+   N.getPattern(capture,selected.tensor,selected.index,current.profile,{maxValues:65536}):null},
   getCloudView:()=>camera.snapshot(),
   onRunCapture:(fn)=>{if(typeof fn!=='function')throw Error('run listener must be a function');
    runListeners.add(fn);return()=>runListeners.delete(fn)},
