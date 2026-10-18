@@ -72,6 +72,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
      'Independent real reference run '+seq+' failed: '+await page.locator('#v6Status').innerText());
   }
   assert.equal(await page.locator('#v6BuildReference').isEnabled(),true);
+  await page.locator('.v6-reference summary').click();
   await page.locator('#v6BuildReference').click();
   assert.equal(await page.locator('#v6Scale').inputValue(),'reference',
     'Actual empirical reference must be accepted only after 5 external genuine runs');
