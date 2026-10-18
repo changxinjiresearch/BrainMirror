@@ -71,6 +71,8 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert(third.snap.groups.some(g=>g.units>0),'CNN must expose actual channel or final output feature units');
   assert.equal(third.record.science.clinical,'NOT_ESTABLISHED');
   assert(third.cnn.modelSha256,'Real CNN hash absent');
+  assert(third.cnn.realIntermediateProbes>=1,'V6.3 must observe at least one genuine CNN hidden Conv tensor');
+  assert(third.snap.groups.some(g=>g.role==='channel'),'Real pretrained CNN intermediate must be native NCHW channel activity');
   assert(third.record.outputs.some(v=>v.name==='dense_2'));
   assert.equal(errors.length,0,errors.join(' | '));
   console.log('PASS genuine V6 NAF: single forward ViT, two independent Run Records, channel details, true residual update/non-evaluable gate, no fake reference, real pretrained CNN, exact SHA provenance; CNN internals exposed '+third.cnn.realIntermediateProbes);
