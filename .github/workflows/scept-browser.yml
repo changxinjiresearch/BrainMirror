@@ -6,6 +6,7 @@ on:
       - "scept-web/**"
       - "scripts/expose_onnx_probes.py"
       - ".github/workflows/scept-browser.yml"
+      - ".github/workflows/scept-pages.yml"
   pull_request:
     paths:
       - "scept-web/**"
