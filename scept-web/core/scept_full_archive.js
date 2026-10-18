@@ -145,7 +145,7 @@
     'Model weights and uninstrumented layers are NOT included.',
     'Tensor paths are generic indices; tensorName gives the actual runtime identity.',
     'Verify SHA-256 and tensorSha256 (type+shape+raw bytes) before scientific reuse.'],
-   files:entries};
+   files:entries.slice()};
   await push('manifest.json',jsonBytes(manifest),{kind:'archive_manifest'});
   const blob=zipStored(files);
   return {blob,manifest,size:blob.size,fileCount:files.length,
