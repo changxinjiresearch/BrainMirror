@@ -60,7 +60,7 @@ const factory=capture.make({observation,contract:record});
  await assert.rejects(factory.captureOnce({session:session({bad:'shape'}),...protocol}),/shape|contradicts|signature|mismatch/i);
  await assert.rejects(factory.captureOnce({session:session({bad:'nonfinite'}),...protocol}),/nonfinite|NaN|invalid/i);
  await assert.rejects(factory.captureOnce({session:session({mutate:true}),...protocol,
-  feeds:{image:{...a,data:new Float32Array(a.data)}}}),/modified original input/);
+  feeds:{image:{...a,data:new Float32Array(a.data)}}}),/modified the original input/);
  await assert.rejects(factory.captureOnce({session:session(),...protocol,
   limits:{maxTensorElements:2,maxCaptureBytes:1024,maxAxisUnits:3}}),/limit|exceed/i);
  await assert.rejects(factory.captureOnce({session:session(),...protocol,
