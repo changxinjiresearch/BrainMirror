@@ -358,6 +358,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   const cap=await engine.captureOnce({session,
    feeds:{pixel_values:{type:'float32',dims:[1,3,224,224],data:X}},
    modelId:'public-sha-verified-ViT-Tiny-ImageNet',
+   retainInputs:$('v6RetainInput').checked,
    profileId:'vit-token-channel',probes:names,
    preprocessing:{id:'scept-mri-v3-native-axial',config:{input:'native-current-MRI-axial-slice',
      channelMode:'grayscale-replicated-3',inputSize:224,normalizer:'v3-mri-fixed-source-quantiles'}},
@@ -377,6 +378,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   const cap=await engine.captureOnce({session:ctx,
    feeds:{input:{type:'float32',dims:[1,256,256,3],data:X}},
    modelId:'Udit013-EfficientNetB3-brain-tumor-leakage-reported',
+   retainInputs:$('v6RetainInput').checked,
    probes,profileId:ctx.profile,
    preprocessing:{id:'scept-mri-v3-cnn-native-axial',config:{
       inputSize:256,channelMode:'NHWC-RGB-gray-duplicate',normalizer:'v3-mri-cnn-source-quantiles'}},
