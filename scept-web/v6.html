@@ -88,9 +88,27 @@
   <article class="v6-cloud-panel"><div class="v6-line"><h3>真实计算位置 · 三维观测</h3><div class="v6-cloud-toolbar" role="group" aria-label="三维视角控制"><button type="button" class="secondary" id="v6ZoomOut" title="缩小三维视图">−</button><button type="button" class="secondary" id="v6ZoomIn" title="放大三维视图">＋</button><button type="button" class="secondary" id="v6Rotate" title="按步旋转三维视角">旋转</button><button type="button" class="secondary" id="v6Reset" title="恢复原始视角与缩放">重置</button></div></div>
    <canvas id="v6Cloud" width="700" height="300" tabindex="0" aria-label="真实计算位置的三维观测；拖动旋转、滚轮缩放、Shift 或鼠标右键拖动平移、双指缩放，Home 重置视角。三维排布不代表真实网络拓扑。"></canvas>
    <p>按住左键拖动自由旋转 · 鼠标滚轮放大/缩小 · Shift＋拖动或右键拖动平移 · 双指缩放 · 重置视角。点位与颜色来自实测数据，旋转不会改变模型结果。</p></article>
-  <article><h3>选中的真实 Token / 通道</h3><p id="v6Selected">点击上方指纹中的一个真实单位。</p>
-   <canvas id="v6Channels" width="700" height="178" aria-label="实际通道或空间特征值的正负分布"></canvas>
-   <p id="v6PatternNote">尚未选择真实观测单元。</p></article>
+  <article class="v6-inspector-panel"><h3>选中的真实 Token / 通道</h3>
+   <div class="v6-inspector-controls">
+    <label>选择实际观测层 / 张量<select id="v6LayerSelect" aria-label="选择已测量的模型层"><option value="">请先运行模型</option></select></label>
+    <label>选择 Token / 通道<select id="v6UnitSelect" aria-label="选择本层实际观测的 Token 或通道"><option value="">未观测</option></select></label>
+   </div>
+   <p id="v6Selected">点击指纹、三维点云，或从上方选择实际观测位置。</p>
+   <div id="v6InspectStats" class="v6-inspector-stats" aria-live="polite">请选择真实观测位置以查看 RMS、均值及数值范围。</div>
+   <canvas id="v6Channels" width="700" height="178" aria-label="实际通道或空间特征值的正负分布；点击柱子可定位其精确数值"></canvas>
+   <div class="v6-exact-control">
+    <label for="v6ChannelIndex">精确数值索引（从 0 开始）</label>
+    <input id="v6ChannelIndex" type="number" min="0" step="1" value="0" disabled aria-label="读取具体特征通道或者空间数值索引">
+    <output id="v6ChannelExact" for="v6ChannelIndex" aria-live="polite">尚无可读取的原始张量。</output>
+   </div>
+   <details class="v6-values-details" id="v6ValuesDetails">
+    <summary>展开真实数值表（逐项查看）</summary>
+    <div class="v6-values-scroller"><table><thead><tr><th scope="col">通道 / 位置索引</th><th scope="col">实际数值</th></tr></thead>
+     <tbody id="v6ChannelRows"><tr><td colspan="2">尚未运行模型。</td></tr></tbody></table></div>
+    <div class="v6-value-pager"><button id="v6ValuePrev" type="button" class="secondary" disabled>上一页</button>
+     <span id="v6ValuePage">—</span><button id="v6ValueNext" type="button" class="secondary" disabled>下一页</button></div>
+   </details>
+   <p id="v6PatternNote">运行模型后可选择层、Token 和具体数值；数值均来自同一次真实推理。</p></article>
  </div>
  <details class="v6-reference"><summary>V6.3 · 参考校准与运行历史</summary>
   <p>至少五次真实、不同输入、相同模型及预处理的 NAF 才能构造经验参考。
