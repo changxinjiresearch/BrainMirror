@@ -150,6 +150,7 @@ async function run(){
   // v3 behavior remains unchanged; no hidden activations or artificial edges are added.
   if(document.body?.classList.contains('v4')){
     document.getElementById('viewTokens')?.click();
+    document.getElementById('tokenOverview')?.click();
     document.getElementById('responseDelta')?.click();
   }
   window.SCEPT_PATCH?.refresh();
