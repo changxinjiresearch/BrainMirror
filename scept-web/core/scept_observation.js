@@ -64,6 +64,67 @@
   return description.outputs.map(m=>observeTensor(m.name,baseline[m.name],edited[m.name],m,profileId,
     probes.includes(m.name)?'selected_real_intermediate':'actual_graph_output',maxAxisUnits));
  }
- function make(){return Object.freeze({id:'runtime-axis-v1',kind:'observation',capabilities:['observations.output','observations.intermediate'],observePair})}
- return Object.freeze({VERSION:'1.0.0-u4',profiles,selectProfile,observeTensor,observePair,make});
+ function observeOnce({description,outputs,probes=[],profileId='generic',maxAxisUnits=2048}){
+  // Separate single-forward API. Existing U4 observePair remains untouched.
+  const profile=selectProfile(profileId);
+  if(!Array.isArray(description?.outputs)||!outputs||typeof outputs!=='object'||
+     !Array.isArray(probes)||new Set(probes).size!==probes.length)
+   fail('INVALID_CONTRACT','Single forward output/signature and unique probe list required');
+  if(!Number.isInteger(maxAxisUnits)||maxAxisUnits<0||maxAxisUnits>16384)
+   fail('INVALID_LIMIT','Axis summaries limit');
+  const metas=description.outputs, names=new Set(metas.map(m=>m.name));
+  if(metas.length!==Object.keys(outputs).length||metas.some(m=>!Object.hasOwn(outputs,m.name)))
+   fail('OUTPUT_MISMATCH','Single run must return all exact declared outputs');
+  // Do not infer nonexistent layers or build fake activity for unavailable names.
+  const measured=[];
+  for(const name of probes){
+   if(typeof name!=='string'||!name)fail('INVALID_CONTRACT','Probe name must be nonempty');
+   if(!names.has(name)){
+    measured.push({tensor:name,status:'not_measured',activity:null,reason:'probe_not_exposed'});
+    continue;
+   }
+   const meta=metas.find(m=>m.name===name),t=outputs[name],n=check(t,meta,name),dims=t.dims;
+   if(profile.exact&&profile.exact.length===dims.length&&
+     profile.exact.some((d,i)=>dims[i]!==d))
+    fail('LEGACY_LAYOUT_MISMATCH','Exact legacy ViT profile mismatch');
+   const axes=(profile.layouts[dims.length]||[]).map(([role,index])=>({role,index,size:dims[index]}));
+   const strides=[];let size=1;
+   for(let i=dims.length-1;i>=0;i--){strides[i]=size;size*=dims[i]}
+   const group=axes.map(ax=>ax.size<=maxAxisUnits?
+     Array.from({length:ax.size},()=>({count:0,sum:0,sq:0,positive:0,negative:0})):null);
+   let sum=0,sq=0,positive=0,negative=0,zero=0,minimum=Infinity,maximum=-Infinity;
+   for(let i=0;i<n;i++){
+    const value=Number(t.data[i]);
+    if(!Number.isFinite(value))fail('NONFINITE_ACTIVATION','Invalid single-run output '+name);
+    sum+=value;sq+=value*value;minimum=Math.min(minimum,value);maximum=Math.max(maximum,value);
+    if(value>0)positive++;else if(value<0)negative++;else zero++;
+    for(let j=0;j<axes.length;j++){
+     if(!group[j])continue;
+     const ax=axes[j],item=group[j][Math.floor(i/strides[ax.index])%ax.size];
+     item.count++;item.sum+=value;item.sq+=value*value;
+     if(value>0)item.positive++;else if(value<0)item.negative++;
+    }
+   }
+   const rms=Math.sqrt(sq/n);
+   if(!Number.isFinite(rms)||!Number.isFinite(sum))fail('NUMERIC_OVERFLOW','Cannot safely summarize '+name);
+   const axisSummaries={};
+   axes.forEach((ax,j)=>{
+    if(group[j])axisSummaries[ax.role]=group[j].map((g,index)=>({
+     index,count:g.count,mean:g.sum/g.count,rms:Math.sqrt(g.sq/g.count),
+     positiveFraction:g.positive/g.count,negativeFraction:g.negative/g.count
+    }));
+   });
+   measured.push({tensor:name,status:'measured',activity:{
+    source:'actual-runtime-output',profile:profileId,architecture:profile.architecture,
+    type:t.type,shape:dims.slice(),axes,axisSummaries,
+    summary:{count:n,mean:sum/n,rms,min:minimum,max:maximum,
+      positiveFraction:positive/n,negativeFraction:negative/n,zeroFraction:zero/n},
+    interpretation:'state magnitude and numerical sign, NOT decision importance or compute cost'
+   }});
+  }
+  return measured;
+ }
+ function make(){return Object.freeze({id:'runtime-axis-v1',kind:'observation',
+  capabilities:['observations.output','observations.intermediate'],observePair,observeOnce})}
+ return Object.freeze({VERSION:'1.1.0-u4-v6-single',profiles,selectProfile,observeTensor,observePair,observeOnce,make});
 });
