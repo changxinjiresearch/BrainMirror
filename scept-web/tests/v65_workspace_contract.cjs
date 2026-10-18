@@ -46,7 +46,8 @@ const suspicious=specimen('f');suspicious.record.provenance.model.sha256='z'.rep
 assert.throws(()=>restored.addLive(suspicious.record,suspicious.naf),/Model\/preprocessing/);
 const invalid=specimen('f');invalid.naf.groups[0].units[0].rms=Number.NaN;
 assert.throws(()=>restored.addLive(invalid.record,invalid.naf),/Nonfinite|finite/);
-const m=JSON.parse(JSON.stringify(archive));m.runs.push({record:fake.record,naf:fake.naf,note:''});
+const m=JSON.parse(JSON.stringify(archive));const validNew=specimen('7');
+m.runs=[{record:validNew.record,naf:validNew.naf,note:''},{record:fake.record,naf:fake.naf,note:''}];
 const previous=restored.list().length;
 assert.throws(()=>restored.importManifest(m),/unrecorded/);
 assert.equal(restored.list().length,previous,'Batch invalid import must be atomic');
