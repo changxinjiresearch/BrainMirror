@@ -10,6 +10,9 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  let current=null,capture=null,history=[],reference=null,selected=null,busy=false;
  let selectedFeatureIndex=0,valuePage=0,detailValues=null;
  if(!root.SCEPT_CLOUD_ORBIT?.newCamera)throw Error('Real NAF 3D camera module not loaded');
+ const archiveEngine=root.SCEPT_FULL_ARCHIVE;
+ let archiving=false,lastArchiveInfo=null;
+ const archiveSay=(v,error=false)=>{const e=$('v6ArchiveStatus');e.textContent=v;e.dataset.error=String(error)};
  const camera=root.SCEPT_CLOUD_ORBIT.newCamera({
   redraw:()=>renderCloud(),
   onTap:pos=>pickCloud(pos)
