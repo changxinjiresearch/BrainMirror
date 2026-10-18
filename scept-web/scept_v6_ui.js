@@ -206,7 +206,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
      high=p.values.reduce((v,x)=>Math.max(v,x),-Infinity);
    show('v6InspectStats',head+' · Min: '+fmtExact(low)+' · Max: '+fmtExact(high));
    const unitMeaning=g.role==='token'?'特征通道':'通道内实际空间特征值';
-   show('v6PatternNote',p.values.length+' 个真正实测的'+unitMeaning+
+   show('v6PatternNote',p.values.length+' 个真实测量的'+unitMeaning+
     ' · '+JSON.stringify(p.coordinates)+'。同样的 RMS 可能对应不同的通道模式。');
    drawPattern(p.values);updateExact();
   }catch(e){
