@@ -127,6 +127,19 @@
         v.textContent=(dict[gate.verdict]||'未评价')+' · '+fmt(gate.value);
         row.append(name,v);gateRoot.append(row);
       }
+      const lroot=$('v4LayerEvidence');lroot.replaceChildren();
+      const full=data.rawEvidence.tasks.filter(t=>t.status==='completed'&&t.explanation?.strength===1);
+      const representative=full[0]?.observations||[];
+      for(const obs of representative){
+        if(obs.tensor===data.rawEvidence.experiment?.manifest?.target?.tensor)continue;
+        const a=full.map(t=>t.observations?.find(o=>o.tensor===obs.tensor)?.mean_abs_delta).filter(finite);
+        const c=full.map(t=>t.controlObservations?.find(o=>o.tensor===obs.tensor)?.mean_abs_delta).filter(finite);
+        if(a.length!==full.length||c.length!==full.length)continue;
+        const row=root.document.createElement('div');row.className='v4-gate';
+        const label=root.document.createElement('span');label.textContent=obs.tensor.split('/').slice(-2).join('/')||obs.tensor;
+        const value=root.document.createElement('strong');value.textContent='P '+fmt(med(a))+' / Q '+fmt(med(c));
+        value.style.color='#9ce5d8';row.append(label,value);lroot.append(row);
+      }
       const verdict=data.scientificVerdict;
       $('v4Verdict').textContent=verdict==='criterion_met'?'计算判别条件满足（不等于医学因果证明）':
         verdict==='criterion_not_met'?'至少一项预注册条件未满足':'无法评价：'+(data.reason||'证据不足');
@@ -138,6 +151,7 @@
         ' · 特异性 '+fmt(last.specificity)+' · 受控效应 '+fmt(last.e);
       $('v4ExportEvidence').disabled=false;
     }
+    $('v4ShowPlanes').addEventListener('click',()=>root.document.body.classList.toggle('show-planes'));
     btn.addEventListener('click',async()=>{
       if(busy)return;
       busy=true;btn.disabled=true;$('v4ExportEvidence').disabled=true;
