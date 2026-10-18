@@ -51,6 +51,7 @@
       <p id="v5Icm">尚未评价：运行真实配对 A/B 并加载可替换 ONNX 才能执行。</p>
     <details class="v5-patching"><summary>研究者模式 · 执行真实 ICM 内部激活替换</summary>
       <p>使用 scripts/scept_build_icm_patch_model.py 基于当前**同一冻结 ONNX**和所选内部层生成带真实 Where 替换操作的模型；不具备模型则维持不可评价。</p>
+      <button type="button" id="v5DownloadModel" class="secondary">下载当前实际运行的、SHA 已验证的 ViT ONNX</button>
       <label for="v5PatchFile">加载真实 patchable ONNX</label><input id="v5PatchFile" type="file" accept=".onnx">
       <label for="v5OriginalHash">原始（插装前后需对应）模型 SHA-256</label><input id="v5OriginalHash" type="text" placeholder="原始 ONNX SHA-256，64 位十六进制">
       <label for="v5TargetIndex">目标 logit 索引</label><input id="v5TargetIndex" type="number" min="0" step="1" value="0">
