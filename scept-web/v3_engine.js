@@ -17,7 +17,7 @@ const EXTRA_PROBES=[
  {kind:'attention',label:'Attention Softmax · 第 6 层',layer:6,name:'/vit/encoder/layer.6/attention/attention/Softmax_output_0'},
  {kind:'residual',label:'Residual Add · 第 6 层',layer:6,name:'/vit/encoder/layer.6/output/Add_output_0'}
 ];
-const st={session:null,graph:null,modelSha:null,sourceHash:SOURCE_HASH,probes:[],extraProbes:[],results:null,selected:6,history:[],loading:true,running:false,failed:null};
+const st={session:null,graph:null,modelSha:null,instrumentedModel:null,sourceHash:SOURCE_HASH,probes:[],extraProbes:[],results:null,selected:6,history:[],loading:true,running:false,failed:null};
 let mouse=null;
 try{st.history=JSON.parse(localStorage.getItem('scept-v3-audit-list')||'[]')}catch{}
 const fmt=n=>Number.isFinite(n)?Math.abs(n)>.000001?n.toFixed(5):n.toExponential(2):'—';
@@ -74,6 +74,9 @@ async function init(){
   st.probes=patched.exposed.filter(p=>p.kind==='value');
   st.extraProbes=patched.exposed.filter(p=>p.kind!=='value');
   st.modelSha=await sha256(patched.model);
+  // V5 only: retain verified model bytes so the scientist can generate an EXACT
+  // SHA-matched executable patch model; never embed checkpoints in GitHub.
+  if(document.body?.classList.contains('v5'))st.instrumentedModel=patched.model;
   $('instrumentedHash').textContent=st.modelSha;
   st.graph=window.SCEPT_INSPECT_ONNX(patched.model);
   window.SCEPT_NETWORK3D?.setGraph(st.graph);
@@ -236,7 +239,14 @@ $('modelMode').onchange=()=>{
 };
 
 $('reloadTemplate').onclick=async()=>{await SCEPT_MRI.loadDefault();readyIfPossible()};
-window.SCEPT_V3={getScientificContext:()=>st.session?{
+window.SCEPT_V3={downloadInstrumented:()=>{
+ if(!document.body?.classList.contains('v5')||!st.instrumentedModel||!st.modelSha)
+  throw Error('Verified V5 instrumented ONNX checkpoint unavailable');
+ const u=URL.createObjectURL(new Blob([st.instrumentedModel],{type:'application/octet-stream'})),
+  a=document.createElement('a');a.href=u;a.download='scept-v5-exact-instrumented-vit.onnx';
+ a.click();setTimeout(()=>URL.revokeObjectURL(u),10000);
+ return st.modelSha;
+},getScientificContext:()=>st.session?{
   session:st.session,sha256:st.modelSha,mriRevision:window.SCEPT_MRI?.state?.revision,
   probes:st.probes.map(p=>({name:p.name,layer:p.layer}))
 }:null,getSnapshot:()=>({ready:!!st.session&&!!SCEPT_MRI.state.loaded,model:!!st.session,mri:SCEPT_MRI.state.loaded,probeLayers:st.probes.map(p=>p.layer),hasExperiment:!!st.results,selected:st.selected,runId:st.results?.at||null,changed:st.results?.layers.find(x=>x.layer===st.selected)?.summary.changed??null}),getAudit:()=>st.results,run};
