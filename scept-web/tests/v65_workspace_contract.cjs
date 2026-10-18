@@ -39,7 +39,7 @@ assert.throws(()=>restored.addLive(c.record,{...c.naf,runId:'run-other_run_id'})
 const fake=specimen('d');fake.naf.groups[0].tensor='invented_hidden';
 assert.throws(()=>restored.addLive(fake.record,fake.naf),/unrecorded/);
 const patient=specimen('e');patient.record.data=new Float32Array([1,2]);
-assert.throws(()=>restored.addLive(patient.record,patient.naf),/RAW_DATA|Unexpected runtime/);
+assert.throws(()=>restored.addLive(patient.record,patient.naf),/Raw model|Unexpected runtime/);
 const smuggle=specimen('e');smuggle.naf.values=[9,9,9];
 assert.throws(()=>restored.addLive(smuggle.record,smuggle.naf),/Raw model/);
 const suspicious=specimen('f');suspicious.record.provenance.model.sha256='z'.repeat(64);
