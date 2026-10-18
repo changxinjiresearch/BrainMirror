@@ -8,6 +8,7 @@ root.document.addEventListener('DOMContentLoaded',()=>{
  C=root.SCEPT_CAPTURE_ONCE,N=root.SCEPT_NAF,K=root.SCEPT_NAF_CALIBRATION;
  if(!$('v6Run')||!O||!R||!C||!N||!K)return;
  let current=null,capture=null,history=[],reference=null,selected=null,busy=false;
+ let selectedFeatureIndex=0,valuePage=0,detailValues=null;
  if(!root.SCEPT_CLOUD_ORBIT?.newCamera)throw Error('Real NAF 3D camera module not loaded');
  const camera=root.SCEPT_CLOUD_ORBIT.newCamera({
   redraw:()=>renderCloud(),
@@ -81,20 +82,138 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   renderDetail();renderCloud();
  }
  function currentGroup(){return groups().find(g=>g.tensor===selected?.tensor)}
+ function probeLabel(g){
+  const t=g.tensor||'unknown';
+  const layer=t.match(/\/layer\.(\d+)\//);
+  const kind=/\/value\//i.test(t)?'Attention Value':
+    /\/output\/Add_output/i.test(t)?'Residual Stream':
+    g.role==='channel'?'CNN Conv':'原始张量';
+  return (layer?'第 '+Number(layer[1])+' 层 · ':'')+kind+' · '+t.split('/').slice(-2).join('/').slice(0,48);
+ }
+ function populateInspector(g,u){
+  const layer=$('v6LayerSelect'),unit=$('v6UnitSelect');
+  const gs=groups().filter(x=>x.status==='measured'&&x.units.length);
+  layer.replaceChildren();
+  if(!gs.length){layer.add(new Option('当前视图无可用观测张量',''));layer.disabled=true;
+   unit.replaceChildren();unit.add(new Option('无可用位置',''));unit.disabled=true;return}
+  layer.disabled=false;
+  for(const candidate of gs)layer.add(new Option(probeLabel(candidate),candidate.tensor));
+  layer.value=g?.tensor||gs[0].tensor;
+  unit.replaceChildren();
+  if(!g?.units.length){unit.add(new Option('无可用位置',''));unit.disabled=true;return}
+  unit.disabled=false;
+  for(const item of g.units){
+   const desc=g.role==='token'?'Token':g.role==='channel'?'通道':'位置';
+   unit.add(new Option(desc+' '+item.index,item.index.toString()));
+  }
+  unit.value=String(u?.index??g.units[0].index);
+ }
+ const fmtExact=x=>Number.isFinite(x)?Number(x).toPrecision(9):'—';
+ const PAGE_SIZE=32;
+ function selectUnit(tensor,index){
+  const g=groups().find(g=>g.tensor===tensor&&g.status==='measured');
+  if(!g||!g.units.some(u=>u.index===index))return;
+  const changed=selected?.tensor!==tensor||selected?.index!==index;
+  selected={tensor,index};
+  if(changed){selectedFeatureIndex=0;valuePage=0}
+  renderDetail();renderCloud();
+ }
+ function renderValueTable(){
+  const host=$('v6ChannelRows');host.replaceChildren();
+  const vals=detailValues;
+  if(!vals?.length){
+   const tr=document.createElement('tr'),cell=document.createElement('td');
+   cell.colSpan=2;cell.textContent='原始数值不可评价或未被保留。';tr.append(cell);host.append(tr);
+   $('v6ValuePage').textContent='—';
+   $('v6ValuePrev').disabled=$('v6ValueNext').disabled=true;return;
+  }
+  const pages=Math.ceil(vals.length/PAGE_SIZE);
+  valuePage=Math.max(0,Math.min(pages-1,valuePage));
+  const begin=valuePage*PAGE_SIZE,end=Math.min(vals.length,begin+PAGE_SIZE);
+  const chunk=document.createDocumentFragment();
+  for(let i=begin;i<end;i++){
+   const tr=document.createElement('tr');
+   if(i===selectedFeatureIndex)tr.className='v6-value-selected';
+   const idx=document.createElement('td'),v=document.createElement('td');
+   idx.textContent=String(i);v.textContent=fmtExact(vals[i]);
+   tr.append(idx,v);
+   tr.addEventListener('click',()=>{selectedFeatureIndex=i;updateExact(true)});
+   chunk.append(tr);
+  }
+  host.append(chunk);
+  $('v6ValuePage').textContent='第 '+(valuePage+1)+' / '+pages+' 页 · 共 '+vals.length+' 个实测数值';
+  $('v6ValuePrev').disabled=valuePage===0;
+  $('v6ValueNext').disabled=valuePage===pages-1;
+ }
+ function updateExact(renderTable=true){
+  const vals=detailValues,control=$('v6ChannelIndex');
+  if(!vals?.length){control.disabled=true;control.max='0';
+   $('v6ChannelExact').textContent='当前观测没有可读取的逐项原始数值。';
+   if(renderTable)renderValueTable();return}
+  selectedFeatureIndex=Math.max(0,Math.min(vals.length-1,Math.round(selectedFeatureIndex)));
+  control.disabled=false;control.min='0';control.max=String(vals.length-1);
+  control.value=String(selectedFeatureIndex);
+  const p=currentGroup(),space=p?.role==='token'?'特征通道':'通道内空间位置 / 特征值';
+  $('v6ChannelExact').textContent=space+' '+selectedFeatureIndex+
+    ' = '+fmtExact(vals[selectedFeatureIndex])+' （实际记录的浮点值）';
+  if(renderTable)renderValueTable();
+  const cv=$('v6Channels'),layout=cv.__patternLayout;
+  if(layout&&cv.getContext){
+   // Redraw the plotted values with a precise highlighted index.
+   drawPattern(vals,false);
+  }
+ }
  function renderDetail(){
-  if(!current||!selected)return;
-  const g=currentGroup(),u=g?.units.find(x=>x.index===selected.index);
-  if(!u){show('v6Selected','当前视图没有这个观测位置的真实数据。');drawPattern(null);return}
-  show('v6Selected',g.tensor+' / '+g.role+' '+selected.index+' · 实际 RMS '+fmt(u.rms)+
-    ' · Mean '+fmt(u.mean)+'。这不是解释重要性。');
-  if(g.view==='update'){show('v6PatternNote','更新模式显示同一次前向传播中 L5→L6 真实残差表示变化；详细通道更新将在后续专用视图提供。');drawPattern(null);return}
-  if(!capture){show('v6PatternNote','原始通道张量已释放；如需再看详情，请重新运行该输入。');drawPattern(null);return}
+  if(!current){
+   show('v6Selected','尚未运行模型');
+   show('v6InspectStats','未观测');detailValues=null;
+   populateInspector(null,null);drawPattern(null);updateExact();return;
+  }
+  const gs=groups().filter(x=>x.status==='measured'&&x.units.length);
+  if(!gs.some(g=>g.tensor===selected?.tensor&&g.units.some(u=>u.index===selected.index))){
+   selected=gs.length?{tensor:gs[0].tensor,index:gs[0].units[0].index}:null;
+   selectedFeatureIndex=0;valuePage=0;
+  }
+  const g=currentGroup(),u=g?.units.find(x=>x.index===selected?.index);
+  populateInspector(g,u);
+  if(!u){
+   show('v6Selected','当前观测模式没有可评价的实际层 / Token。');
+   show('v6InspectStats','未观测或不可评价');
+   show('v6PatternNote','当前模型未提供此模式所需的真实中间张量。');
+   detailValues=null;drawPattern(null);updateExact();return;
+  }
+  const actualMean=Number.isFinite(u.mean)?fmtExact(u.mean):'—';
+  show('v6Selected',g.tensor+' / '+g.role+' '+selected.index+
+    ' · RMS '+fmtExact(u.rms)+' · Mean '+actualMean+'。这不是解释重要性。');
+  const head='RMS: '+fmtExact(u.rms)+' · Mean: '+actualMean+
+    (Number.isFinite(u.count)?' · 实测数值数: '+u.count:'');
+  show('v6InspectStats',head);
+  if(g.view==='update'){
+   show('v6InspectStats','单次残差更新 RMS: '+fmtExact(u.rms)+
+    ' · 有符号平均更新: '+actualMean+' · 实际计算位置: '+selected.index);
+   show('v6PatternNote','仅显示有真实前后模块张量支持的更新汇总。当前更新模式尚不提供逐通道差异表，不能用状态数值冒充更新数值。');
+   detailValues=null;drawPattern(null);updateExact();return;
+  }
+  if(!capture){
+   show('v6PatternNote','当前运行的原始张量已释放，精确数值不可评价；请重新执行真实模型。');
+   detailValues=null;drawPattern(null);updateExact();return;
+  }
   try{
    const p=N.getPattern(capture,g.tensor,selected.index,current.profile,{maxValues:65536});
-   show('v6PatternNote',p.values.length+' 个真实数值 · '+JSON.stringify(p.coordinates)+
-     '；同样大小的 RMS 也可能对应完全不同的通道模式。');
-   drawPattern(p.values);
-  }catch(e){show('v6PatternNote','真实通道不可评价：'+e.message);drawPattern(null)}
+   detailValues=p.values;
+   selectedFeatureIndex=Math.max(0,Math.min(p.values.length-1,selectedFeatureIndex));
+   const low=p.values.reduce((v,x)=>Math.min(v,x),Infinity),
+     high=p.values.reduce((v,x)=>Math.max(v,x),-Infinity);
+   show('v6InspectStats',head+' · Min: '+fmtExact(low)+' · Max: '+fmtExact(high));
+   const unitMeaning=g.role==='token'?'特征通道':'通道内实际空间特征值';
+   show('v6PatternNote',p.values.length+' 个真正实测的'+unitMeaning+
+    ' · '+JSON.stringify(p.coordinates)+'。同样的 RMS 可能对应不同的通道模式。');
+   drawPattern(p.values);updateExact();
+  }catch(e){
+   detailValues=null;
+   show('v6PatternNote','真实通道不可评价：'+e.message);
+   drawPattern(null);updateExact();
+  }
  }
  function drawPattern(vals){
   const cv=$('v6Channels'),ctx=cv.getContext('2d');
@@ -102,17 +221,51 @@ root.document.addEventListener('DOMContentLoaded',()=>{
   cv.width=w*dpr;cv.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle='#071723';ctx.fillRect(0,0,w,h);
   ctx.strokeStyle='#43636b';ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
+  cv.__patternLayout=null;
   if(!vals||!vals.length)return;
-  const max=Math.max(1e-10,...vals.map(Math.abs)),bars=Math.min(vals.length,640),step=Math.ceil(vals.length/bars),size=w/bars;
+  let max=1e-10;for(const v of vals)max=Math.max(max,Math.abs(v));
+  const bars=Math.min(vals.length,640),step=Math.ceil(vals.length/bars),size=w/bars;
+  cv.__patternLayout={bars,step,count:vals.length,width:w,height:h};
   for(let i=0;i<bars;i++){
    const v=vals[i*step],height=Math.abs(v)/max*(h/2-12);
    ctx.fillStyle=v>=0?'#5cd2bb':'#eca769';
    ctx.fillRect(i*size,v>=0?h/2-height:h/2,Math.max(1,size*.76),Math.max(.5,height));
   }
+  const mark=Math.floor(selectedFeatureIndex/step);
+  ctx.strokeStyle='#ffefa4';ctx.lineWidth=2;
+  ctx.strokeRect(mark*size,h/2-83,Math.max(2,size),166);
   ctx.font='10px system-ui';ctx.fillStyle='#a1cbd0';ctx.fillText(
-    vals.length>bars?'仅下采样显示真实值（每 '+step+' 个取第一个）：共 '+vals.length:'真实通道数值 · 正负均有含义；±值色标按选中向量缩放',
-    8,h-8);
+   vals.length>bars?'仅下采样显示实测值（每 '+step+' 项抽样）：共 '+vals.length:
+   '实测值 · 正负数有含义 · 黄色框为当前选中索引',8,h-8);
  }
+ $('v6LayerSelect').onchange=e=>{
+  const g=groups().find(g=>g.tensor===e.target.value&&g.status==='measured');
+  if(g?.units.length)selectUnit(g.tensor,g.units[0].index);
+ };
+ $('v6UnitSelect').onchange=e=>{
+  const g=groups().find(g=>g.tensor===$('v6LayerSelect').value);
+  const n=Number(e.target.value);
+  if(g?.units.some(u=>u.index===n))selectUnit(g.tensor,n);
+ };
+ $('v6ChannelIndex').onchange=e=>{
+  if(!detailValues?.length)return;
+  const n=Number(e.target.value);
+  if(Number.isSafeInteger(n)&&n>=0&&n<detailValues.length){
+   selectedFeatureIndex=n;valuePage=Math.floor(n/PAGE_SIZE);updateExact();
+  }else updateExact();
+ };
+ $('v6Channels').onclick=e=>{
+  const layout=e.currentTarget.__patternLayout;
+  if(!layout||!detailValues?.length)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const x=(e.clientX-rect.left)/rect.width*layout.width;
+  const index=Math.floor(Math.max(0,Math.min(layout.bars-1,
+   Math.floor(x/(layout.width/layout.bars))))*layout.step);
+  selectedFeatureIndex=Math.min(detailValues.length-1,index);
+  valuePage=Math.floor(selectedFeatureIndex/PAGE_SIZE);updateExact();
+ };
+ $('v6ValuePrev').onclick=()=>{valuePage--;renderValueTable()};
+ $('v6ValueNext').onclick=()=>{valuePage++;renderValueTable()};
  function renderCloud(){
   const cv=$('v6Cloud'),ctx=cv.getContext('2d'),dpr=Math.min(2,devicePixelRatio||1);
   const w=Math.max(440,Math.round(cv.getBoundingClientRect().width||670)),h=300;
