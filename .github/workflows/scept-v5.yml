@@ -49,6 +49,8 @@ jobs:
           exit 1
       - name: Real pretrained ViT and original MRI fingerprint with 985 genuine Token cells
         run: node scept-web/tests/v5_fingerprint_browser.cjs
+      - name: Verify real NIfTI A and 3 B paired mask and actual ViT CRC model execution
+        run: node scept-web/tests/v5_paired_mri_browser.cjs
       - name: Store actual browser NDF screenshot
         if: always()
         uses: actions/upload-artifact@v4
