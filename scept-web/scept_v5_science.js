@@ -43,7 +43,7 @@
    err('model SHA-256 and actual layer data required');
   if(!/^[0-9a-f]{64}$/i.test(baselineHash||'')||!/^[0-9a-f]{64}$/i.test(counterfactualHash||''))
    err('raw input checksums required');
-  if(baselineHash===counterfactualHash)err('identical inputs: zero-effect must be explicitly reported');
+  const identicalInputs=baselineHash===counterfactualHash;
   if(source!=='real-onnx-runtime')err('cannot build science from mock or drawn values');
   const seen=new Set(),items=layers.map(l=>{
    if(typeof l.name!=='string'||!l.name||seen.has(l.name))err('duplicate or unnamed real tensor');
@@ -70,7 +70,7 @@
     maxAbsDelta:max,changed:nonzero,total:n};
   });
   return{schema:NDF,version:VERSION,modelSha256,baselineHash,counterfactualHash,
-    source,profile,label,rows:items,scientificStatus:'descriptive_internal_response_only',
+    source,profile,label,rows:items,identicalInputs,scientificStatus:identicalInputs?'zero_effect_control':'descriptive_internal_response_only',
     limitations:['A/B difference is not evidence of a causal path','A/B alone does not establish stability',
       'Display scales and activation magnitudes are not calibrated across different network layers']};
  }
