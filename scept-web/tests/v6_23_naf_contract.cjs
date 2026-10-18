@@ -40,7 +40,7 @@ const hash=x=>x.repeat(64),mk=(x,model=hash('a'))=>({
  assert.equal(N.getPattern(cap,'residual_after',0,'vit-token-channel').values.length,2);
  assert.deepEqual(N.getPattern(cap,'residual_after',0,'vit-token-channel').values,[2,0]);
  assert.equal(N.update(cap,{...good,graph:{nodes:[]},profile:'vit-token-channel'}).status,'not_evaluable');
- assert.throws(()=>N.getPattern(cap,'residual_after',3,'vit-token-channel'),/shape/i);
+ assert.throws(()=>N.getPattern(cap,'residual_after',3,'vit-token-channel'),/Expected \[1,tokens,channels\]/);
  assert.equal(K.scale(.5,{mode:'raw',rawMax:2}),.25);
  assert.equal(K.scale(.5,{mode:'raw',rawMax:1}),.5);
  assert.throws(()=>K.scale(1,{mode:'raw',rawMax:0}),/max/);
