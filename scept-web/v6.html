@@ -85,9 +85,9 @@
   <span><i class="v5-swatch v5-mid"></i>数值中等</span><span><i class="v5-swatch v5-high"></i>数值较大</span>
   <span>固定 RAW 色标，非统计显著性</span></div>
  <div class="v6-twocol">
-  <article><div class="v6-line"><h3>真实计算位置 · 三维观测</h3><button type="button" class="secondary" id="v6Rotate">旋转</button></div>
-   <canvas id="v6Cloud" width="700" height="255" aria-label="实际已观测计算位置的三维排列，位置不代表真实网络拓扑"></canvas>
-   <p>点对应真实计算位置，颜色来自单次实测活动；三维位置仅为排布，不虚构节点之间的连接。</p></article>
+  <article class="v6-cloud-panel"><div class="v6-line"><h3>真实计算位置 · 三维观测</h3><div class="v6-cloud-toolbar" role="group" aria-label="三维视角控制"><button type="button" class="secondary" id="v6ZoomOut" title="缩小三维视图">−</button><button type="button" class="secondary" id="v6ZoomIn" title="放大三维视图">＋</button><button type="button" class="secondary" id="v6Rotate" title="按步旋转三维视角">旋转</button><button type="button" class="secondary" id="v6Reset" title="恢复原始视角与缩放">重置</button></div></div>
+   <canvas id="v6Cloud" width="700" height="300" tabindex="0" aria-label="真实计算位置的三维观测；拖动旋转、滚轮缩放、Shift 或鼠标右键拖动平移、双指缩放，Home 重置视角。三维排布不代表真实网络拓扑。"></canvas>
+   <p>按住左键拖动自由旋转 · 鼠标滚轮放大/缩小 · Shift＋拖动或右键拖动平移 · 双指缩放 · 重置视角。点位与颜色来自实测数据，旋转不会改变模型结果。</p></article>
   <article><h3>选中的真实 Token / 通道</h3><p id="v6Selected">点击上方指纹中的一个真实单位。</p>
    <canvas id="v6Channels" width="700" height="178" aria-label="实际通道或空间特征值的正负分布"></canvas>
    <p id="v6PatternNote">尚未选择真实观测单元。</p></article>
@@ -287,6 +287,6 @@
 <script src="./core/scept_run_record.js"></script><script src="./core/scept_capture_once.js"></script>
 <script src="./core/scept_naf.js"></script><script src="./core/scept_naf_calibration.js"></script>
 <script src="./core/scept_v6_graph_probes.js"></script>
-<script src="./scept_v6_cnn.js"></script><script src="./scept_v6_ui.js"></script>
+<script src="./scept_v6_cnn.js"></script><script src="./core/scept_cloud_orbit.js"></script><script src="./scept_v6_ui.js"></script>
 <script src="./core/scept_workspace_journal.js"></script><script src="./scept_workspace_v65.js"></script>
 </body></html>
