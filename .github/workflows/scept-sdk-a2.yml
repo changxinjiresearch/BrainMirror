@@ -1,4 +1,4 @@
-name: SCEPT Python SDK A0-A4 — NAF and Controlled Research
+name: SCEPT Python SDK A0-A5 — Cross-runtime Research Archive
 on:
   pull_request:
     paths:
@@ -48,5 +48,13 @@ jobs:
         run: python -m pytest scept_sdk/tests/test_a3_calibration_parity.py -q
       - name: A4 preregistered controlled U10 real ONNX triple-forward study and JS nuisance parity
         run: python -m pytest scept_sdk/tests/test_a4_protocols.py -q
-      - name: Complete independent A0-A4 regression
+      - name: A5 full ZIP export/import, real PyTorch/ONNX model replay and tamper rejection
+        run: python -m pytest scept_sdk/tests/test_a5_archive.py -q
+      - name: A5 original production JS V6 complete-observation ZIP import and NAF re-analysis
+        run: python -m pytest scept_sdk/tests/test_a5_web_interop.py -q
+      - name: A5 researcher-facing standalone verification CLI
+        run: |
+          scept-archive verify /tmp/scept-full-archive-contract.zip
+          scept-archive recompute /tmp/scept-full-archive-contract.zip
+      - name: Complete independent A0-A5 regression
         run: python -m pytest scept_sdk/tests -q
