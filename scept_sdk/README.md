@@ -1,4 +1,4 @@
-# SCEPT Research SDK A0–A5 (alpha)
+# SCEPT Research SDK A0–A6 (alpha release candidate)
 
 Install from source (this package is **not yet on PyPI**):
 
@@ -56,4 +56,4 @@ File SHA and ZIP CRC validate integrity against the manifest, not real-world aut
 
 PyTorch model identity is a *state-dict fingerprint*, **not** proof of unchanged model source code. ONNX identity is SHA-256 of the exact frozen original model bytes. Preprocessing descriptor is user declared (string IDs / integers only in A0 to avoid silently incompatible JS float formatting). Shape/axis profile never implies tumor semantics, model-output importance or causality. For preregistering methods, observer.model_sha256 exposes original ONNX hash or current PyTorch state hash.
 
-**Not yet implemented:** arbitrary nested PyTorch output structures, distributed scheduler, external-user installation qualification, formal license/PyPI publishing, U11 independent scientific validation and clinical explanation. These belong to A6 or separate M4 scientific work. Do not infer that this is a scientifically validated explanation method.
+**A6 release qualification:** Run `python scept_sdk/examples/a6_clean_room.py` from the repository root after installing `./scept_sdk[all,test]`; see [A6 verification and honest M5 gate](../docs/SCEPT_SDK_A6_RELEASE_QUALIFICATION.md). Wheel builds and Python 3.10/3.11/3.12 matrix are gated in CI. Independent external reproduction and explicit owner-approved licensing remain release blockers; do not assert M5 acceptance or PyPI availability.\n\n**Not yet implemented:** arbitrary nested PyTorch output structures, distributed scheduler, external-user installation qualification, formal license/PyPI publishing, U11 independent scientific validation and clinical explanation. These belong to A6 or separate M4 scientific work. Do not infer that this is a scientifically validated explanation method.
