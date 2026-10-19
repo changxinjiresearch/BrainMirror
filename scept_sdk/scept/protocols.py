@@ -173,6 +173,7 @@ def u10_gates(plan:U10Plan,rows:list[dict[str,Any]]):
     expected=len(plan.nuisance_seeds)*len(plan.strengths)
     if len(rows)!=expected:return no("Incomplete preregistered seed×dose matrix")
     mat={}
+    seen_run_ids=set()
     for row in rows:
         k=(row.get("seed"),row.get("dose"))
         if k in mat or k[0] not in plan.nuisance_seeds or k[1] not in plan.strengths:
@@ -188,6 +189,9 @@ def u10_gates(plan:U10Plan,rows:list[dict[str,Any]]):
             return no("Nonfinite/missing actual target statistic")
         if not isinstance(row.get("runIds"),list) or len(row["runIds"])!=3 or len(set(row["runIds"]))!=3:
             return no("No three distinct real A/B/C run identities")
+        if any(not isinstance(v,str) or v in seen_run_ids for v in row["runIds"]):
+            return no("Reused/nonunique runtime run IDs across seed×dose cells")
+        seen_run_ids.update(row["runIds"])
         mat[k]=row
     if any((s,d) not in mat for s in plan.nuisance_seeds for d in plan.strengths):
         return no("Missing dose for nuisance seed")
@@ -268,9 +272,13 @@ def run_u10(*,observer,input_tensor,plan:U10Plan):
             if any(plan.target_index>=len(x) for x in actual):
                 fail("TARGET_NOT_OBSERVED","Model target index outside measured output")
             x,y,z=(float(v[plan.target_index]) for v in actual)
-            dp=(y-x)/plan.output_scale;dq=(z-x)/plan.output_scale
-            contrast=dp-dq
-            score=(abs(y-x)-abs(z-x))/plan.output_scale
+            delta_target=y-x
+            delta_control=z-x
+            dp=delta_target/plan.output_scale
+            dq=delta_control/plan.output_scale
+            # Production JS U10 computes (dt-dc)/S, not (dt/S-dc/S).
+            contrast=(delta_target-delta_control)/plan.output_scale
+            score=(abs(delta_target)-abs(delta_control))/plan.output_scale
             if not all(map(math.isfinite,(dp,dq,contrast,score))):
                 fail("NONFINITE","Actual model target overflow")
             layer_responses=[]
