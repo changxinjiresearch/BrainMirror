@@ -44,6 +44,8 @@ jobs:
         run: python -m pytest scept_sdk/tests/test_onnx_adapter.py -q
       - name: A3 actual ViT/CNN NAF arithmetic compared with production JS
         run: python -m pytest scept_sdk/tests/test_a3_naf_parity.py -q
+      - name: A3 genuine same-model empirical calibration and JS V6.3 midrank parity
+        run: python -m pytest scept_sdk/tests/test_a3_calibration_parity.py -q
       - name: A4 preregistered controlled U10 real ONNX triple-forward study and JS nuisance parity
         run: python -m pytest scept_sdk/tests/test_a4_protocols.py -q
       - name: Complete independent A0-A4 regression
