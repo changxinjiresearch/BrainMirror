@@ -1,8 +1,8 @@
-"""Public SCEPT Python SDK A0–A2.
+"""Public SCEPT Python SDK A0–A3.
 
 A genuine single forward captures named actual model outputs and layer tensors.
-NAF mathematical calculation, U10 controlled explanation and V6 ZIP emission
-remain A3–A5. They are intentionally NOT silently simulated here.
+NAF mathematical state/pattern and qualified representation updates implemented
+in A3. Cross-language full ZIP remains A5.
 """
 from __future__ import annotations
 import copy
@@ -14,6 +14,7 @@ import numpy as np
 
 from .adapters import PyTorchAdapter, ONNXAdapter
 from .contracts import SCEPTError, fail, build_record
+from . import naf as naf_math
 
 @dataclass(frozen=True)
 class CapturedRun:
@@ -22,6 +23,7 @@ class CapturedRun:
     _tensors: dict[str, tuple[np.ndarray, str]]
     _inputs: dict[str, tuple[np.ndarray, str]]
     requested_probes: tuple[str, ...]
+    _graph_edges: tuple | None = None
 
     @property
     def run_id(self) -> str:
@@ -53,8 +55,22 @@ class CapturedRun:
             fail("NOT_OBSERVED", f"Input feed is not present: {name}")
         return self._inputs[name][0].copy()
 
-    def fingerprint(self):
-        raise NotImplementedError("SCEPT Python NAF belongs to A3. Captured raw tensors are genuine.")
+    def fingerprint(self, *, max_axis_units: int = 2048) -> dict[str, Any]:
+        """Real single-run NAF, actual measured values, never importance."""
+        return naf_math.fingerprint(self, max_axis_units=max_axis_units)
+
+    def pattern(self, tensor: str, unit: int, *, max_values: int = 65536) -> dict[str, Any]:
+        """Real per-unit raw numeric channels/spatial features."""
+        return naf_math.pattern(self, tensor, unit, max_values=max_values)
+
+    def representation_update(self, input_tensor: str, output_tensor: str, *,
+                              coordinate_semantics: str | None = None,
+                              verified_identity: bool = False,
+                              declared_by: str | None = None) -> dict[str, Any]:
+        """Actual graph-path and coordinate verified same-forward update, or unavailable."""
+        return naf_math.representation_update(self, input_tensor=input_tensor,
+            output_tensor=output_tensor, coordinate_semantics=coordinate_semantics,
+            verified_identity=verified_identity, declared_by=declared_by)
 
     def export(self, path: str):
         raise NotImplementedError("Cross-language verified scientific ZIP belongs to A5. No fake archive.")
@@ -95,6 +111,18 @@ class SCEPT:
         self.profile=profile
         self.layers=tuple(layers)
 
+    @property
+    def model_sha256(self) -> str:
+        """Real frozen input-model identity, inspectable for protocol locking.
+
+        ONNX: exact original uninstrumented model bytes. PyTorch: current
+        state_dict bytes only, NOT a cryptographic hash of executable source.
+        """
+        if self.backend=="onnx":
+            return self._adapter.model_sha256
+        from .adapters import _weights_sha
+        return _weights_sha(self._adapter.model)
+
     def observe(self, x: Any, *, preprocess_id: str = "identity-v1",
                 preprocess_config: dict[str,Any] | None = None,
                 model_id: str = "user-supplied-frozen-model") -> CapturedRun:
@@ -118,4 +146,5 @@ class SCEPT:
         # browser's NAF schema or call missing U10 methods.
         return CapturedRun(record,
              {name:(arr.copy(),dt) for name,(arr,dt) in outs.items()},
-             {name:(arr.copy(),dt) for name,(arr,dt) in ins.items()}, self.layers)
+             {name:(arr.copy(),dt) for name,(arr,dt) in ins.items()}, self.layers,
+             getattr(self._adapter, 'graph_edges', None))

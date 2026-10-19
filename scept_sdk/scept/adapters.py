@@ -155,6 +155,7 @@ class ONNXAdapter:
         self.model_sha256=hashlib.sha256(content).hexdigest()
         graph=onnx.load_model_from_string(content)
         onnx.checker.check_model(graph)
+        self.graph_edges=tuple((tuple(node.input),tuple(node.output)) for node in graph.graph.node)
         producers={out for node in graph.graph.node for out in node.output if out}
         graph_out={v.name for v in graph.graph.output}
         missing=[p for p in probes if p not in graph_out and p not in producers]
