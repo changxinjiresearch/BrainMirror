@@ -1,0 +1,46 @@
+name: SCEPT Python SDK A0-A2 — True Model Observation
+on:
+  pull_request:
+    paths:
+      - "scept_sdk/**"
+      - "docs/SCEPT_SDK_A0_A2_**"
+      - ".github/workflows/scept-sdk-a2.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scept_sdk/**"
+      - ".github/workflows/scept-sdk-a2.yml"
+permissions:
+  contents: read
+jobs:
+  python-sdk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install actual PyTorch CPU-only (no new paid GPU)
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install SCEPT source package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e './scept_sdk[test]'
+      - name: Verify actual installable wheel and native Python import
+        run: |
+          python -m pip wheel --no-deps -w /tmp/scept-sdk-wheels ./scept_sdk
+          python -c "from scept import SCEPT, CapturedRun; print('SCEPT SDK public API import OK')"
+      - name: A0 exact browser/Python canonical SHA & fail-closed contract
+        run: python -m pytest scept_sdk/tests/test_contracts.py -q
+      - name: A2 actual pretrained-compatible PyTorch CNN + Transformer hooks
+        run: python -m pytest scept_sdk/tests/test_torch_adapter.py -q
+      - name: A2 real ONNX Conv/Relu graph instrumentation and numerical truth
+        run: python -m pytest scept_sdk/tests/test_onnx_adapter.py -q
+      - name: Complete independent A0-A2 regression
+        run: python -m pytest scept_sdk/tests -q
