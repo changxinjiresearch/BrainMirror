@@ -164,7 +164,7 @@ for name,p,digest in archives:
 
 # Same private repository, separate extension path: do not overwrite P4 files.
 def commit_private_json(path, data):
-    content=(json.dumps(data,indent=2,sort_keys=True,allow_nan=False)+"\n").encode("utf-8")
+    content = (summary_path.read_bytes() if path.endswith("/summary.json") else (json.dumps(data,indent=2,sort_keys=True,allow_nan=False)+"\n").encode("utf-8"))
     url=f"{API}/contents/{path}"
     current=session.get(url,timeout=(30,120))
     if current.status_code==200:
