@@ -78,7 +78,7 @@ class SCEPT:
                  backend: str | None = None, profile: str = "generic",
                  providers: tuple[str, ...] = ("CPUExecutionProvider",),
                  max_capture_bytes: int = 32_000_000):
-        if not isinstance(layers,(list,tuple)) or not layers or any(not isinstance(x,str) for x in layers):
+        if not isinstance(layers,(list,tuple)) or not layers or any(not isinstance(x,str) or not x for x in layers):
             fail("INVALID_PROBES","Specify actual named modules or graph tensors")
         if backend is None:
             backend = "onnx" if isinstance(model,(str,bytes,Path)) else "torch"
