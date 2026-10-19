@@ -4,13 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scept-research"
-version = "0.2.0a4"
-description = "SCEPT NAF single-forward observation and controlled numeric U10, research SDK A0-A4"
+version = "0.2.0a5"
+description = "SCEPT NAF single-forward observation and controlled numeric U10, research SDK A0-A5"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "SCEPT contributors"}]
 dependencies = ["numpy>=1.24,<3"]
 classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering :: Artificial Intelligence"]
+
+[project.scripts]
+scept-archive = "scept.cli:main"
 
 [project.optional-dependencies]
 torch = ["torch>=2.1"]
