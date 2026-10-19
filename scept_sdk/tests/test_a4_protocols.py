@@ -75,6 +75,52 @@ def test_real_onnx_u10_full_preregistered_study_passes_without_claiming_causalit
     assert all(len(r['layerResponses'])==1 for r in result['cells'])
     assert all(r['controlledMagnitude']==0 for r in result['cells'] if r['dose']==0)
     assert result['gates']['metrics']['medianControlled']==pytest.approx(2.)
+    # Compare the same true ONNX seed×dose results with ORIGINAL production
+    # JavaScript U10 suite, not just separately asserted Python formulas.
+    fixture={'cells':result['cells'],'plan':{'strengths':plan.strengths,
+        'seeds':plan.nuisance_seeds,
+        'minSpecificity':plan.min_specificity,
+        'minTargetEffect':plan.min_target_effect,
+        'minPositiveFraction':plan.min_positive_fraction,
+        'maxSpread':plan.max_spread,
+        'minimumSignAgreement':plan.minimum_sign_agreement,
+        'doseTolerance':plan.dose_tolerance,
+        'nullTolerance':plan.null_tolerance,
+        'outputScale':plan.output_scale,
+        'expectedSign':plan.expected_sign}}
+    js_source="""const U=require('./scept-web/plugins/u10_evidential_dependence.js');
+const fs=require('fs'),v=JSON.parse(fs.readFileSync(0,'utf8'));
+const t=v.cells.map(x=>({status:'completed',result:{
+ genuineInference:true,
+ intervention:{schema:'scept.u10.intervention.v1',nuisanceSeed:x.seed,
+ strength:x.dose,nuisanceSigma:x.matching.nuisanceSigma,
+ targetCount:2,controlCount:2,
+ meanDiff:x.matching.meanDiff,stdDiff:x.matching.stdDiff,
+ meanTolerance:0.05,stdTolerance:0.05,
+ targetMaskSha256:x.matching.targetMaskSha256,
+ controlMaskSha256:x.matching.controlMaskSha256},
+ analysis:{target:{controlDelta:x.controlSignedDelta},
+ method:{schema:'scept.u10.explanation.v1',score:x.score,
+ targetedEffect:x.targetedEffect,matchedControlEffect:x.matchedControlEffect,
+ controlledSignedDelta:x.controlledSignedDelta,
+ controlledMagnitude:x.controlledMagnitude,targetSignedDelta:x.targetSignedDelta}}
+ }}));
+const p=v.plan;
+const gates=U.suite({tasks:t,config:{expectedStrengths:p.strengths,
+ expectedNuisanceSeeds:p.seeds,minSpecificity:p.minSpecificity,
+ minTargetEffect:p.minTargetEffect,minPositiveFraction:p.minPositiveFraction,
+ maxSpread:p.maxSpread,minimumSignAgreement:p.minimumSignAgreement,
+ doseTolerance:p.doseTolerance,nullTolerance:p.nullTolerance,
+ outputScale:p.outputScale,expectedSign:p.expectedSign}});
+console.log(JSON.stringify(gates));"""
+    executed=subprocess.run(['node','-e',js_source],cwd=ROOT,input=json.dumps(fixture),
+                            text=True,capture_output=True,check=True)
+    js_gate=json.loads(executed.stdout)
+    assert js_gate['verdict']==result['gates']['verdict']
+    assert [x['verdict'] for x in js_gate['gates']]==[
+        x['verdict'] for x in result['gates']['gates']]
+    for key,val in result['gates']['metrics'].items():
+        assert val==pytest.approx(js_gate['metrics'][key],abs=1e-10)
     assert u10_gates(plan,result['cells'][:-1])['verdict']=='not_evaluable'
     duplicated=list(result['cells'])
     duplicated[-1]=duplicated[0]
