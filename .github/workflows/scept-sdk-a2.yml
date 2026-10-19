@@ -1,4 +1,4 @@
-name: SCEPT Python SDK A0-A2 — True Model Observation
+name: SCEPT Python SDK A0-A4 — NAF and Controlled Research
 on:
   pull_request:
     paths:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   python-sdk:
     runs-on: ubuntu-latest
-    timeout-minutes: 24
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,5 +42,9 @@ jobs:
         run: python -m pytest scept_sdk/tests/test_torch_adapter.py -q
       - name: A2 real ONNX Conv/Relu graph instrumentation and numerical truth
         run: python -m pytest scept_sdk/tests/test_onnx_adapter.py -q
-      - name: Complete independent A0-A2 regression
+      - name: A3 actual ViT/CNN NAF arithmetic compared with production JS
+        run: python -m pytest scept_sdk/tests/test_a3_naf_parity.py -q
+      - name: A4 preregistered controlled U10 real ONNX triple-forward study and JS nuisance parity
+        run: python -m pytest scept_sdk/tests/test_a4_protocols.py -q
+      - name: Complete independent A0-A4 regression
         run: python -m pytest scept_sdk/tests -q
