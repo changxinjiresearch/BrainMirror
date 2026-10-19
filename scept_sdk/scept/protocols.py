@@ -262,7 +262,9 @@ def run_u10(*,observer,input_tensor,plan:U10Plan):
                 return torch.from_numpy(value.copy()).to(device=device)
             runs=[observer.observe(feed(v),
                        preprocess_id="u10-locked-numeric-v1",
-                       preprocess_config={"nuisance_seed":seed,"dose_basis_points":round(dose*10000)},
+                       preprocess_config={"nuisance_seed":seed,
+                                          "dose_exact":format(dose,".17g"),
+                                          "locked_plan_sha256":locked},
                        model_id="preregistered-u10") for v in (A,B,C)]
             if any(r.record["provenance"]["model"]["sha256"]!=model_sha for r in runs):
                 fail("MODEL_MUTATION","Model state did not remain frozen across triple")
