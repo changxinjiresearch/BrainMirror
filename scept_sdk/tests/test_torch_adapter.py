@@ -35,8 +35,12 @@ def test_torch_actual_one_forward_cnn_and_record():
     altered[0,0,0,0]=999.
     assert result.tensor("conv")[0,0,0,0]!=999.
     assert not any(m._forward_hooks for m in model.modules())
-    with pytest.raises(NotImplementedError,match="A3"):
-        result.fingerprint()
+    naf=result.fingerprint()
+    assert naf["schema"]=="scept.naf.v1"
+    assert naf["groups"][0]["status"]=="measured"
+    assert naf["science"]["causality"]=="NOT_ESTABLISHED"
+    assert len(result.pattern("conv",0)["values"])==64
+    assert result.representation_update("conv","head")["status"]=="not_evaluable"
     with pytest.raises(NotImplementedError,match="A5"):
         result.export("archive.zip")
 
