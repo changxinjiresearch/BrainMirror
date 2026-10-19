@@ -234,11 +234,23 @@ def run_u10(*,observer,input_tensor,plan:U10Plan):
     if model_sha!=ensure_hash(plan.model_sha256,"model"):
         fail("MODEL_MISMATCH","Preregistered model fingerprint differs from frozen model")
     locked=sha256(json.dumps(asdict(plan),sort_keys=True).encode()).hexdigest()
+    if plan.target_tensor not in getattr(observer._adapter,"probes",()):
+        # Public outputs are captured even if they are not included in named probes.
+        if observer.backend=="onnx" and plan.target_tensor not in observer._adapter.outputs:
+            fail("TARGET_NOT_OBSERVED","Target is not an actual runtime output")
+        if observer.backend=="torch" and not plan.target_tensor.startswith("model."):
+            fail("TARGET_NOT_OBSERVED","Only actual configured modules/model output accepted")
     rows=[]
     for seed in plan.nuisance_seeds:
         for dose in plan.strengths:
             A,B,C,diagnostics=paired_inputs(a,plan,seed=seed,strength=dose)
-            runs=[observer.observe(v if observer.backend=="torch" else {plan.input_name:v},
+            def feed(value):
+                if observer.backend=="onnx": return {plan.input_name:value}
+                import torch
+                params=list(observer._adapter.model.parameters())
+                device=params[0].device if params else "cpu"
+                return torch.from_numpy(value.copy()).to(device=device)
+            runs=[observer.observe(feed(v),
                        preprocess_id="u10-locked-numeric-v1",
                        preprocess_config={"nuisance_seed":seed,"dose_basis_points":round(dose*10000)},
                        model_id="preregistered-u10") for v in (A,B,C)]
@@ -255,7 +267,20 @@ def run_u10(*,observer,input_tensor,plan:U10Plan):
             score=(abs(y-x)-abs(z-x))/plan.output_scale
             if not all(map(math.isfinite,(dp,dq,contrast,score))):
                 fail("NONFINITE","Actual model target overflow")
+            layer_responses=[]
+            for probe in observer.layers:
+                if any(probe not in r.tensors for r in runs):
+                    fail("OBSERVATIONS_REQUIRED","Internal selected layer missing in A/B/C")
+                original,case,control=[r.tensor(probe).astype(np.float64) for r in runs]
+                diff_b=float(np.mean(np.abs(case-original)))
+                diff_c=float(np.mean(np.abs(control-original)))
+                layer_responses.append({"tensor":probe,"shape":list(original.shape),
+                    "targetedMeanAbsoluteChange":diff_b,
+                    "matchedControlMeanAbsoluteChange":diff_c,
+                    "matchedDifference":diff_b-diff_c,
+                    "status":"actual-numeric-internal-response-only"})
             rows.append({"seed":seed,"dose":dose,"baseline":x,"target":y,"control":z,
+             "layerResponses":layer_responses,
              "targetedEffect":abs(dp),"matchedControlEffect":abs(dq),
              "targetSignedDelta":dp,"controlSignedDelta":dq,
              "controlledSignedDelta":contrast,"controlledMagnitude":abs(contrast),
