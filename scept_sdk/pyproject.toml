@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scept-research"
-version = "0.2.0a5"
-description = "SCEPT NAF single-forward observation and controlled numeric U10, research SDK A0-A5"
+version = "0.2.0a6"
+description = "SCEPT NAF single-forward observation and controlled numeric U10, research SDK A0-A6"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "SCEPT contributors"}]
