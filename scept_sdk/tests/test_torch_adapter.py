@@ -44,7 +44,12 @@ def test_true_transformer_layer_not_fixed_197_tokens():
     torch.manual_seed(31)
     model=nn.TransformerEncoderLayer(d_model=8,nhead=2,dim_feedforward=16,batch_first=True,dropout=0.)
     observer=SCEPT(model,["linear1","linear2"],backend="torch",profile="vit-token-channel")
-    r=observer.observe(torch.randn(1,5,8))
+    previous_fastpath=torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    try:
+        r=observer.observe(torch.randn(1,5,8))
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous_fastpath)
     assert r.tensor("linear1").shape==(1,5,16)
     assert r.tensor("linear2").shape==(1,5,8)
     assert r.record["science"]["stability"]=="NOT_EVALUATED"
