@@ -38,6 +38,8 @@ def verified_case(pid,grade):
         obs=load_observation(str(zp))
         if obs.run_id!=entry["runId"] or obs.manifest["captureScope"]["inputsIncluded"] is not False:
             raise RuntimeError("Archived SCEPT run identity/privacy invalid")
+        if obs.record["provenance"]["model"]["sha256"]!=entry["modelStateSha256"]:
+            raise RuntimeError("Captured model state provenance differs from original case record")
         measured={g["tensor"] for g in obs.recompute_naf()["groups"] if g["status"]=="measured"}
         if measured!=set(LAYERS):raise RuntimeError("NAF not measured in all three layers")
         patches[name]={}
