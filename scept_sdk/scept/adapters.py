@@ -61,7 +61,7 @@ def _weights_sha(model: Any) -> str:
         # fingerprint every original state byte without pretending it is an
         # observable V6 activation dtype.
         raw=t.detach().cpu().contiguous()
-        binary=raw.view(torch.uint8).numpy().tobytes()
+        binary=raw.reshape(-1).view(torch.uint8).numpy().tobytes()
         descriptor=json.dumps({"name":name,"shape":list(t.shape),"dtype":str(t.dtype)},
                               sort_keys=True,separators=(",",":")).encode()
         d.update(descriptor+b"\0"+binary+b"\0")
