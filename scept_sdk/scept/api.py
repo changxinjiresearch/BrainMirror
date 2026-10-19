@@ -111,6 +111,18 @@ class SCEPT:
         self.profile=profile
         self.layers=tuple(layers)
 
+    @property
+    def model_sha256(self) -> str:
+        """Real frozen input-model identity, inspectable for protocol locking.
+
+        ONNX: exact original uninstrumented model bytes. PyTorch: current
+        state_dict bytes only, NOT a cryptographic hash of executable source.
+        """
+        if self.backend=="onnx":
+            return self._adapter.model_sha256
+        from .adapters import _weights_sha
+        return _weights_sha(self._adapter.model)
+
     def observe(self, x: Any, *, preprocess_id: str = "identity-v1",
                 preprocess_config: dict[str,Any] | None = None,
                 model_id: str = "user-supplied-frozen-model") -> CapturedRun:
