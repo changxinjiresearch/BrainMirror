@@ -19,6 +19,10 @@ PyTorch and ONNX outputs are obtained from one frozen real forward, never recons
 
 For optional residual representation update, both pre- and post-unit tensors must be observed in the SAME forward, have identical float32 shape, a REAL directed path in the original frozen ONNX graph, and an explicitly registered same-residual-stream coordinate identity assertion. Otherwise return not_evaluable; matching shapes alone never qualify. On a supported native token u, RMSUpdate = sqrt(mean_j((post[u,j]-pre[u,j])^2)) and meanSignedUpdate=mean_j(post[u,j]-pre[u,j]). This is arithmetic change and not a mechanism of causation.
 
+### A3: actual reference calibration
+
+A3 also ports the production JS V6.3 reference and empirical midrank formulas. At least 5 real distinct input hashes with identical frozen model/preprocessing SHA, unit profile and actual observed shape are mandatory. The reference excludes its target input (leakage prevention), and within-volume ranks are not patient population percentiles. Explicit independent-cohort designation needs distinct caller-declared sample identities but does NOT independently prove patient independence. Exact JS midrank distributions are regression tested using 6 genuine PyTorch forwards. Fixed raw color magnitude is immutable across runs; adaptive per-run scaling cannot be mistaken for statistical calibration.
+
 ### A4: preregistered controlled test
 
 Before executing inference, lock:
@@ -61,7 +65,7 @@ For an actual preregistered ONNX numerical controlled study:
     control = Mask.from_indices("input", tuple(x.shape), (100, 101), "control-source")
     plan = U10Plan(input_name="input", target_tensor="actual_model_output",
                    target_index=0, target_mask=target, control_mask=control,
-                   model_sha256=observer._adapter.model_sha256)
+                   model_sha256=observer.model_sha256)
     report = run_u10(observer=observer, input_tensor=x, plan=plan)
 
 The user must substitute actual existing layer names and scientifically suitable external ROI sources. Local ProtocolRegistry supports register(name, version, callable) and run(name, ...); arbitrary Python protocol plugins have local process privileges and ARE NOT untrusted-code sandboxes.
