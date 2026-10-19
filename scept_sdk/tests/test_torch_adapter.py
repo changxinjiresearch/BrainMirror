@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 import torch
 from torch import nn
-from scept import SCEPT, SCEPTError, tensor_array, tensor_sha
+from scept import SCEPT, SCEPTError, tensor_array, tensor_sha, load_observation
 
-def test_torch_actual_one_forward_cnn_and_record():
+def test_torch_actual_one_forward_cnn_and_record(tmp_path):
     torch.manual_seed(29)
     class CNN(nn.Module):
         def __init__(self):
@@ -41,8 +41,16 @@ def test_torch_actual_one_forward_cnn_and_record():
     assert naf["science"]["causality"]=="NOT_ESTABLISHED"
     assert len(result.pattern("conv",0)["values"])==64
     assert result.representation_update("conv","head")["status"]=="not_evaluable"
-    with pytest.raises(NotImplementedError,match="A5"):
-        result.export("archive.zip")
+    archive=tmp_path/"actual-run.zip"
+    info=result.export(archive)
+    assert info["outputTensors"]==3
+    from_zip=load_observation(archive)
+    assert from_zip.run_id==result.run_id
+    assert from_zip.input_names==()
+    np.testing.assert_array_equal(from_zip.tensor("conv"),result.tensor("conv"))
+    assert from_zip.recompute_naf()["source"]=="offline_recomputed_from_integrity_checked_archive"
+    with pytest.raises(SCEPTError,match="INPUT_NOT_ARCHIVED"):
+        from_zip.input("input")
 
 def test_true_transformer_layer_not_fixed_197_tokens():
     torch.manual_seed(31)
