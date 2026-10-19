@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "scept-web/**"
+      - "scept_sdk/**"
       - ".github/workflows/scept-v65.yml"
       - ".github/workflows/scept-pages.yml"
       - "docs/SCEPT_V6_5_WORKSPACE_RELEASE.md"
@@ -56,6 +57,23 @@ jobs:
         run: |
           python scept-web/tests/verify_full_archive.py /tmp/scept-real-vit-full-observation.zip
           python scept-web/tests/verify_full_archive.py /tmp/scept-real-vit-with-input.zip
+      - name: A5 independent Python SDK import of REAL pretrained ViT browser-observation archives
+        run: |
+          python -m pip install 'numpy>=1.24,<3'
+          PYTHONPATH=scept_sdk python - <<'PY'
+          from scept import load_observation
+          from pathlib import Path
+          plain=load_observation('/tmp/scept-real-vit-full-observation.zip')
+          retained=load_observation('/tmp/scept-real-vit-with-input.zip')
+          assert plain.record['schema']=='scept.run-record.v1'
+          assert len(plain.tensors)>=5
+          assert plain.input_names==()
+          assert len(retained.tensors)>=5
+          assert len(retained.input_names)>0
+          assert sum(len(g['units']) for g in plain.recompute_naf()['groups'])>=985
+          assert plain.recompute_naf()['science']['model_forward_reexecuted'] is False
+          print('PASS A5 real browser public ViT: Python independent import, 985+ NAF units, optional actual input and SHA')
+          PY
       - name: Public-release visual acceptance screenshot
         if: always()
         uses: actions/upload-artifact@v4
