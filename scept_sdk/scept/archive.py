@@ -431,7 +431,7 @@ def _load_zip(data: bytes) -> ArchiveObservation:
                 if actual_sha!=ensure_hash(entry.get("tensorSha256"),"tensor") or \
                    actual_sha!=ensure_hash(expected_hash,"record"):
                     fail("TENSOR_HASH_MISMATCH","Raw bytes contradict record: "+name)
-                if kind=="observed_output_tensor" and (entry.get("kind") not in _VALID_KIN or
+                if kind=="observed_output_tensor" and (entry.get("kind") not in _VALID_KINDS or
                     meta.get("elements")!=array.size or meta.get("status")!="measured"):
                     fail("INVALID_RECORD","Runtime recorded output dimension/status invalid")
                 destination[name]=(array,entry["dtype"])
