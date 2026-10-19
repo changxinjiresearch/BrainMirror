@@ -179,9 +179,15 @@ def u10_gates(plan:U10Plan,rows:list[dict[str,Any]]):
             return no("Duplicate or unexpected cell")
         if not row.get("genuineInference") or not row.get("modelIdentityVerified"):
             return no("Unverified A/B/C true runtime evidence")
-        if not all(math.isfinite(row[v]) for v in
-                   ("score","targetedEffect","matchedControlEffect","controlledMagnitude","controlledSignedDelta")):
-            return no("Nonfinite score")
+        info=row.get("matching")
+        if not isinstance(info,dict) or info.get("targetMaskSha256")!=plan.target_mask.indices_sha256 or info.get("controlMaskSha256")!=plan.control_mask.indices_sha256 or info.get("nuisanceSigma")!=plan.nuisance_sigma or info.get("meanDiff",float("inf"))>plan.mean_tolerance or info.get("stdDiff",float("inf"))>plan.std_tolerance:
+            return no("Mismatched masks, nuisance or numeric matching across cells")
+        if not all(isinstance(row.get(v),(int,float)) and math.isfinite(row[v]) for v in
+                   ("score","targetedEffect","matchedControlEffect","controlledMagnitude",
+                    "controlledSignedDelta","targetSignedDelta")):
+            return no("Nonfinite/missing actual target statistic")
+        if not isinstance(row.get("runIds"),list) or len(row["runIds"])!=3 or len(set(row["runIds"]))!=3:
+            return no("No three distinct real A/B/C run identities")
         mat[k]=row
     if any((s,d) not in mat for s in plan.nuisance_seeds for d in plan.strengths):
         return no("Missing dose for nuisance seed")
