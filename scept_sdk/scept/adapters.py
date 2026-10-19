@@ -93,6 +93,8 @@ class PyTorchAdapter:
         if any(not isinstance(t,torch.Tensor) for t in original.values()):
             fail("INPUT_MISMATCH","PyTorch inputs must be actual torch.Tensor values")
         named={name:_freeze(t,label=name) for name,t in original.items()}
+        if sum(v[0].nbytes for v in named.values())>self.max_capture_bytes:
+            fail("RESOURCE_LIMIT","Actual input snapshots exceed permitted capture byte budget")
         original_hash={n:tensor_sha(*named[n]) for n in named}
         model_hash=_weights_sha(self.model)
         modules=list(self.model.modules())
@@ -190,6 +192,8 @@ class ONNXAdapter:
         if set(inputs)!=set(self.inputs):
             fail("INPUT_MISMATCH","Must supply exactly real named ONNX inputs")
         source={name:_freeze(inputs[name],label=name) for name in self.inputs}
+        if sum(v[0].nbytes for v in source.values())>self.max_capture_bytes:
+            fail("RESOURCE_LIMIT","Actual ONNX inputs exceed capture budget before execution")
         original_hash={name:tensor_sha(*x) for name,x in source.items()}
         # ONNX Runtime CPU accepts numpy; no A/B or hidden reruns.
         feeds={name:a for name,(a,_dtype) in source.items()}
