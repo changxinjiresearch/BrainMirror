@@ -53,7 +53,14 @@ def verified_case(pid,grade):
         logits=obs.tensor("model.output")
         if logits.shape!=(1,2) or not np.array_equal(logits[0],np.asarray(entry["logitsLggHgg"],dtype=logits.dtype)):
             raise RuntimeError("Output logits differ from saved original")
-        data[name]={"layers":metrics,"pHggSlice0":entry["pHggFirstSlice"]}
+        depth={
+          "block0_to_5":cka(patches[name][LAYERS[0]],patches[name][LAYERS[1]]),
+          "block5_to_11":cka(patches[name][LAYERS[1]],patches[name][LAYERS[2]]),
+          "block0_to_11":cka(patches[name][LAYERS[0]],patches[name][LAYERS[2]])}
+        if any(abs(depth[k]-entry["withinModelCKA"][k])>1e-10 for k in depth):
+            raise RuntimeError("Within-model depth CKA differs from original archive")
+        data[name]={"layers":metrics,"pHggSlice0":entry["pHggFirstSlice"],
+                    "withinModelCKA":depth}
         if "independentPyTorchHookReplay" in entry:
             replay=entry["independentPyTorchHookReplay"]
             if replay["status"]!="PASS" or any(x["maxAbsoluteDifference"]>1e-6 for x in replay["tensors"].values()):
@@ -114,6 +121,10 @@ def main():
               "pairedJminusS":confidence(d,rng),
               "HGGpairedJminusS":confidence(d[h],rng),"LGGpairedJminusS":confidence(d[~h],rng)}
         aggregate[layer]["crossModelCKA"]=confidence([r["crossModelCKA"][layer] for r in records],rng)
+    for model in ("S","J"):
+        aggregate[model+"_withinModelCKA"]={
+          k:confidence([r[model]["withinModelCKA"][k] for r in records],rng)
+          for k in ("block0_to_5","block5_to_11","block0_to_11")}
     pid=ids
     tap=[float(p4[(p,"J")]["tap"])-float(p4[(p,"S")]["tap"]) for p in pid]
     iou=[float(p4[(p,"J")]["iou10"])-float(p4[(p,"S")]["iou10"]) for p in pid]
