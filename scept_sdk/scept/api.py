@@ -2,7 +2,7 @@
 
 A genuine single forward captures named actual model outputs and layer tensors.
 NAF mathematical state/pattern and qualified representation updates implemented
-in A3. Cross-language full ZIP remains A5.
+in A3. Cross-language ZIP export/import and audit are implemented in A5.
 """
 from __future__ import annotations
 import copy
@@ -72,8 +72,16 @@ class CapturedRun:
             output_tensor=output_tensor, coordinate_semantics=coordinate_semantics,
             verified_identity=verified_identity, declared_by=declared_by)
 
-    def export(self, path: str):
-        raise NotImplementedError("Cross-language verified scientific ZIP belongs to A5. No fake archive.")
+    def export(self, path: str, *, include_inputs: bool = False,
+               reference: dict[str,Any] | None = None) -> dict[str,Any]:
+        """Export every REAL observed output in website-compatible ZIP layout.
+
+        Including the original preprocessed model feed requires explicit opt-in.
+        It can contain sensitive medical data. No model weights or unseen layers.
+        """
+        from .archive import export_observation
+        return export_observation(self, path, include_inputs=include_inputs,
+                                  reference=reference)
 
 class SCEPT:
     """Reusable independent observer for existing PyTorch or ONNX models.
