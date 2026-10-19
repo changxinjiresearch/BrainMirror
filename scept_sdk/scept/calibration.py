@@ -70,7 +70,7 @@ def build_reference(samples: list[dict[str,Any]], *, label: str,
             "modelSha256":model,"preprocessSha256":preprocessing,
             "profile":profile,"label":label,"domain":domain,"kind":kind,
             "nSamples":len(samples),"distributions":{k:sorted(v) for k,v in dist.items()},
-            "inputSignatures":[list(x) for x in seen_inputs],
+            "inputSignatures":[[list(pair) for pair in signature] for signature in sorted(seen_inputs)],
             "provenanceAttestation":"USER_DECLARED_NOT_EXTERNALLY_VERIFIED" if kind=="independent-cohort"
                                       else "DISTINCT_HASHES_WITHIN_VOLUME_ONLY",
             "scientificMeaning":(
@@ -93,7 +93,7 @@ def calibrate(naf:dict[str,Any],reference:dict[str,Any]):
        reference["modelSha256"]!=naf["provenance"]["model"]["sha256"] or \
        reference["preprocessSha256"]!=naf["provenance"]["preprocessing"]["sha256"]:
         fail("INCOMPATIBLE_REFERENCE","Exact model/preprocessing/profile match required")
-    if [list(v) for v in _input_signature(naf)] in reference.get("inputSignatures",[]):
+    if [list(pair) for pair in _input_signature(naf)] in reference.get("inputSignatures",[]):
         fail("REFERENCE_LEAKAGE","Target input must be excluded from other-sample reference")
     groups=[]
     for g in naf["groups"]:
