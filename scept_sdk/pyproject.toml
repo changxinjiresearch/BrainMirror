@@ -8,7 +8,6 @@ version = "0.2.0a2"
 description = "SCEPT single-forward real model observation, research SDK A0-A2"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
 authors = [{name = "SCEPT contributors"}]
 dependencies = ["numpy>=1.24,<3"]
 classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering :: Artificial Intelligence"]
