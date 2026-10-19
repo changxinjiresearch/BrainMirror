@@ -93,7 +93,10 @@ def calibrate(naf:dict[str,Any],reference:dict[str,Any]):
        reference["modelSha256"]!=naf["provenance"]["model"]["sha256"] or \
        reference["preprocessSha256"]!=naf["provenance"]["preprocessing"]["sha256"]:
         fail("INCOMPATIBLE_REFERENCE","Exact model/preprocessing/profile match required")
-    if [list(pair) for pair in _input_signature(naf)] in reference.get("inputSignatures",[]):
+    signatures=reference.get("inputSignatures")
+    if not isinstance(signatures,list) or len(signatures)<5 or len(signatures)!=reference.get("nSamples"):
+        fail("REFERENCE_PROVENANCE","Reference must contain five other actual source input signatures")
+    if [list(pair) for pair in _input_signature(naf)] in signatures:
         fail("REFERENCE_LEAKAGE","Target input must be excluded from other-sample reference")
     groups=[]
     for g in naf["groups"]:
