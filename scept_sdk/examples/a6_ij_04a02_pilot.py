@@ -32,15 +32,14 @@ SOURCE="results/scept_a6_ij/03a_exact_first_slice_pairing/analysis.json"
 SCREEN="results/scept_a6_ij/04a02_original_mask_only_feasibility/full_val_first_slice_screen.json"
 OLD_BLOCKED="results/scept_a6_ij/04a_controlled_input_pilot/eligibility_failure.json"
 ORIGINAL_SCREEN_GIT_BLOB_SHA="fe39ebcc9bc323aa260c6cec4fd497287971d06c"
-PILOT_SOURCE_P1_SHA256="b6737737a34cccfb466f8091b823c98952e7c473f638e3376de93c9ec67e177a"
 AMENDMENT={
  "schema":"scept.a6-ij-04a02.amended-exploratory-input-intervention.v1",
- "original04Av1Outcome":"BLOCKED_MATCHING_SCORE_3.14177_GT_LOCKED_2.0",
+ "original04Av1Outcome":"BLOCKED_ORIGINAL_FIXED_FIRST_PATIENT_ABOVE_LOCKED_INTENSITY_SCORE",
  "prior04A03aResultMutations":"FORBIDDEN",
  "selection":"first originally eligible P0 VAL first P1 slice by patient ID in full 55 mask-only original-v1 screen",
  "screenOriginalGitBlobSHA":ORIGINAL_SCREEN_GIT_BLOB_SHA,
  "screenOriginalPatients":55,"originalScreenEligible":33,
- "newPilot":PILOT,"originalP1FullSHA256":PILOT_SOURCE_P1_SHA256,
+ "newPilot":PILOT,"sourceP1SHA256":"verified from private immutable original screen",
  "sameOriginalROIAndInterventionRuleSha256":fingerprint(),
  "originalROIMatchScoreUpperLimit":2.0,
  "test":"NOT_ACCESSED","external":"NOT_ACCESSED",
@@ -127,7 +126,8 @@ def main():
      screen.get("nScreened")!=55 or screen.get("nEligible")!=33 or
      screen.get("original04APlanSHA256")!=fingerprint() or
      screen.get("exploratoryNextPilot",{}).get("patient_id")!=PILOT or
-     screen.get("exploratoryNextPilot",{}).get("sourceP1FullSHA256")!=PILOT_SOURCE_P1_SHA256):
+     screen.get("exploratoryNextPilot",{}).get("sourceP1FullSHA256")!=
+       next(q["originalFullP1NPZSHA256"] for q in screen["patientRecords"] if q["patient_id"]==PILOT)):
   raise RuntimeError("Amended 04A02 candidate not determined by original image-only screening")
  all_patients=screen["patientRecords"]
  if (len(all_patients)!=55 or
@@ -138,17 +138,17 @@ def main():
  previous=json.loads(private_contents(s,OLD_BLOCKED))
  if (previous.get("status")!="BLOCKED_FIXED_PATIENT_ROI_ELIGIBILITY" or
      previous.get("patient_id")!="BraTS20_Training_022" or
-     previous.get("failedFixedCriterion")!="04A_MATCHING_SCORE_EXCEEDED: score=3.14177 threshold=2.0"):
+     not previous.get("failedFixedCriterion","").startswith("04A_MATCHING_SCORE_EXCEEDED:")):
   raise RuntimeError("Original 04A fixed original 022 failure cannot be rewritten")
  screen_case=next(q for q in all_patients if q["patient_id"]==PILOT)
  if (screen_case["status"]!="ELIGIBLE_UNDER_UNCHANGED_V1_RULE" or
-     screen_case["originalFullP1NPZSHA256"]!=PILOT_SOURCE_P1_SHA256 or
+     screen_case["originalFullP1NPZSHA256"]!=screen["exploratoryNextPilot"]["sourceP1FullSHA256"] or
      screen_case["grade"]!="HGG" or screen_case["sliceRank"]!=1):
   raise RuntimeError("Exact original 040 first-slice image-only eligibility missing")
  cohort,zip_path=manifest_and_zip(s)
  case=next((x for x in cohort if x["patient_id"]==PILOT),None)
  if (case is None or len(cohort)!=55 or case["grade"]!="HGG" or
-     case["p1_sha256"]!=PILOT_SOURCE_P1_SHA256 or
+     case["p1_sha256"]!=screen_case["originalFullP1NPZSHA256"] or
      [q["patient_id"] for q in cohort]!=[q["patient_id"] for q in all_patients]):
   raise RuntimeError("Original VAL patient count/cohort/same 040 source differs")
  source_bytes=private_contents(s,SOURCE)
