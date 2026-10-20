@@ -18,14 +18,14 @@ def test_python_310_syntax_and_original_source_fingerprint():
     for token in (
         'PILOT="BraTS20_Training_040"',
         'ORIGINAL_SCREEN_GIT_BLOB_SHA="fe39ebcc9bc323aa260c6cec4fd497287971d06c"',
-        'PILOT_SOURCE_P1_SHA256="b6737737a34cccfb466f8091b823c98952e7c473f638e3376de93c9ec67e177a"',
+        'screen["exploratoryNextPilot"]["sourceP1FullSHA256"]',
         'OUT=ROOT/"a6_ij_04a02_private"',
         '"sameOriginalROIAndInterventionRuleSha256":fingerprint()',
         '"originalROIMatchScoreUpperLimit":2.0',
         'screen_response.json().get("sha")!=ORIGINAL_SCREEN_GIT_BLOB_SHA',
         'screen.get("nScreened")!=55 or screen.get("nEligible")!=33',
         'screen.get("original04APlanSHA256")!=fingerprint()',
-        'screen_case["originalFullP1NPZSHA256"]!=PILOT_SOURCE_P1_SHA256',
+        'screen_case["originalFullP1NPZSHA256"]!=screen["exploratoryNextPilot"]["sourceP1FullSHA256"]',
         'previous.get("patient_id")!="BraTS20_Training_022"',
         'next(q["patient_id"] for q in all_patients',
         'selection["matchScore"]>2.0',
@@ -66,7 +66,8 @@ def test_no_new_rule_threshold_and_no_original_case_relabel():
     assert '"sameOriginalROIAndInterventionRuleSha256":fingerprint()' in s
     assert "selection=choose(image,wt,fg)" in s
     assert "selection[arm][key]" in s
-    assert 'case["p1_sha256"]!=PILOT_SOURCE_P1_SHA256' in s
+    assert 'case["p1_sha256"]!=screen_case["originalFullP1NPZSHA256"]' in s
+    assert 'PILOT_SOURCE_P1_SHA256=' not in s
     assert 'include_inputs=True' not in s
 
 def test_pilot_does_not_select_max_lesion_response_posthoc():
