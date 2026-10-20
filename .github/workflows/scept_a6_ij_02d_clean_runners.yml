@@ -37,6 +37,7 @@ jobs:
       - name: Test two architectures, exact direct hooks, and PyTorch versus ONNX CPU
         env:
           SCEPT_02D_REPORT: ${{ runner.temp }}/a6_ij_02d_python_${{ matrix.python-version }}.json
+          SCEPT_02D_REQUIRE_ONNX: "1"
           OMP_NUM_THREADS: '2'
           MKL_NUM_THREADS: '2'
           OPENBLAS_NUM_THREADS: '1'
