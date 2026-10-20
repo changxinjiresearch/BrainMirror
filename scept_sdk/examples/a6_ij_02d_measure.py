@@ -266,6 +266,8 @@ def main():
  probe=("net.layer1","net.layer3")
  observe=SCEPT(cnn,probe,backend="torch",profile="cnn-nchw",max_capture_bytes=32_000_000)
  resnet_sha=observe.model_sha256
+ weights_path=OUT/"resnet18_seed240216_untrained_state.pt"
+ torch.save(cnn.state_dict(),weights_path)
  npz_results={}
  real_zip_meta=[]
  for patient in COHORT:
@@ -348,6 +350,7 @@ def main():
            "architecture":"timm resnet18 genuine CNN",
            "weightTraining":"NONE - deterministic random initialization, NOT medically trained",
            "randomSeed":PLAN["cnnSeed"],"stateSha256":resnet_sha,
+           "torchModelWeights":{"name":weights_path.name,"sha256":sha_file(weights_path),"bytes":weights_path.stat().st_size},
            "onnxFile":{"name":onnx_path.name,"sha256":onnx_sha,"bytes":onnx_path.stat().st_size},
            "torchObservations":npz_results,"onnxObservations":onnx_results,
            "twoPatientInputDifferenceByLayer":output_diffs,
