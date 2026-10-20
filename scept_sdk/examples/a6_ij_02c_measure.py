@@ -256,8 +256,10 @@ def main():
   raise RuntimeError("Previous 02B source changed mid-study")
  if not pin.exists():save_json(pin,source_record)
  if all(inspect_existing(root,r) is not None for r in cohort[:args.limit]):
-  print("A6-IJ-02C: all",args.limit,"prior patient artifacts SHA-verified; no rerun")
-  return
+  print("A6-IJ-02C: all",args.limit,"prior patient artifacts SHA-verified")
+  if args.limit<55:
+   return
+  print("Full cohort verified; checking or creating the two OOD blank controls")
  models={name:checkpoint_model(name) for name in ("S","J")}
  observers={name:SCEPT(models[name],list(PROBES),backend="torch",
                        profile="vit-token-channel",max_capture_bytes=16_000_000)
