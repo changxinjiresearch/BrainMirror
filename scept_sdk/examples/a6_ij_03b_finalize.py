@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import spearmanr
 from a6_ij_03b_measure import (
- PLAN,psha,sha,github,API,PREFIX,RELEASE_TAG,OUT,private_contents,LAYERS
+ PLAN,psha,sha,github,API,PREFIX,RELEASE_TAG,OUT,private_contents,LAYERS,REPO
 )
 from a6_ij_03b_archive_chunk_private import remote_status,commit_once
 
@@ -53,7 +53,6 @@ def main():
  if len(ids)!=55 or sum(v=="HGG" for v in grade.values())!=44 or \
      sum(v=="LGG" for v in grade.values())!=11:
   raise RuntimeError("Final study patient cohort changed")
- release=fetch_json(s,f"releases/tags/{RELEASE_TAG}") if False else None
  resp=s.get(f"{API}/releases/tags/{RELEASE_TAG}",timeout=(30,120))
  resp.raise_for_status()
  release=resp.json()
