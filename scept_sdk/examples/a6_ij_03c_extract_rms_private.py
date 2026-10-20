@@ -42,9 +42,13 @@ def required_asset(s,tag,name,expected_sha,expected_size):
  OUT.mkdir(parents=True,exist_ok=True)
  filename=OUT/("source_"+name)
  if filename.exists() and filename.stat().st_size==expected_size:
+  digest=hashlib.sha256()
   with filename.open("rb") as fp:
-   dig=hashlib.file_digest(fp,"sha256").hexdigest()
-  if dig==expected_sha:return filename
+   while True:
+    block=fp.read(4*1024*1024)
+    if not block:break
+    digest.update(block)
+  if digest.hexdigest()==expected_sha:return filename
  tmp=OUT/(filename.name+".partial")
  with s.get(f"{API}/releases/assets/{asset['id']}",headers={"Accept":"application/octet-stream"},
             stream=True,allow_redirects=True,timeout=(30,900)) as response:
