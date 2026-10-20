@@ -1,0 +1,28 @@
+# A6-IJ-02D — Cross-architecture, cross-engine, fresh-environment replay
+
+**Status: locked engineering validation protocol; do not claim scientific PASS until real Kaggle and fresh CI complete.**
+
+## Why
+
+A6-IJ-01 / 02A / 02B / 02C demonstrated real patient-derived frozen P4 ViT-B/16 internal activation captures and 55-patient representation comparisons. A6-IJ-02D tests whether SCEPT's measurement, archive, and replay behavior survives **a different architecture** and **a distinct inference engine**, rather than asserting SCEPT is novel merely because it can call PyTorch forward hooks.
+
+## Preregistered real-sample tasks
+
+1. **Existing ViT-B/16 S+J frozen replay:** take FIRST TWO locked P0 validation patients (BraTS20_Training_022 and BraTS20_Training_040), FIRST pinned P1 FLAIR slice, from full-SHA256 verified P1 NPZ archive. Check original checkpoint full SHA256 and P4 metadata. Download source A6-IJ-02C private release **first patient shard**, checking against original private integrity receipt and each inner original ZIP SHA256. In a NEW Python process (02D, separate from 02C) execute direct PyTorch module forward-pre-hooks/forward-hooks *without SCEPT*, compare six [1,197,768] named true captured tensors and logits for FIRST validation patient of **both S/J** against independently reloaded 02C archive with max absolute delta <=1e-6. Also compare another patient input's outputs against 02D first patient (no pre-declared causal importance). Scope: fresh-process replication, **not independent operator/lab or independent hardware**.
+2. **Real CNN architecture:** instantiate genuine timm ResNet-18 with `pretrained=False`, deterministic seed 240216; **randomly initialized network has NO MRI-trained clinical capability**. Wrap exposing three *real* outputs: `net.layer1` [1,64,56,56], `net.layer3` [1,256,14,14], logits [1,2]; pass exact same first two pinned P1 validation first-slice MRI tensors. SCEPT torch observer `profile=cnn-nchw` measures actual 64/256 channels and real logits, full ZIP export/input excluded. Independent original-model direct PyTorch forward hooks agree within maximum abs 1e-6 for two real MRI images. This is a different architecture **software qualification**, not medical model validation.
+3. **Distinct engine:** export that frozen, deterministic untrained ResNet-18 wrapper as a full original ONNX graph (opset 17), exposing `layer1`, `layer3`, `logits` as real graph outputs, explicitly validate onnx.checker, run the same real MRI tensors through SCEPT ONNX adapter with `CPUExecutionProvider` and `profile=cnn-nchw`; check the actual intermediate tensor shapes and compare SCEPT PyTorch raw tensors vs SCEPT ONNX raw outputs with **max abs <=1e-3 and relative L2 <=1e-3 for all probes and logits**. Record both tolerances separately. All exports and model state fingerprints are persisted privately. **ONNXRuntime and PyTorch in same Kaggle host constitute cross-engine, not cross-OS/hardware**. The P1 first slice is OOD for untrained CNN.
+4. **Clean independent workflow runners:** No patient data or tokens. GitHub Actions matrix Python 3.10, 3.11 and 3.12, fresh Linux runners, synthetic deterministic torch CNN and toy transformer-style model, genuine SCEPT single forwards + actual ZIP roundtrip/recompute + independent direct torch hooks, **CNN ONNX graph parity if export supported**. Require **all three matrix jobs PASS** and archive their environment/replay reports. These runs are independent environments/processes but not independent external researchers.
+5. **Private immutable provenance:** SHA-256 full source S/J checkpoint, patient NPZ, 02C release shard & inner ZIP; all derived patient and CNN captures remain only in private coursework repo. Original local output raw ZIPs stored in private GitHub Release with remote re-download full SHA256; original byte-identical JSON results and independent audit receipt saved to private research repository. Never upload 02C patient activation ZIP, patient identifiers, pretrained/randomized model checkpoints, source MRI, Kaggle token, or sensitive material to public BrainMirror.
+
+## Numerical gate
+
+- Source must be exact frozen P0 split/validation and P1 checksum; no TRAIN/TEST MRI required; test set remains sealed.
+- Two P4 ViT states each replay original A6-IJ-02C first-patient full raw values using genuinely independent direct forward-hook implementation; both PASS.
+- ResNet-18 CNN PyTorch + ONNX both run two distinct frozen real MRI validation slices; two real conv layers captured and direct-hook matches PASS. A/B hidden outputs differ numerically, but classification meaningless.
+- ONNX engine parity all two CNN intermediate probes and logits for both inputs <=1e-3 max abs and <=1e-3 relative L2.
+- Three independently provisioned CI Python versions pass a source-and-synthetic cross-architecture suite with real observed tensors; cannot claim bit-for-bit equality between all Python environments.
+- All private patient-derived artifacts permanently retrievable with checked source/remote SHA256. A partial failure MUST remain visible; do not soften tolerances or silently omit architectures.
+
+## Hard scientific boundaries
+
+A6-IJ-02D can establish defined **engineering scope** of genuine intra-model observation, numerical reproducibility, and PyTorch/ONNX portability on tested architectures/engines. It cannot establish actual clinical explanation, model decision evidence dependence, universal model applicability, an independently operated external replication, dominance over Grad-CAM, or full M5 release/license approval. Any scientific mechanism validity is still the separate SCEPT U10/U11/M4 evidence dependency task.
