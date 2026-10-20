@@ -33,7 +33,7 @@ jobs:
       - name: Install SDK and actual PyTorch/ONNX runtimes
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e './scept_sdk[all]' 'pytest>=7'
+          python -m pip install -e './scept_sdk[all]' 'pytest>=7' 'onnxscript>=0.1'
       - name: Test two architectures, exact direct hooks, and PyTorch versus ONNX CPU
         env:
           SCEPT_02D_REPORT: ${{ runner.temp }}/a6_ij_02d_python_${{ matrix.python-version }}.json
