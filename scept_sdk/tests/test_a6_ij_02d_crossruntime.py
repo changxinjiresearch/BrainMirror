@@ -6,6 +6,7 @@ or clinical/scientific attribution. Run on fresh Python 3.10/3.11/3.12 runners.
 """
 from __future__ import annotations
 import hashlib
+import inspect
 import json
 import os
 import platform
@@ -126,9 +127,12 @@ def test_two_architectures_real_torch_zip_and_independent_reexecution():
         x=cases[0][1]
         cnn=cases[0][0]
         model_path=Path(td)/"frozen-cnn.onnx"
-        torch.onnx.export(cnn,x,str(model_path),opset_version=17,
-                          input_names=["image"],output_names=["stem_raw","residual_raw","logits"],
-                          do_constant_folding=True)
+        export_kwargs={"opset_version":17, "input_names":["image"],
+                       "output_names":["stem_raw","residual_raw","logits"],
+                       "do_constant_folding":True}
+        if "dynamo" in inspect.signature(torch.onnx.export).parameters:
+            export_kwargs["dynamo"]=False
+        torch.onnx.export(cnn,x,str(model_path),**export_kwargs)
         onnx.checker.check_model(onnx.load(str(model_path)))
         from_torch=SCEPT(cnn,("stem","residual"),backend="torch",profile="cnn-nchw").observe(
             x,preprocess_id="synthetic-02d")
