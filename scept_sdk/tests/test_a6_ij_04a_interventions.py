@@ -45,6 +45,8 @@ def test_python_310_syntax_and_locked_medical_privacy_bounds():
     assert 'nOriginalSCEPTCapturedForwards' in patient
     assert 'status"]="PASS_INPUT_INTERVENTION_PILOT_ENGINEERING"' in patient
     assert 'sourceNPZSha256' in patient
+    assert 'BLOCKED_FIXED_PATIENT_ROI_ELIGIBILITY' in patient
+    assert 'eligibility_failure.json' in patient
     assert 'remote_sha(s,item,got_sha,size)' in private
     assert 'originalPatientMRIStoredInSCEPTZips":False' in private
     assert 'if len(files)!=12' in private
