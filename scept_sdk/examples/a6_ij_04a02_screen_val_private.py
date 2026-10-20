@@ -68,6 +68,12 @@ def screen_record(patient,grade,source_sha,axial,x,wt,fg):
     "ineligibilityReason":message,
     "regionSelection":None,
     "scientificInterpretation":"Original input mask containment precondition fails; no claim original P1 scan is corrupted"})
+  elif message=="Original P1 WT or brain mask unexpectedly empty":
+   record.update({
+    "status":"INELIGIBLE_ORIGINAL_V1_EMPTY_WT_OR_TOO_SMALL_FOREGROUND",
+    "ineligibilityReason":message,
+    "regionSelection":None,
+    "scientificInterpretation":"Exact original-v1 eligibility precondition fails, with no source file edits"})
   elif message.startswith(expected):
    record.update({"status":STATUS_INELIGIBLE,
                   "ineligibilityReason":message,
@@ -155,6 +161,7 @@ def main():
   "cohort":"original P0 55 VAL original first P1 FLAIR slices only",
   "nScreened":55,"nEligible":len(eligible),"nIneligible":55-len(eligible),
   "nOriginalV1MaskContainmentFailures":sum(r["status"]=="INELIGIBLE_ORIGINAL_V1_MASK_CONTAINMENT" for r in records),
+  "nOriginalV1EmptyMaskOrSmallForegroundFailures":sum(r["status"]=="INELIGIBLE_ORIGINAL_V1_EMPTY_WT_OR_TOO_SMALL_FOREGROUND" for r in records),
   "totalOriginalWTPixelsOutsideForeground":sum(r["originalMaskGeometry"]["wtPixelsOutsideForeground"] for r in records),
   "selectionRule":"First eligible by original ascending P0 VAL patient_id, matching unchanged original 04A input-only rules; never select by model output",
   "exploratoryNextPilot":{"patient_id":eligible[0]["patient_id"],
