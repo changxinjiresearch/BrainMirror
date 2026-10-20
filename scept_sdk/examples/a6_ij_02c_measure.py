@@ -155,47 +155,6 @@ def alignment_null(A,B,denom,patient_index,block,stage):
          "std":float(np.std(values)),"max":float(np.max(values)),
          "q95":float(np.quantile(values,0.95))}
 
-def summarize_patient(patient,index,grade,sources,model_runs,raw_results,reference):
- result={"schema":"scept.a6-ij-02c.patient.v1","patient_id":patient,
-         "grade":grade,"planSha256":plan_sha(),"sliceIndex":0,
-         "sourceNPZsha256":sources["p1_sha256"],"models":{},"matched":{}}
- for name in ("S","J"):
-  capture,stages,errors=model_runs[name]
-  raw=raw_results[name]
-  layer_metrics={}
-  for b in BLOCKS:
-   layer_metrics[str(b)]={"layerNormMaxAbsError":errors[str(b)],
-      "prePostCKA":cka(stages[str(b)]["pre"],stages[str(b)]["post"]),
-      "postVsAffinefreeCKA":cka(stages[str(b)]["post"],stages[str(b)]["affinefree"]),
-      "stages":{stage:token_metrics(stages[str(b)][stage])
-                for stage in STAGES}}
-  result["models"][name]={
-    "runId":capture.run_id,"modelStateSha256":reference[name],
-    "zipName":raw.name,"zipSha256":sha_file(raw),"zipBytes":raw.stat().st_size,
-    "layers":layer_metrics,
-    "logits":capture.tensor("model.output")[0].tolist()}
-  if index==0:
-   result["models"][name]["independentHookReplay"]=independent_replay(
-      model_runs[name][3],model_runs[name][4],capture) if len(model_runs[name])>4 else None
- for b in BLOCKS:
-  pair={}
-  for st in STAGES:
-   a=model_runs["S"][1][str(b)][st]
-   v=model_runs["J"][1][str(b)][st]
-   score,G,H,denom=aligned_cka(a,v)
-   matched={"alignedCKA":score}
-   if st in ("pre","post"):
-    null=alignment_null(G,H,denom,index,b,st)
-    matched["permutedPatchNull"]=null
-    matched["alignedMinusNullMean"]=score-null["mean"]
-   pair[st]=matched
-  delta_02b=abs(pair["post"]["alignedCKA"]-reference["02B"][patient][f"blocks.{b}.norm1"])
-  if delta_02b>PLAN["02BPostCKAMaxAbs"]:
-   raise RuntimeError(f"02B source CKA is not reproducible for {patient} block {b}: {delta_02b}")
-  pair["02BpostCKAAbsoluteDeviation"]=delta_02b
-  result["matched"][str(b)]=pair
- return result
-
 def inspect_existing(root,source):
  pid=source["patient_id"]
  fp=root/"cases"/f"{pid}.json"
