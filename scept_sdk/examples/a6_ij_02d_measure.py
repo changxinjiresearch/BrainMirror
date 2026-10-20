@@ -44,7 +44,8 @@ PLAN={"schema":"scept.a6-ij-02d.plan.v1",
  "cnnTorchVsONNXMaxAbs":MAX_CROSS_ENGINE_ABS,
  "cnnTorchVsONNXRelativeL2":MAX_CROSS_ENGINE_REL,
  "onnxOpset":17,"onnxProvider":"CPUExecutionProvider",
- "engines":["PyTorch CPU","ONNX Runtime CPU"],"crossOS":"separate clean GitHub runners",
+ "engines":["PyTorch CPU","ONNX Runtime CPU"],
+ "cleanRunnerScope":"Linux hosts with Python 3.10/3.11/3.12; NOT cross-OS or independent external operator",
  "sensitiveRawData":"PRIVATE ONLY; include_inputs=False",
  "test":"NOT_ACCESSED","scientificValidity":"NOT_ESTABLISHED"}
 
