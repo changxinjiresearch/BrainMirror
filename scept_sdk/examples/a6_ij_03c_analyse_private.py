@@ -218,6 +218,7 @@ def analyse(rows,source):
       "source":"within each grade, shuffle entire 9-dimensional SCEPT structural vector by patient; preserve B1+target",
       "meanShuffledIncrement":float(permdeltas.mean()),
       "shuffled95Quantile":list(map(float,np.quantile(permdeltas,[.025,.975]))),
+      "all100OriginalShuffledMAEImprovements":permdeltas.tolist(),
       "fractionShuffledGreaterEqualOriginal":float(np.mean(permdeltas>=compare)),
       "exploratoryOnly":"Not a calibrated or multiplicity-adjusted hypothesis test"}
   strat={}
