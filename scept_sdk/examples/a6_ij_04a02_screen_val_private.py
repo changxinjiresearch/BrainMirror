@@ -30,28 +30,54 @@ def canonical(data):
  return (json.dumps(data,sort_keys=True,indent=2,allow_nan=False)+"\n").encode("utf-8")
 
 def screen_record(patient,grade,source_sha,axial,x,wt,fg):
- # All computation is P1 image/mask domain, never a model effect.
+ # Pure original P1 image/mask QA. Keep UNMODIFIED WT/foreground arrays;
+ # a failed original-v1 containment precondition is a separately reported
+ # ineligibility, NOT blanket corrupted original MRI and NOT a valid match.
  record={"patient_id":patient,"grade":grade,"sliceRank":1,
          "axialIndex":int(axial),"originalFullP1NPZSHA256":source_sha,
          "original04APlanSHA256":fingerprint(),
          "modelsRun":0}
+ # Record diagnostic overlap, but do NOT intersect/dilate/change original masks.
+ # The strict_image() routine below remains the single original-v1 gate.
+ if np.asarray(wt).shape!=(224,224) or np.asarray(fg).shape!=(224,224):
+  raise RuntimeError("Original P1 WT/foreground 224x224 shape corrupt")
+ original_wt=np.asarray(wt)>0
+ original_fg=np.asarray(fg)>0
+ outside=int(np.count_nonzero(original_wt & ~original_fg))
+ total=int(np.count_nonzero(original_wt))
+ record["originalMaskGeometry"]={
+  "wtPixels":total,
+  "foregroundPixels":int(np.count_nonzero(original_fg)),
+  "wtPixelsOutsideForeground":outside,
+  "wtOutsideForegroundFraction":float(outside/max(total,1)),
+  "masksLeftUnchanged":True}
  try:
   x,wt,fg=strict_image(x,wt,fg)
   chosen=choose(x,wt,fg)
  except RuntimeError as exc:
-  # Only predefined ROI/healthy-control eligibility errors count as
-  # ineligibility. Corrupted NPZ/mask geometry is a fatal SOURCE error.
   message=str(exc)
   expected=("04A_FIXED_LESION_PATCH_INELIGIBLE",
             "04A_NO_MATCHED_BRAIN_CONTROL",
             "04A_MATCHING_SCORE_EXCEEDED",
             "04A_HEALTHY_DONOR_POOL_INELIGIBLE")
-  if not message.startswith(expected):
+  if message=="Original WT is not contained within original brain foreground":
+   if outside<=0:
+    raise RuntimeError("Containment failure without measured WT/foreground mismatch")
+   record.update({
+    "status":"INELIGIBLE_ORIGINAL_V1_MASK_CONTAINMENT",
+    "ineligibilityReason":message,
+    "regionSelection":None,
+    "scientificInterpretation":"Original input mask containment precondition fails; no claim original P1 scan is corrupted"})
+  elif message.startswith(expected):
+   record.update({"status":STATUS_INELIGIBLE,
+                  "ineligibilityReason":message,
+                  "regionSelection":None})
+  else:
+   # Bad encoding, non-finite MRI or unexpected input errors are source
+   # integrity problems and still abort rather than become eligibility labels.
    raise
-  record.update({"status":STATUS_INELIGIBLE,
-                 "ineligibilityReason":message,
-                 "regionSelection":None})
  else:
+  if outside!=0:raise RuntimeError("Invalid original-v1 accepted ROI geometry")
   record.update({"status":STATUS_ELIGIBLE,
                  "ineligibilityReason":None,
                  "regionSelection":chosen})
@@ -128,6 +154,8 @@ def main():
   "original04APlanSHA256":fingerprint(),
   "cohort":"original P0 55 VAL original first P1 FLAIR slices only",
   "nScreened":55,"nEligible":len(eligible),"nIneligible":55-len(eligible),
+  "nOriginalV1MaskContainmentFailures":sum(r["status"]=="INELIGIBLE_ORIGINAL_V1_MASK_CONTAINMENT" for r in records),
+  "totalOriginalWTPixelsOutsideForeground":sum(r["originalMaskGeometry"]["wtPixelsOutsideForeground"] for r in records),
   "selectionRule":"First eligible by original ascending P0 VAL patient_id, matching unchanged original 04A input-only rules; never select by model output",
   "exploratoryNextPilot":{"patient_id":eligible[0]["patient_id"],
                           "grade":eligible[0]["grade"],"sliceRank":1,
@@ -136,7 +164,7 @@ def main():
   "patientRecords":records,
   "frozenModelsRun":0,"gradcamCalls":0,"sceptCalls":0,
   "sealedP5":"NOT_ACCESSED","externalP6":"NOT_ACCESSED",
-  "scientificConclusion":"NONE: this is image+mask eligibility auditing, not decision evidence dependence"
+  "scientificConclusion":"NONE: original v1 mask containment failures are separately counted as ineligible; no patient mask altered; no decision evidence dependence"
  }
  orig=canonical(summary)
  target=f"{BASE}/full_val_first_slice_screen.json"
