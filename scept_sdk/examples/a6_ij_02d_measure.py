@@ -204,7 +204,6 @@ def main():
  p=argparse.ArgumentParser()
  p.add_argument("--out",default=str(OUT))
  args=p.parse_args()
- global OUT
  # The directory is pre-registered; reject arbitrary redirects for leakage prevention.
  if Path(args.out).resolve()!=OUT.resolve():
   raise RuntimeError("Private archive destination is locked; no arbitrary output path allowed")
