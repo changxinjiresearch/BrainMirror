@@ -143,7 +143,8 @@ def capture(observer,im,grade,patient,model,condition,p1_sha,stage):
      "planSha256":fingerprint04b(),"explicitlyNoTraining":True})
  if ({g["tensor"] for g in run.fingerprint()["groups"] if g["status"]=="measured"}!=set(LAYERS) or
      any(run.tensor(k).shape!=(1,197,768) for k in LAYERS) or
-     run.tensor("model.output").shape!=(1,2)):
+     run.tensor("model.output").shape!=(1,2) or
+     not all(np.isfinite(run.tensor(k)).all() for k in (*LAYERS,"model.output"))):
   raise RuntimeError("Real SCEPT 3 authentic layer/2 logit output capture incomplete")
  output=real_output(run.tensor("model.output")[0],grade)
  tmp=stage/(f"{patient}_{model}_{condition}.partial.zip")
@@ -158,8 +159,6 @@ def capture(observer,im,grade,patient,model,condition,p1_sha,stage):
  name=f"{patient}_{model}_{condition}_private.zip"
  final=stage/name
  os.replace(tmp,final)
- if sha_file(final)!=sha_file(final):
-  raise RuntimeError("SCEPT archive source checksum inconsistency")
  return run,{"name":name,"sha256":sha_file(final),"bytes":final.stat().st_size,
              "runId":run.run_id,"modelStateSHA256":observer.model_sha256,
              "output":output}
@@ -292,6 +291,16 @@ def main():
  torch.set_num_threads(min(4,torch.get_num_threads()))
  s=github()
  selection,baseline,lock=source(s)
+ # Mandatory all-33 ORIGINAL PRE-MODEL physical input feasibility archive
+ # before any frozen ViT model is even constructed.
+ preflight_path="results/scept_a6_ij/04b_equal_l2_interventions/premodel_input_feasibility.json"
+ previous=json.loads(private_contents(s,preflight_path))
+ if (previous.get("status")!="PASS_33_OF_33_PATIENTS_4_PAIRED_INPUT_L2_DOSES_PREMODEL" or
+     previous.get("planSHA256")!=fingerprint04b() or
+     previous.get("sourceLock")!=lock or
+     previous.get("nNewMatchedPass")!=33 or previous.get("nNewMatchedBlocked")!=0 or
+     len(previous.get("patientRecords",[]))!=33):
+  raise RuntimeError("04B exact original source-only all-33 equal-L2 feasibility gate NOT PASS; NO model inference")
  source_rows,zip_path=unpack_val_zip(s)
  by_id={r["patient_id"]:r for r in source_rows}
  if len(by_id)!=55:raise RuntimeError("P0 original VAL whole cohort missing")
