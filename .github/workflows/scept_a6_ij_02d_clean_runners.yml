@@ -33,7 +33,7 @@ jobs:
       - name: Install SDK and actual PyTorch/ONNX runtimes
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e './scept_sdk[all]' 'pytest>=7' 'onnxscript>=0.1'
+          python -m pip install -e './scept_sdk[all]' 'pytest>=7' 'onnxscript>=0.1' 'timm>=1.0'
       - name: Test two architectures, exact direct hooks, and PyTorch versus ONNX CPU
         env:
           SCEPT_02D_REPORT: ${{ runner.temp }}/a6_ij_02d_python_${{ matrix.python-version }}.json
@@ -42,12 +42,12 @@ jobs:
           MKL_NUM_THREADS: '2'
           OPENBLAS_NUM_THREADS: '1'
         run: |
-          python -m pytest -q -s scept_sdk/tests/test_a6_ij_02d_crossruntime.py
+          python -m pytest -q -s scept_sdk/tests/test_a6_ij_02d_crossruntime.py scept_sdk/tests/test_a6_ij_02d_resnet18_actual.py
       - name: Upload environment-specific replay evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: scept-02d-clean-python-${{ matrix.python-version }}
-          path: ${{ runner.temp }}/a6_ij_02d_python_${{ matrix.python-version }}.json
+          path: ${{ runner.temp }}/a6_ij_02d_python_${{ matrix.python-version }}*.json
           if-no-files-found: warn
           retention-days: 30
