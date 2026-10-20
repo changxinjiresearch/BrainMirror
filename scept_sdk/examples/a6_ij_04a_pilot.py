@@ -122,7 +122,25 @@ def main():
     int(axes[0])!=old[(PILOT,"J")]["axial_index"]:
   raise RuntimeError("Original P1 rank1 axial index/source mask incompatible")
  strict_image(image,wt,fg)
- selection=choose(image,wt,fg)
+ try:
+  selection=choose(image,wt,fg)
+ except RuntimeError as exc:
+  # Predeclared region-eligibility rejection is a meaningful negative protocol
+  # result. Persist privately; never reselect patient/ROI to manufacture PASS.
+  from a6_ij_03b_archive_chunk_private import commit_once
+  blocked={"schema":"scept.a6-ij-04a.eligibility-failure.v1",
+   "status":"BLOCKED_FIXED_PATIENT_ROI_ELIGIBILITY",
+   "patient_id":PILOT,"grade":"HGG","sliceRank":1,
+   "interventionPlanSha256":fingerprint(),
+   "originalP1PatientNPZFullSHA256":digest(raw),
+   "failedFixedCriterion":str(exc),"notRerunOnAlternativePatient":True,
+   "originalTest":"NOT_ACCESSED","scientificVerdict":"NOT_DETERMINED"}
+  local=OUT/"eligibility_failure.json"
+  write_fixed(local,blocked)
+  commit_once(s,"results/scept_a6_ij/04a_controlled_input_pilot/eligibility_failure.json",
+              local.read_bytes())
+  print("A6-IJ-04A LOCKED ROI ELIGIBILITY BLOCKED; FAILURE ARCHIVED PRIVATELY",flush=True)
+  raise
  inputs={"clean":image}
  mutation={}
  for op in OPS:
