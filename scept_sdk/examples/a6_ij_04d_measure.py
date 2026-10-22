@@ -19,7 +19,7 @@ import torch
 from a6_ij_02b_measure import checkpoint_model,sha_file
 from a6_ij_03b_measure import github,private_contents
 from a6_ij_04a_interventions import choose,strict_image
-from a6_ij_04b_measure import unpack_val_zip,check_mask_selection,pure_input,canonical,sha
+from a6_ij_04b_measure import unpack_val_zip,pure_input,canonical,sha
 from a6_ij_04b_matched_interventions import matched_inputs,fingerprint04b
 from a6_ij_04c_association_private import load as original04b_load,BASE as CBASE
 from a6_ij_04d_hook import (
@@ -88,8 +88,9 @@ def patient_measure(item,original,zipf,models):
   raise RuntimeError("04D original P1 first-slice axial index differs")
  strict_image(image,wt,fg)
  selection=choose(image,wt,fg)
- check_mask_selection(selection,original)
  orig04b=original["patientFixedROIs"]
+ if abs(float(selection["matchScore"])-float(orig04b["matchScore"]))>1e-9:
+  raise RuntimeError("04D 04B fixed source-only lesion/nonlesion eligibility matching changed")
  for arm in ARMS:
   for coord in ("row","col"):
    if selection[arm][coord]!=orig04b[arm][coord]:
