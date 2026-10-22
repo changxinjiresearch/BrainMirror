@@ -84,7 +84,7 @@ def patient_measure(item,original,zipf,models):
   image=np.asarray(npz["flair"][0],dtype=np.float32).copy()
   wt=np.asarray(npz["wt"][0]).copy();fg=np.asarray(npz["foreground"][0]).copy()
   axis=int(npz["axial_indices"][0])
- if axis!=original["axialIndex"] or axis!=item["axial_index"] if "axial_index" in item else axis!=original["axialIndex"]:
+ if axis!=int(original["axialIndex"]):
   raise RuntimeError("04D original P1 first-slice axial index differs")
  strict_image(image,wt,fg)
  selection=choose(image,wt,fg)
@@ -120,9 +120,7 @@ def patient_measure(item,original,zipf,models):
  donated={}
  for model_name in ("S","J"):
   model=models[model_name]
-  if not (model.training is False and torch.is_grad_enabled() is True):
-   # Global grad mode need not be disabled outside inference_mode; no backward.
-   if model.training:raise RuntimeError("04D original frozen network must be eval")
+  if model.training:raise RuntimeError("04D frozen model must remain eval")
   baseline={}
   activations={}
   for condition in ("clean",*chosen.values()):
