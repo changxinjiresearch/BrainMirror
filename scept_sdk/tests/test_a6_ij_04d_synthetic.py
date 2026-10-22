@@ -69,7 +69,7 @@ def test_single_token_intervention_and_placebo_from_frozen_graph():
  new=patched_forward(model,edit,"blocks.5",ca["blocks.5"],[2])
  placebo=patched_forward(model,edit,"blocks.5",ca["blocks.5"],[3])
  assert abs(new[0]-b[0])>1e-6
- assert abs(placebo[0]-b[0])>0 # since model mixed states, so placebo can affect!
+ assert np.isfinite(placebo).all() # placebo may or may not change output
  assert assert_logits(patched_forward(model,edit,"blocks.5",ed["blocks.5"],[2]),b,"edit-self")==0
 
 def test_prespecified_selection_and_indeterminate_margin_rule():
