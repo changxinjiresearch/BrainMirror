@@ -1,0 +1,43 @@
+name: SCEPT A6-IJ-04A02 — complete VAL feasibility contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - phase/scept-sdk-a6-m5-release-qualification
+    paths:
+      - scept_sdk/examples/a6_ij_04a02_screen_val_private.py
+      - scept_sdk/tests/test_a6_ij_04a02_feasibility_contract.py
+      - scept_sdk/tests/test_a6_ij_04a02_pilot_contract.py
+      - scept_sdk/examples/a6_ij_04a02_pilot.py
+      - scept_sdk/examples/a6_ij_04a02_archive_private.py
+      - .github/workflows/scept_a6_ij_04a02_feasibility_synthetic.yml
+  pull_request:
+    paths:
+      - scept_sdk/examples/a6_ij_04a02_screen_val_private.py
+      - scept_sdk/tests/test_a6_ij_04a02_feasibility_contract.py
+      - scept_sdk/tests/test_a6_ij_04a02_pilot_contract.py
+      - scept_sdk/examples/a6_ij_04a02_pilot.py
+      - scept_sdk/examples/a6_ij_04a02_archive_private.py
+      - .github/workflows/scept_a6_ij_04a02_feasibility_synthetic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  original-block-not-overwritten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Verify synthetic source-only old failure and 55 original case rules
+        run: |
+          python -m pip install -q 'pytest>=7' 'numpy>=1.24,<3'
+          python -m pytest -q -s scept_sdk/tests/test_a6_ij_04a02_feasibility_contract.py scept_sdk/tests/test_a6_ij_04a02_pilot_contract.py

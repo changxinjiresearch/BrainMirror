@@ -1,0 +1,40 @@
+name: SCEPT A6-IJ-04A — preregistered ROI synthetic safeguards
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['phase/scept-sdk-a6-m5-release-qualification']
+    paths:
+      - 'scept_sdk/examples/a6_ij_04a_*.py'
+      - 'scept_sdk/tests/test_a6_ij_04a_interventions.py'
+      - '.github/workflows/scept_a6_ij_04a_intervention_synthetic.yml'
+  pull_request:
+    paths:
+      - 'scept_sdk/examples/a6_ij_04a_*.py'
+      - 'scept_sdk/tests/test_a6_ij_04a_interventions.py'
+      - '.github/workflows/scept_a6_ij_04a_intervention_synthetic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  paired-intervention-numerical-sanity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10','3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Exact synthetic scientific ROI algebra
+        run: |
+          python -m pip install -q 'numpy>=1.24,<3' 'scipy>=1.11' 'pytest>=7'
+          python -m pytest -q -s scept_sdk/tests/test_a6_ij_04a_interventions.py
+      - name: Scope
+        run: |
+          echo "A6-IJ-04A synthetic independent Python environment only"
+          echo "No MRI, no GitHub private patient records, no P4 inference and no clinical validity claimed"

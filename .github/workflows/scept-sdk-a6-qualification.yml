@@ -1,0 +1,48 @@
+name: SCEPT SDK A6 clean-environment candidate qualification
+on:
+  push:
+    branches: [main, phase/scept-sdk-a6-m5-release-qualification]
+    paths:
+      - 'scept_sdk/**'
+      - 'docs/SCEPT_SDK_A6_*'
+      - '.github/workflows/scept-sdk-a6-qualification.yml'
+  pull_request:
+    paths:
+      - 'scept_sdk/**'
+      - 'docs/SCEPT_SDK_A6_*'
+      - '.github/workflows/scept-sdk-a6-qualification.yml'
+permissions:
+  contents: read
+jobs:
+  clean-wheel-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install CPU Torch and build wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m build --wheel ./scept_sdk --outdir /tmp/scept-wheel
+      - name: Install built wheel and exercise public CLI
+        run: |
+          python -m pip install '/tmp/scept-wheel/scept_research-'*.whl
+          python -m pip install 'pytest>=7' 'onnx>=1.15' 'onnxruntime>=1.17'
+          python -m pip check
+          python -c 'import scept; print(scept.__version__)'
+      - name: Synthetic full observation, ZIP, offline NAF and true replay
+        run: python scept_sdk/examples/a6_clean_room.py
+      - name: All SDK A0-A6 regression including original JS
+        run: python -m pytest scept_sdk/tests -q

@@ -1,0 +1,11 @@
+# A6-IJ-04C: Preregistered representation-to-decision association
+
+This protocol is retrospective secondary analysis of the immutable A6-IJ-04B 33-patient validation study, with no new model training and no test access. The source analysis and all seven source batches are in the private research repository. Original patient data and numeric results must remain private.
+
+**Primary endpoint, locked before examining 04C outcomes:** per patient, take the mean across frozen models S and J of (a) lesion-minus-control absolute true-grade logit margin change under Gaussian sigma3 dose 50%, and (b) lesion-minus-control log1p of direct targeted patch-token L2 change at blocks.11.norm1. Calculate Spearman correlation across the 33 independent patient pairs.
+
+**Uncertainty:** 2000 patient-only bootstrap draws, seed 240216, and 2000 patient shuffles of the internal contrast, retaining both models as one unit. Report signed estimates, 95% bootstrap intervals, permutation tails, any degenerate samples, without treating 66 model records as independent.
+
+**Prespecified baselines:** original input ROI absolute mean pixel change and full-replacement L2 difference; compare input-only versus input-plus-representation using fixed alpha-1 ridge regression with training-only standardization and leave-one-patient-out predictions, plus train-mean baseline. Report MAE and R2, which may be worse than baseline. Analyze three original ViT blocks, patch-relative L2, direct-token L2, cosine, RMS and both models separately as exploratory outcomes; never treat these as confirmatory after selecting the primary.
+
+**Scope:** Original 04B source data: 33 of 55 original validation cases, S/J frozen models, 594 authentic observations, 7 checksum-verified archives. Verify all original seven patient batches and baseline primary endpoint before analysis. No new Kaggle model inference needed for original summarized layer metrics. This analysis only tests observational association and possible incremental prediction, NOT causal mediation or medical attribution fidelity. A full tensor-level independent audit and controlled neuron intervention remain separate tasks, as do independent test/external replication and Grad-CAM head-to-head benchmarks. Null results and model disagreements are published as-is.

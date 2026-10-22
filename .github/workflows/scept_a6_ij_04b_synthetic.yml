@@ -1,0 +1,40 @@
+name: SCEPT A6-IJ-04B equal-L2 synthetic scientific QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['phase/scept-sdk-a6-m5-release-qualification']
+    paths:
+      - 'scept_sdk/examples/a6_ij_04b_*.py'
+      - 'scept_sdk/tests/test_a6_ij_04b_contract.py'
+      - '.github/workflows/scept_a6_ij_04b_synthetic.yml'
+  pull_request:
+    paths:
+      - 'scept_sdk/examples/a6_ij_04b_*.py'
+      - 'scept_sdk/tests/test_a6_ij_04b_contract.py'
+      - '.github/workflows/scept_a6_ij_04b_synthetic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  exact-input-perturbation-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install numerical-only test environment
+        run: python -m pip install -q 'numpy>=1.24,<3' 'scipy>=1.11' 'pytest>=7'
+      - name: Test actual equal-L2 source-only paired logic and scientific audit contracts
+        run: python -m pytest -q -s scept_sdk/tests/test_a6_ij_04b_contract.py
+      - name: Privacy and scope
+        run: |
+          echo "Synthetic input only: NO real patient MRI, NO frozen model, NO private repo data"
+          echo "Successful source CI does NOT mean 04B 33-person clinical or neural result completed"
